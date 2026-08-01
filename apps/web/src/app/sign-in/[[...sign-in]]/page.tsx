@@ -14,7 +14,7 @@ export default function SignInPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_#12343b,_#06131a_45%,_#02070a)] p-6">
-      <SignIn path="/sign-in" routing="path" forceRedirectUrl="/" signUpUrl="/sign-up" />
+      <SignIn path="/sign-in" routing="path" forceRedirectUrl="/" />
     </main>
   );
 }

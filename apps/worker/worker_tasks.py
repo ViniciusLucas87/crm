@@ -41,8 +41,8 @@ logger = logging.getLogger(__name__)
 
 # ── Shared Celery app ──
 _redis_password = os.getenv("REDIS_PASSWORD", "redis_dev")
-_broker_url = f"redis://:{_redis_password}@redis:6379/0"
-_result_backend = f"redis://:{_redis_password}@redis:6379/1"
+_broker_url = os.getenv("REDIS_URL", f"redis://:{_redis_password}@redis:6379/0")
+_result_backend = os.getenv("REDIS_RESULT_URL", _broker_url)
 celery_app = Celery("pns_worker", broker=_broker_url, backend=_result_backend)
 
 # ── Lazy DB factory ──

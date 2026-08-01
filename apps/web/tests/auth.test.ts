@@ -50,7 +50,7 @@ describe("Authorization — pages", () => {
     },
   );
 
-  const publicPages = ["/sign-in", "/sign-up"];
+  const publicPages = ["/sign-in"];
 
   it.each(publicPages)(
     "public page %s is accessible without auth (2xx)",
@@ -60,6 +60,11 @@ describe("Authorization — pages", () => {
       expect(status).toBeLessThan(300);
     },
   );
+
+  it("public sign-up is disabled", async () => {
+    const status = await fetchStatus(`${WEB_URL}/sign-up`);
+    expect(status).toBe(307);
+  });
 });
 
 describe("Authorization — Next.js API routes", () => {

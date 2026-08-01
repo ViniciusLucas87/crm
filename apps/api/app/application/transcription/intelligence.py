@@ -81,7 +81,7 @@ class IntelligenceReport:
     commitments: list[str] = field(default_factory=list)
     summary: str = ""
     transcript_length: int = 0
-    analyzed_at: str = ""
+    analyzed_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 # ═══════════════════════════════════════════════════════════

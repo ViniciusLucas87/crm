@@ -7,6 +7,9 @@ import jsxA11yPlugin from "eslint-plugin-jsx-a11y";
 import globals from "globals";
 
 export default [
+  {
+    ignores: [".next/**", "node_modules/**", "coverage/**", "next-env.d.ts"],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

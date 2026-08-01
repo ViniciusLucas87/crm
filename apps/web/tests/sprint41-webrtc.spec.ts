@@ -179,7 +179,6 @@ test.describe("Sprint 41 — Diagnostics Panel", () => {
     await expect(page.locator("text=WebRTC Diagnostics")).toBeVisible();
 
     // Click close (X button)
-    const closeButton = page.locator("button", { hasText: "" }).filter({ has: page.locator("svg") }).last();
     // Click the close button in the panel header
     await page.locator("text=WebRTC Diagnostics").locator("..").locator("button").click();
 
