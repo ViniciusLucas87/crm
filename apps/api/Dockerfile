@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # ── Application code ──
 COPY apps/api .
+RUN chmod +x /app/start.sh
 
 # ── Validate models at BUILD TIME ──
 RUN python -c "from app.infrastructure.db.base import Base; from app.infrastructure.db import models; Base.registry.configure(); print(f'Build-time model check: {len(Base.registry.mappers)} mappers OK')"
@@ -31,4 +32,4 @@ LABEL com.pns.git_commit="${GIT_COMMIT}"
 LABEL com.pns.service="api"
 
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/app/start.sh"]

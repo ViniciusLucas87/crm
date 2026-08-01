@@ -1,11 +1,16 @@
 from datetime import UTC, date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, JSON, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.db.base import Base
+
+
+# Keep PostgreSQL's efficient JSONB in production while allowing the SQLite
+# test database to render the same model metadata.
+JSON_DOCUMENT = JSON().with_variant(JSONB, "postgresql")
 
 
 class Company(Base):
@@ -638,7 +643,7 @@ class Call(Base):
 
     # ── Metadata ──
     provider_metadata: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    metadata_json: Mapped[dict | None] = mapped_column(JSON_DOCUMENT, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
@@ -664,8 +669,8 @@ class AutomationAssessment(Base):
     scoring_model_version: Mapped[str] = mapped_column(String(20), default="1.0")
     recommendation_model_version: Mapped[str] = mapped_column(String(20), default="1.0")
 
-    raw_answers: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    calculated_output: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    raw_answers: Mapped[dict] = mapped_column(JSON_DOCUMENT, nullable=False)
+    calculated_output: Mapped[dict] = mapped_column(JSON_DOCUMENT, nullable=False)
 
     industry: Mapped[str | None] = mapped_column(String(120), nullable=True)
     employee_range: Mapped[str | None] = mapped_column(String(50), nullable=True)
@@ -674,7 +679,7 @@ class AutomationAssessment(Base):
     estimated_weekly_hours: Mapped[int] = mapped_column(Integer, default=0)
     estimated_annual_hours: Mapped[int] = mapped_column(Integer, default=0)
     estimated_people_count: Mapped[int] = mapped_column(Integer, default=0)
-    primary_pain_points: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    primary_pain_points: Mapped[list | None] = mapped_column(JSON_DOCUMENT, nullable=True)
 
     privacy_accepted: Mapped[bool] = mapped_column(Boolean, default=False)
     marketing_accepted: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -695,19 +700,19 @@ class AutomationAssessment(Base):
 
     # ── Sprint 47.9 — Assessment Intelligence ──
     primary_pain_point: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    secondary_pain_points: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    secondary_pain_points: Mapped[list | None] = mapped_column(JSON_DOCUMENT, nullable=True)
     current_process_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     root_cause: Mapped[str | None] = mapped_column(Text, nullable=True)
     business_impact: Mapped[str | None] = mapped_column(Text, nullable=True)
-    recommended_solution_categories: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    recommendation_reasons: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    recommended_solution_categories: Mapped[list | None] = mapped_column(JSON_DOCUMENT, nullable=True)
+    recommendation_reasons: Mapped[list | None] = mapped_column(JSON_DOCUMENT, nullable=True)
     urgency: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    buying_signals: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    buying_signals: Mapped[list | None] = mapped_column(JSON_DOCUMENT, nullable=True)
     likely_decision_maker: Mapped[str | None] = mapped_column(String(255), nullable=True)
     project_size_band: Mapped[str | None] = mapped_column(String(20), nullable=True)
     next_best_action: Mapped[str | None] = mapped_column(Text, nullable=True)
-    discovery_questions: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    intelligence_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    discovery_questions: Mapped[list | None] = mapped_column(JSON_DOCUMENT, nullable=True)
+    intelligence_json: Mapped[dict | None] = mapped_column(JSON_DOCUMENT, nullable=True)
     intelligence_version: Mapped[str | None] = mapped_column(String(20), nullable=True)
     intelligence_generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     intelligence_confidence: Mapped[float | None] = mapped_column(Numeric(4, 3), nullable=True)
@@ -770,7 +775,7 @@ class EmailMessage(Base):
     # ── Provider ──
     provider: Mapped[str] = mapped_column(String(50), nullable=False, default="zoho")
     correlation_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
-    provider_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    provider_metadata: Mapped[dict | None] = mapped_column(JSON_DOCUMENT, nullable=True)
 
     # ── Metadata ──
     created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -784,7 +789,7 @@ class OutboxEvent(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     event_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
-    payload_json: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    payload_json: Mapped[dict] = mapped_column(JSON_DOCUMENT, nullable=False)
     correlation_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
 
     status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False, index=True)

@@ -3,8 +3,8 @@ import os
 from celery import Celery
 
 redis_password = os.getenv("REDIS_PASSWORD", "redis_dev")
-broker_url = f"redis://:{redis_password}@redis:6379/0"
-backend_url = f"redis://:{redis_password}@redis:6379/1"
+broker_url = os.getenv("REDIS_URL", f"redis://:{redis_password}@redis:6379/0")
+backend_url = os.getenv("REDIS_RESULT_URL", broker_url)
 
 celery_app = Celery(
     "pns_worker",

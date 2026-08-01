@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.application.llm import LLMConfig, LLMMessage, create_provider, get_memory_store, get_prompt
 from app.application.llm.prompt_components import CHAT_SYSTEM_PROMPT
+from app.core.config import get_settings
 from app.infrastructure.auth.clerk import AuthContext, require_permission
 from app.infrastructure.db.session import get_db_session
 from app.infrastructure.mcp import MCPServer, get_registry, register_all_tools
@@ -127,11 +128,18 @@ async def mcp_chat(
     tools = registry.list_openai_functions()
 
     # Configure LLM — default to DeepSeek
+    settings = get_settings()
+    if not settings.deepseek_api_key:
+        return {
+            "error": "The CRM AI provider is not configured",
+            "session_id": session_id,
+        }
     llm_config = LLMConfig(
-        provider=provider_cfg.get("provider", "deepseek"),
-        model=provider_cfg.get("model", "deepseek-chat"),
-        api_key=provider_cfg.get("api_key", "") or "sk-4baa89a56bc14ef6aa4de2587e525d8e",
-        api_base=provider_cfg.get("api_base", "https://api.deepseek.com/v1"),
+        # DeepSeek exposes an OpenAI-compatible API.
+        provider="openai",
+        model=settings.deepseek_model,
+        api_key=settings.deepseek_api_key,
+        api_base=settings.deepseek_api_base,
         temperature=provider_cfg.get("temperature", 0.3),
         max_tokens=provider_cfg.get("max_tokens", 4096),
     )
@@ -270,7 +278,10 @@ def list_prompts_endpoint(
 # ── Memory Management ──
 
 @router.get("/memory/{session_id}")
-def get_memory(session_id: str):
+def get_memory(
+    session_id: str,
+    ctx: AuthContext = Depends(require_permission("companies:read")),
+):
     """Get conversation memory for a session."""
     memory = get_memory_store().get(session_id)
     if memory is None:
@@ -279,7 +290,10 @@ def get_memory(session_id: str):
 
 
 @router.delete("/memory/{session_id}")
-def delete_memory(session_id: str):
+def delete_memory(
+    session_id: str,
+    ctx: AuthContext = Depends(require_permission("companies:write")),
+):
     """Clear conversation memory for a session."""
     get_memory_store().delete(session_id)
     return {"status": "deleted", "session_id": session_id}

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  Sparkles, TrendingUp, Zap, Target, Lightbulb, Clock,
+  Sparkles, TrendingUp, Zap, Target, Lightbulb,
   Phone, Mail, FileText, AlertTriangle, CheckCircle, Users,
   BarChart3, ArrowRight, ExternalLink
 } from "lucide-react";
@@ -109,7 +109,7 @@ export default function AssessmentDetailPage() {
             <Badge className={urgencyColors[data.urgency || "medium"] || ""}>
               {data.urgency?.toUpperCase()} URGENCY
             </Badge>
-            <Badge variant="outline" className="text-gray-300 border-gray-600">
+            <Badge variant="neutral" className="text-gray-300 border-gray-600">
               {data.project_size_band?.toUpperCase()} PROJECT
             </Badge>
           </div>
@@ -208,10 +208,10 @@ export default function AssessmentDetailPage() {
           <Card className="p-5">
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">Actions</h3>
             <div className="space-y-2">
-              <Button variant="outline" className="w-full justify-start gap-2" size="sm">
+              <Button variant="secondary" className="w-full justify-start gap-2" size="sm">
                 <Phone className="w-4 h-4" /> Call Contact
               </Button>
-              <Button variant="outline" className="w-full justify-start gap-2" size="sm">
+              <Button variant="secondary" className="w-full justify-start gap-2" size="sm">
                 <Mail className="w-4 h-4" /> Email Contact
               </Button>
               <Link href="/leads" className="w-full">

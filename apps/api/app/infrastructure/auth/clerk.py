@@ -257,6 +257,17 @@ def get_auth_context(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Token missing required claims"
             )
+        allowed_user_ids = settings.crm_allowed_user_id_set
+        if settings.pns_env.lower() == "production" and not allowed_user_ids:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="CRM access allowlist is not configured",
+            )
+        if allowed_user_ids and clerk_user_id not in allowed_user_ids:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This account is not authorized to access the CRM",
+            )
         email = str(claims.get("email") or f"{clerk_user_id}@clerk.user")
         clerk_org_id = claims.get("org_id")
         org_slug = claims.get("org_slug")
