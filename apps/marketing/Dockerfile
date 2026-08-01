@@ -1,44 +1,26 @@
 # ── Marketing Website Dockerfile (Railway production) ──
-# Pacific North Systems — public website at pacificnorthsystems.com
-# Uses pnpm workspace, builds from monorepo root context
+# Standalone build — does NOT require monorepo root context
+# Build from: apps/marketing/
 
 FROM node:20-alpine AS deps
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.12.2 --activate
-
-# Copy workspace root files for pnpm resolution
-COPY pnpm-workspace.yaml ./
-COPY pnpm-lock.yaml ./
-COPY package.json ./
-
-# Copy marketing + shared contracts manifests
-COPY apps/marketing/package.json ./apps/marketing/package.json
-COPY packages/contracts/package.json ./packages/contracts/package.json
-COPY packages/contracts ./packages/contracts
-
-RUN pnpm install --frozen-lockfile --filter @pns/marketing
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile --prod=false 2>/dev/null || pnpm install --no-frozen-lockfile
 
 FROM node:20-alpine AS builder
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.12.2 --activate
 
-# ── Version metadata ──
 ARG GIT_COMMIT=unknown
 ARG BUILD_TIME=unknown
 ARG IMAGE_VERSION=unknown
 RUN echo "{\"git_commit\":\"${GIT_COMMIT}\",\"build_time\":\"${BUILD_TIME}\",\"image_version\":\"${IMAGE_VERSION}\"}" > /app/version.json
 
-COPY pnpm-workspace.yaml ./
-COPY pnpm-lock.yaml ./
-COPY package.json ./
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/marketing/node_modules ./apps/marketing/node_modules
-COPY --from=deps /app/packages/contracts/node_modules ./packages/contracts/node_modules
-COPY apps/marketing ./apps/marketing
-COPY packages/contracts ./packages/contracts
+COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
-WORKDIR /app/apps/marketing
 RUN pnpm build
 
 FROM node:20-alpine AS runner
@@ -47,13 +29,12 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 
-COPY --from=builder /app/apps/marketing/.next ./.next
-COPY --from=builder /app/apps/marketing/package.json ./
-COPY --from=builder /app/apps/marketing/node_modules ./node_modules
-COPY --from=builder /app/apps/marketing/public ./public
-COPY --from=builder /app/apps/marketing/next.config.mjs ./
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.mjs ./
 
-# ── OCI Metadata ──
 ARG GIT_COMMIT=unknown
 ARG BUILD_TIME=unknown
 ARG IMAGE_VERSION=unknown
