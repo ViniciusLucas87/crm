@@ -1,0 +1,4055 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "docker: up",
+			"type": "shell",
+			"command": "docker compose up --build",
+			"group": "build"
+		},
+		{
+			"label": "clerk: check",
+			"type": "shell",
+			"command": "npm install -g clerk@latest && clerk --version"
+		},
+		{
+			"label": "clerk: install",
+			"type": "shell",
+			"command": "npm install -g clerk@latest"
+		},
+		{
+			"label": "clerk: install via cmd",
+			"type": "shell",
+			"command": "cmd /c \"npm install -g clerk@latest\""
+		},
+		{
+			"label": "clerk: version",
+			"type": "shell",
+			"command": "cmd /c \"clerk --version\""
+		},
+		{
+			"label": "clerk: update",
+			"type": "shell",
+			"command": "cmd /c \"clerk update --yes\""
+		},
+		{
+			"label": "clerk: auth login",
+			"type": "shell",
+			"command": "cmd /c \"clerk auth login\"",
+			"isBackground": true
+		},
+		{
+			"label": "clerk: auth login",
+			"type": "shell",
+			"command": "cmd /c \"start \"\" clerk auth login\"",
+			"isBackground": true
+		},
+		{
+			"label": "clerk: init",
+			"type": "shell",
+			"command": "cmd /c \"clerk init --app app_3GjOf0czXrK9DbVxMDOYMEnOEdB\"",
+			"isBackground": true
+		},
+		{
+			"label": "clerk: init in web",
+			"type": "shell",
+			"command": "cmd /c \"cd apps\\web && clerk init --app app_3GjOf0czXrK9DbVxMDOYMEnOEdB\"",
+			"isBackground": true
+		},
+		{
+			"label": "clerk: init in web",
+			"type": "shell",
+			"command": "cmd /c \"cd /d apps\\web && clerk init --app app_3GjOf0czXrK9DbVxMDOYMEnOEdB\"",
+			"isBackground": true
+		},
+		{
+			"label": "clerk: init in web",
+			"type": "shell",
+			"command": "Set-Location apps\\web; clerk init --app app_3GjOf0czXrK9DbVxMDOYMEnOEdB",
+			"isBackground": true
+		},
+		{
+			"label": "clerk: init web dir",
+			"type": "shell",
+			"command": "Set-Location apps\\web; clerk init --app app_3GjOf0czXrK9DbVxMDOYMEnOEdB",
+			"isBackground": true
+		},
+		{
+			"label": "clerk: init web v2",
+			"type": "shell",
+			"command": "cmd /c \"cd /d apps\\web ^& clerk init --app app_3GjOf0czXrK9DbVxMDOYMEnOEdB\"",
+			"isBackground": true
+		},
+		{
+			"label": "clerk: pull env",
+			"type": "shell",
+			"command": "cmd /c clerk env pull --app app_3GjOf0czXrK9DbVxMDOYMEnOEdB"
+		},
+		{
+			"label": "clerk: doctor",
+			"type": "shell",
+			"command": "cmd /c \"cd /d apps\\web & clerk doctor\"",
+			"isBackground": true
+		},
+		{
+			"label": "docker: rebuild",
+			"type": "shell",
+			"command": "docker compose down; docker compose up --build -d",
+			"isBackground": true
+		},
+		{
+			"label": "docker: rebuild web",
+			"type": "shell",
+			"command": "docker compose build --no-cache web; docker compose up -d web",
+			"isBackground": true
+		},
+		{
+			"label": "docker: ps",
+			"type": "shell",
+			"command": "docker compose ps"
+		},
+		{
+			"label": "docker: api logs",
+			"type": "shell",
+			"command": "docker compose logs api --tail 30"
+		},
+		{
+			"label": "docker: web logs",
+			"type": "shell",
+			"command": "docker compose logs web --tail 20"
+		},
+		{
+			"label": "docker: restart api",
+			"type": "shell",
+			"command": "docker compose up -d api"
+		},
+		{
+			"label": "verify: jwks",
+			"type": "shell",
+			"command": "curl.exe -s -o NUL -w \"%{http_code}\" \"https://classic-cattle-18.clerk.accounts.dev/.well-known/jwks.json\""
+		},
+		{
+			"label": "verify: jwks v2",
+			"type": "shell",
+			"command": "cmd /c \"curl.exe -s -w %{http_code} -o nul https://classic-cattle-18.clerk.accounts.dev/.well-known/jwks.json\""
+		},
+		{
+			"label": "verify: jwks v3",
+			"type": "shell",
+			"command": "Invoke-WebRequest -Uri \"https://classic-cattle-18.clerk.accounts.dev/.well-known/jwks.json\" -UseBasicParsing | Select-Object StatusCode"
+		},
+		{
+			"label": "docker: api logs 2",
+			"type": "shell",
+			"command": "docker compose logs api --tail 40"
+		},
+		{
+			"label": "docker: api full logs",
+			"type": "shell",
+			"command": "docker compose logs api 2>&1 | Select-String -Pattern \"ERROR|Traceback|HTTPStatusError|401|404|detail\" -Context 2,2"
+		},
+		{
+			"label": "docker: api new logs",
+			"type": "shell",
+			"command": "docker compose logs api --since 1m"
+		},
+		{
+			"label": "docker: rebuild api v2",
+			"type": "shell",
+			"command": "docker compose build --no-cache api; docker compose up -d api",
+			"isBackground": true
+		},
+		{
+			"label": "docker: check",
+			"type": "shell",
+			"command": "docker compose ps"
+		},
+		{
+			"label": "docker: db verify",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c \"SELECT u.id, u.email, u.clerk_user_id, m.role, o.name, o.slug FROM users u JOIN organization_memberships m ON m.user_id = u.id JOIN organizations o ON o.id = m.organization_id;\""
+		},
+		{
+			"label": "docker: db verify v2",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT u.id, u.email, u.clerk_user_id, m.role, o.name, o.slug FROM users u JOIN organization_memberships m ON m.user_id = u.id JOIN organizations o ON o.id = m.organization_id;'"
+		},
+		{
+			"label": "docker: promote user",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c \"UPDATE organization_memberships SET role='admin' WHERE user_id=3;\""
+		},
+		{
+			"label": "docker: promote user v2",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'UPDATE organization_memberships SET role=''admin'' WHERE user_id=3;'"
+		},
+		{
+			"label": "docker: rebuild api v3",
+			"type": "shell",
+			"command": "docker compose build --no-cache api; docker compose up -d api"
+		},
+		{
+			"label": "docker: ps final",
+			"type": "shell",
+			"command": "docker compose ps"
+		},
+		{
+			"label": "docker: check membership",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT u.clerk_user_id, u.email, m.role FROM users u JOIN organization_memberships m ON m.user_id = u.id ORDER BY u.id;'"
+		},
+		{
+			"label": "docker: set admin",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'UPDATE organization_memberships SET role=''admin'' WHERE user_id=3;'"
+		},
+		{
+			"label": "docker: verify fix in container",
+			"type": "shell",
+			"command": "docker compose exec -T api grep -n \"role != 'member'\" /app/app/infrastructure/auth/clerk.py"
+		},
+		{
+			"label": "docker: rebuild web final",
+			"type": "shell",
+			"command": "docker compose build --no-cache web; docker compose up -d web",
+			"isBackground": true
+		},
+		{
+			"label": "docker: wait for web",
+			"type": "shell",
+			"command": "docker compose ps"
+		},
+		{
+			"label": "docker: check web new",
+			"type": "shell",
+			"command": "docker compose ps web"
+		},
+		{
+			"label": "docker: force rebuild web",
+			"type": "shell",
+			"command": "docker compose build --no-cache web 2>&1; if ($LASTEXITCODE -eq 0) { docker compose up -d web }"
+		},
+		{
+			"label": "cleanup: delete companies screen",
+			"type": "shell",
+			"command": "cmd /c \"del /f \\\"apps\\web\\src\\components\\companies\\companies-screen.tsx\\\"\""
+		},
+		{
+			"label": "docker: final rebuild",
+			"type": "shell",
+			"command": "docker compose build --no-cache web; docker compose up -d web",
+			"isBackground": true
+		},
+		{
+			"label": "docker: wait build",
+			"type": "shell",
+			"command": "docker compose ps web"
+		},
+		{
+			"label": "docker: web logs check",
+			"type": "shell",
+			"command": "docker compose logs web --tail 5"
+		},
+		{
+			"label": "docker: verify new files",
+			"type": "shell",
+			"command": "docker compose exec -T web ls /app/src/components/ui/toast.tsx /app/src/components/ui/skeleton.tsx /app/src/components/ui/empty-state.tsx /app/src/components/dashboard/recent-activity.tsx 2>&1"
+		},
+		{
+			"label": "docker: force rebuild",
+			"type": "shell",
+			"command": "docker compose down web; docker compose build --no-cache web; docker compose up -d web"
+		},
+		{
+			"label": "docker: rebuild final v2",
+			"type": "shell",
+			"command": "docker compose build --no-cache web; docker compose up -d web"
+		},
+		{
+			"label": "docker: rebuild design system",
+			"type": "shell",
+			"command": "docker compose build --no-cache web; docker compose up -d web",
+			"isBackground": true
+		},
+		{
+			"label": "docker: ps check",
+			"type": "shell",
+			"command": "docker compose ps web"
+		},
+		{
+			"label": "docker: ps wait",
+			"type": "shell",
+			"command": "docker compose ps web"
+		},
+		{
+			"label": "docker: rebuild sync",
+			"type": "shell",
+			"command": "docker compose build --no-cache web 2>&1; docker compose up -d web 2>&1"
+		},
+		{
+			"label": "docker: fix and up",
+			"type": "shell",
+			"command": "docker compose down; docker compose up -d"
+		},
+		{
+			"label": "docker: final sprint15",
+			"type": "shell",
+			"command": "docker compose build --no-cache web; docker compose up -d web"
+		},
+		{
+			"label": "docker: rebuild final",
+			"type": "shell",
+			"command": "docker compose build --no-cache web; docker compose up -d web"
+		},
+		{
+			"label": "docker: rebuild sprint175",
+			"type": "shell",
+			"command": "docker compose build --no-cache web; docker compose up -d web"
+		},
+		{
+			"label": "cleanup: delete old detail",
+			"type": "shell",
+			"command": "cmd /c \"del /f \\\"apps\\web\\src\\app\\companies\\[id]\\page.tsx\\\"\""
+		},
+		{
+			"label": "docker: rebuild phase1",
+			"type": "shell",
+			"command": "docker compose build --no-cache web; docker compose up -d web"
+		},
+		{
+			"label": "docker: rebuild fix",
+			"type": "shell",
+			"command": "docker compose build --no-cache web; docker compose up -d web"
+		},
+		{
+			"label": "docker: rebuild fix2",
+			"type": "shell",
+			"command": "docker compose build --no-cache web; docker compose up -d web"
+		},
+		{
+			"label": "alembic: create migration",
+			"type": "shell",
+			"command": "docker compose exec -T api alembic revision --autogenerate -m \"sprint2_sales_workspace\""
+		},
+		{
+			"label": "docker: rebuild api + migrate",
+			"type": "shell",
+			"command": "docker compose build --no-cache api; docker compose up -d api; Start-Sleep -Seconds 3; docker compose exec -T api alembic upgrade head"
+		},
+		{
+			"label": "docker: rebuild api no buildkit",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache api; docker compose up -d api; docker compose exec -T api alembic upgrade head"
+		},
+		{
+			"label": "docker: check api",
+			"type": "shell",
+			"command": "docker compose ps api; docker compose exec -T api alembic current 2>&1"
+		},
+		{
+			"label": "docker: build both no buildkit",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache api; docker compose build --no-cache web; docker compose up -d; docker compose exec -T api alembic upgrade head"
+		},
+		{
+			"label": "docker: run migration",
+			"type": "shell",
+			"command": "docker compose exec -T api alembic upgrade head 2>&1"
+		},
+		{
+			"label": "docker: start and migrate",
+			"type": "shell",
+			"command": "docker compose up -d; Start-Sleep -Seconds 3; docker compose exec -T api alembic upgrade head 2>&1"
+		},
+		{
+			"label": "docker: api logs",
+			"type": "shell",
+			"command": "docker compose logs api --tail 20 2>&1"
+		},
+		{
+			"label": "cleanup: delete models",
+			"type": "shell",
+			"command": "cmd /c \"del /f \\\"apps\\api\\app\\infrastructure\\db\\models.py\\\"\""
+		},
+		{
+			"label": "docker: rebuild + migrate",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache api; docker compose up -d api; Start-Sleep -Seconds 4; docker compose exec -T api alembic upgrade head 2>&1"
+		},
+		{
+			"label": "docker: check status",
+			"type": "shell",
+			"command": "docker compose ps; docker compose exec -T api alembic current 2>&1"
+		},
+		{
+			"label": "docker: test api",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d web"
+		},
+		{
+			"label": "docker: check api errors",
+			"type": "shell",
+			"command": "docker compose logs api --tail 30 2>&1"
+		},
+		{
+			"label": "docker: check containers",
+			"type": "shell",
+			"command": "docker compose ps 2>&1"
+		},
+		{
+			"label": "docker: rebuild api fix",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache api; docker compose up -d api"
+		},
+		{
+			"label": "docker: rebuild web final",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d web"
+		},
+		{
+			"label": "docker: ps final",
+			"type": "shell",
+			"command": "docker compose ps 2>&1"
+		},
+		{
+			"label": "docker: force web build",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web 2>&1; if ($LASTEXITCODE -eq 0) { docker compose up -d web }"
+		},
+		{
+			"label": "docker: rebuild web fix",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d web"
+		},
+		{
+			"label": "docker: rebuild api with fix",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache api; docker compose up -d api"
+		},
+		{
+			"label": "docker: check current",
+			"type": "shell",
+			"command": "docker compose ps 2>&1; docker compose exec -T api grep -n estimated_value /app/app/infrastructure/repositories/dashboard_repository.py 2>&1"
+		},
+		{
+			"label": "docker: api latest errors",
+			"type": "shell",
+			"command": "docker compose logs api --tail 20 2>&1"
+		},
+		{
+			"label": "docker: rebuild api v3",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache api; docker compose up -d api"
+		},
+		{
+			"label": "docker: rebuild web contacts fix",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d web"
+		},
+		{
+			"label": "docker: force restart web",
+			"type": "shell",
+			"command": "docker compose stop web; docker compose rm -f web; docker compose up -d web"
+		},
+		{
+			"label": "docker: force recreate web",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate web 2>&1"
+		},
+		{
+			"label": "docker: verify snake keys in container",
+			"type": "shell",
+			"command": "docker compose exec -T web grep -n toSnakeKeys /app/.next/server/app/api/contacts/route.js 2>&1; docker compose exec -T web grep -n toSnakeKeys /app/.next/standalone/.next/server/app/api/contacts/route.js 2>&1; docker compose exec -T web find /app -name \"*.js\" -exec grep -l toSnakeKeys {} \\; 2>&1 | Select-Object -First 5"
+		},
+		{
+			"label": "docker: full rebuild deploy",
+			"type": "shell",
+			"command": "docker compose down web; $env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d --force-recreate web"
+		},
+		{
+			"label": "docker: rebuild sprint3",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache api; docker compose build --no-cache web; docker compose up -d --force-recreate; docker compose exec -T api alembic upgrade head"
+		},
+		{
+			"label": "docker: status check",
+			"type": "shell",
+			"command": "docker compose ps 2>&1; docker compose exec -T api alembic current 2>&1"
+		},
+		{
+			"label": "docker: check web new",
+			"type": "shell",
+			"command": "docker compose exec -T web ls /app/.next/server/app/api/timeline/route.js 2>&1; docker compose exec -T web ls /app/.next/server/app/api/search/route.js 2>&1"
+		},
+		{
+			"label": "docker: check search component",
+			"type": "shell",
+			"command": "docker compose exec -T web find /app -name \"*global-search*\" -o -name \"*timeline-view*\" 2>&1"
+		},
+		{
+			"label": "docker: clean rebuild all",
+			"type": "shell",
+			"command": "docker compose down; $env:DOCKER_BUILDKIT=0; docker compose build --no-cache; docker compose up -d; docker compose exec -T api alembic upgrade head"
+		},
+		{
+			"label": "docker: quick check",
+			"type": "shell",
+			"command": "docker compose ps 2>&1"
+		},
+		{
+			"label": "docker: check build routes",
+			"type": "shell",
+			"command": "docker compose exec -T web ls /app/.next/server/app/api/ 2>&1"
+		},
+		{
+			"label": "docker: build web classic",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose -f docker-compose.yml build --no-cache web 2>&1 | Select-Object -Last 5"
+		},
+		{
+			"label": "docker: build error detail",
+			"type": "shell",
+			"command": "docker compose build --no-cache web 2>&1 | Select-String \"Error\" -Context 2,2"
+		},
+		{
+			"label": "docker: rebuild web fix lint",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d --force-recreate web"
+		},
+		{
+			"label": "docker: rebuild web final v2",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d --force-recreate web"
+		},
+		{
+			"label": "docker: rebuild web v3",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d --force-recreate web"
+		},
+		{
+			"label": "docker: rebuild web v4",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d --force-recreate web"
+		},
+		{
+			"label": "docker: rebuild web v5",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d --force-recreate web"
+		},
+		{
+			"label": "cleanup: delete search",
+			"type": "shell",
+			"command": "cmd /c \"del /f \\\"apps\\web\\src\\components\\dashboard\\global-search.tsx\\\"\""
+		},
+		{
+			"label": "docker: rebuild web final v6",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d --force-recreate web"
+		},
+		{
+			"label": "docker: rebuild sprint4",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache api; docker compose build --no-cache web; docker compose up -d --force-recreate; docker compose exec -T api alembic upgrade head"
+		},
+		{
+			"label": "docker: final check",
+			"type": "shell",
+			"command": "docker compose ps 2>&1; docker compose exec -T api alembic current 2>&1"
+		},
+		{
+			"label": "docker: rebuild web type fix",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d --force-recreate web"
+		},
+		{
+			"label": "docker: rebuild web sprint4 final",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d --force-recreate web"
+		},
+		{
+			"label": "docker: rebuild web sprint4 v2",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d --force-recreate web"
+		},
+		{
+			"label": "docker: rebuild web sprint4 v3",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d --force-recreate web"
+		},
+		{
+			"label": "docker: final sprint4 build",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT=0; docker compose build --no-cache web; docker compose up -d --force-recreate web"
+		},
+		{
+			"label": "cleanup: delete intel tab",
+			"type": "shell",
+			"command": "cmd /c \"del /f \\\"apps\\web\\src\\components\\companies\\company-intelligence-tab.tsx\\\"\""
+		},
+		{
+			"label": "check containers",
+			"type": "shell",
+			"command": "docker ps --format \"{{.Names}} {{.Status}}\""
+		},
+		{
+			"label": "check api health",
+			"type": "shell",
+			"command": "curl -s http://localhost:8000/api/v1/health"
+		},
+		{
+			"label": "docker: build with buildkit off",
+			"type": "shell",
+			"command": "cmd /c \"set DOCKER_BUILDKIT=0 && docker compose build --no-cache web && docker compose build --no-cache api && docker compose up -d --force-recreate\""
+		},
+		{
+			"label": "docker: build web",
+			"type": "shell",
+			"command": "docker compose build --no-cache web"
+		},
+		{
+			"label": "rebuild all",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "rebuild all",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "rebuild all",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "rebuild all",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "rebuild all",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "cleanup rebuild script",
+			"type": "shell",
+			"command": "cmd /c \"del /f rebuild.bat\""
+		},
+		{
+			"label": "rebuild sprint 6",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "rebuild sprint 6",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "cleanup",
+			"type": "shell",
+			"command": "cmd /c \"del /f rebuild.bat\""
+		},
+		{
+			"label": "rebuild sprint 7",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "rebuild sprint 7",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "rebuild sprint 7 final",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "rebuild sprint 7 final",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "test health",
+			"type": "shell",
+			"command": "docker ps --format \"{{.Names}}\""
+		},
+		{
+			"label": "test containers",
+			"type": "shell",
+			"command": "docker container ls --format table"
+		},
+		{
+			"label": "test api health",
+			"type": "shell",
+			"command": "curl.exe -s http://localhost:8000/health"
+		},
+		{
+			"label": "test api health v1",
+			"type": "shell",
+			"command": "curl.exe -s http://localhost:8000/api/v1/health"
+		},
+		{
+			"label": "cleanup",
+			"type": "shell",
+			"command": "cmd /c \"del /f rebuild.bat\""
+		},
+		{
+			"label": "check api logs",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 20"
+		},
+		{
+			"label": "rebuild api fix",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "verify api fixed",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 5"
+		},
+		{
+			"label": "test daily brief",
+			"type": "shell",
+			"command": "curl.exe -s http://localhost:8000/api/v1/health"
+		},
+		{
+			"label": "check api errors",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 15"
+		},
+		{
+			"label": "rebuild api fix v2",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "check api running",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 3"
+		},
+		{
+			"label": "check api errors now",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 20"
+		},
+		{
+			"label": "rebuild api with migration",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "check api and migration",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 10"
+		},
+		{
+			"label": "run migration",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 alembic upgrade head"
+		},
+		{
+			"label": "check migrations",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 alembic history"
+		},
+		{
+			"label": "rebuild and migrate",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "run migration again",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 alembic upgrade head"
+		},
+		{
+			"label": "check api errors v3",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 10"
+		},
+		{
+			"label": "cleanup script",
+			"type": "shell",
+			"command": "cmd /c \"del /f rebuild.bat\""
+		},
+		{
+			"label": "check api logs",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 30"
+		},
+		{
+			"label": "check api errors",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 15"
+		},
+		{
+			"label": "check api errors now",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 10"
+		},
+		{
+			"label": "rebuild all",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "check containers",
+			"type": "shell",
+			"command": "docker container ls --format table"
+		},
+		{
+			"label": "check containers",
+			"type": "shell",
+			"command": "docker container ls"
+		},
+		{
+			"label": "api logs",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 5"
+		},
+		{
+			"label": "api error check",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 3"
+		},
+		{
+			"label": "rebuild api only",
+			"type": "shell",
+			"command": "cmd /c \"set DOCKER_BUILDKIT=0 && docker compose build --no-cache api && docker compose up -d --force-recreate api\""
+		},
+		{
+			"label": "rebuild api",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "cleanup",
+			"type": "shell",
+			"command": "cmd /c \"del /f rebuild.bat\""
+		},
+		{
+			"label": "api error logs",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 15"
+		},
+		{
+			"label": "check api startup",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 5"
+		},
+		{
+			"label": "check build",
+			"type": "shell",
+			"command": "docker logs crmsystem-web-1 --tail 3"
+		},
+		{
+			"label": "check web logs",
+			"type": "shell",
+			"command": "docker logs crmsystem-web-1 2>&1 | findstr \"Ready\""
+		},
+		{
+			"label": "rebuild web no cache",
+			"type": "shell",
+			"command": ".\\rebuild.bat"
+		},
+		{
+			"label": "check web",
+			"type": "shell",
+			"command": "docker ps --filter name=web"
+		},
+		{
+			"label": "cleanup",
+			"type": "shell",
+			"command": "cmd /c \"del /f rebuild.bat\""
+		},
+		{
+			"label": "force rebuild",
+			"type": "shell",
+			"command": "cmd /c \"set DOCKER_BUILDKIT=0 && docker compose build --no-cache web && docker compose build --no-cache api && docker compose up -d --force-recreate\""
+		},
+		{
+			"label": "cleanup",
+			"type": "shell",
+			"command": "cmd /c \"del /f rebuild.bat\""
+		},
+		{
+			"label": "create rebuild bat",
+			"type": "shell",
+			"command": "powershell -Command \"Set-Content -Path rebuild.bat -Value '@echo off', 'set DOCKER_BUILDKIT=0', 'docker compose build --no-cache web', 'docker compose up -d --force-recreate web'\""
+		},
+		{
+			"label": "rebuild web",
+			"type": "shell",
+			"command": ".\\r.bat"
+		},
+		{
+			"label": "rebuild web",
+			"type": "shell",
+			"command": ".\\r.bat"
+		},
+		{
+			"label": "rebuild web",
+			"type": "shell",
+			"command": ".\\r.bat"
+		},
+		{
+			"label": "cleanup",
+			"type": "shell",
+			"command": "cmd /c \"del /f r.bat\""
+		},
+		{
+			"label": "rebuild api llm",
+			"type": "shell",
+			"command": "cmd /c \"set DOCKER_BUILDKIT=0&&docker compose build --no-cache api&&docker compose up -d --force-recreate api\""
+		},
+		{
+			"label": "clean old bat",
+			"type": "shell",
+			"command": "cmd /c \"del /f r.bat\""
+		},
+		{
+			"label": "rebuild api",
+			"type": "shell",
+			"command": ".\\r.bat"
+		},
+		{
+			"label": "build api",
+			"type": "shell",
+			"command": ".\\r.bat"
+		},
+		{
+			"label": "verify api",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 5"
+		},
+		{
+			"label": "final verify",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 3"
+		},
+		{
+			"label": "cleanup",
+			"type": "shell",
+			"command": "cmd /c \"del /f r.bat\""
+		},
+		{
+			"label": "del enrichment",
+			"type": "shell",
+			"command": "cmd /c \"del /f \\\"apps\\api\\app\\application\\llm\\enrichment.py\\\"\""
+		},
+		{
+			"label": "api startup check",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 2>&1 | findstr /i \"error warning exception traceback\""
+		},
+		{
+			"label": "api logs",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 20"
+		},
+		{
+			"label": "verify api",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 5"
+		},
+		{
+			"label": "test reports",
+			"type": "shell",
+			"command": "curl.exe -s http://localhost:8000/api/v1/health"
+		},
+		{
+			"label": "run migration",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 alembic upgrade head"
+		},
+		{
+			"label": "check api",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 3"
+		},
+		{
+			"label": "verify",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 3"
+		},
+		{
+			"label": "api logs",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 20"
+		},
+		{
+			"label": "final check",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 3"
+		},
+		{
+			"label": "force rebuild",
+			"type": "shell",
+			"command": "cmd /c \"set DOCKER_BUILDKIT=0&&docker compose build --no-cache api&&docker compose up -d --force-recreate api\""
+		},
+		{
+			"label": "rebuild api2",
+			"type": "shell",
+			"command": "powershell -Command \"$env:DOCKER_BUILDKIT='0'; docker compose build --no-cache api; docker compose up -d --force-recreate api\""
+		},
+		{
+			"label": "verify api",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 3"
+		},
+		{
+			"label": "health",
+			"type": "shell",
+			"command": "curl.exe -s http://localhost:8000/api/v1/health"
+		},
+		{
+			"label": "run migration",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 alembic upgrade head"
+		},
+		{
+			"label": "check migration",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 alembic current"
+		},
+		{
+			"label": "rebuild all",
+			"type": "shell",
+			"command": "powershell -Command \"$env:DOCKER_BUILDKIT='0'; docker compose build --no-cache api; docker compose build --no-cache web; docker compose up -d --force-recreate\""
+		},
+		{
+			"label": "rebuild-containers",
+			"type": "shell",
+			"command": "docker compose down && docker compose build --no-cache && docker compose up -d && docker exec crmsystem-api-1 alembic upgrade head",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-containers",
+			"type": "shell",
+			"command": "docker compose down; docker compose build --no-cache; docker compose up -d; Start-Sleep -Seconds 8; docker exec crmsystem-api-1 alembic upgrade head",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-all",
+			"type": "shell",
+			"command": "docker compose down; docker compose build --no-cache; docker compose up -d",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-web",
+			"type": "shell",
+			"command": "docker compose build web",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "recreate-web",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "migrate",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 alembic upgrade head",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-api",
+			"type": "shell",
+			"command": "docker compose build api; docker compose up -d --force-recreate api",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "force-rebuild-web",
+			"type": "shell",
+			"command": "docker compose stop web; docker compose rm -f web; docker rmi crmsystem-web --force; docker compose build --no-cache web; docker compose up -d web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-containers",
+			"type": "shell",
+			"command": "docker ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-containers2",
+			"type": "shell",
+			"command": "docker ps",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "start-web",
+			"type": "shell",
+			"command": "docker compose up -d web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-ps",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-ps2",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-images",
+			"type": "shell",
+			"command": "docker images crmsystem-web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "explicit-build-web",
+			"type": "shell",
+			"command": "docker compose build web 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-image",
+			"type": "shell",
+			"command": "docker images crmsystem-web --format '{{.Repository}}:{{.Tag}} {{.Size}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "next-check",
+			"type": "shell",
+			"command": "cd apps/web; npx next build --no-lint 2>&1 | Select-Object -Last 20",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "docker-rebuild-simple",
+			"type": "shell",
+			"command": "docker compose down; docker compose up -d --build",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-final",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "final-check",
+			"type": "shell",
+			"command": "docker ps",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-error",
+			"type": "shell",
+			"command": "docker compose up -d 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-now",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-final",
+			"type": "shell",
+			"command": "docker ps",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "docker-status",
+			"type": "shell",
+			"command": "docker ps -a",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-error-log",
+			"type": "shell",
+			"command": "docker logs 7f765a209a95 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "docker-clean",
+			"type": "shell",
+			"command": "docker container prune -f; docker image prune -f",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "next-build-check",
+			"type": "shell",
+			"command": "cmd /c \"cd /d C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\web && npm run build 2>&1\"",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "run-build-check",
+			"type": "shell",
+			"command": "cmd /c C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "run-build-check2",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-web-now",
+			"type": "shell",
+			"command": "docker compose build web 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-web-image",
+			"type": "shell",
+			"command": "docker images crmsystem-web --format '{{.Repository}}:{{.Tag}} {{.Size}} {{.CreatedAt}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-images-now",
+			"type": "shell",
+			"command": "docker images crmsystem-web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "local-build-test",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-final",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-v3",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-v4",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-v5",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-v6",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-v7",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-v8",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-v9",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-v10",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-v11",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-v12",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-v13",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-v14",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-v15",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-v16",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "docker-deploy",
+			"type": "shell",
+			"command": "docker compose build web; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-ps-now",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "run-migration",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 alembic upgrade head",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-api-final",
+			"type": "shell",
+			"command": "docker compose build api --no-cache; docker compose up -d --force-recreate api",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-api-check",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "migrate-final",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 alembic upgrade head",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "api-logs",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 30 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-s17",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-s17b",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "deploy-s17",
+			"type": "shell",
+			"command": "docker compose build api --no-cache; docker compose build web; docker compose up -d --force-recreate api web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-s17",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "api-error-log",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 50 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-web-s17",
+			"type": "shell",
+			"command": "docker compose build web; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-s17b",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-deepseek-key",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 python -c \"import os; print('DEEPSEEK_API_KEY:', 'SET' if os.getenv('DEEPSEEK_API_KEY') else 'NOT SET')\"",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "restart-api-key",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate api",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "api-logs2",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 40 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-env",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 sh -c 'echo KEY: $DEEPSEEK_API_KEY'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "restart-api-now",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate api",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "verify-key",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 sh -c 'echo ${DEEPSEEK_API_KEY:0:10}...'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-key2",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 env",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "api-logs3",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-api-log",
+			"type": "shell",
+			"command": "docker compose build api --no-cache; docker compose up -d --force-recreate api",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-log",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "api-logs-now",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-api-fix",
+			"type": "shell",
+			"command": "docker compose build api --no-cache; docker compose up -d --force-recreate api",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-check",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "api-logs-final",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 20 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-openai",
+			"type": "shell",
+			"command": "docker compose build api --no-cache; docker compose up -d --force-recreate api",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-openai",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "api-logs-500",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 25 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-migrate",
+			"type": "shell",
+			"command": "docker compose build api --no-cache; docker compose up -d --force-recreate api; docker exec crmsystem-api-1 alembic upgrade head",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-final-now",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "api-logs-ws",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 15 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-web-final",
+			"type": "shell",
+			"command": "docker compose build web; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-web",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "api-logs-lead",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-s18",
+			"type": "shell",
+			"command": "docker compose build api --no-cache; docker compose build web; docker compose up -d --force-recreate api web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-s18",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-disc",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 10 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-lead-api",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 sh -c 'python -c \"from app.infrastructure.db.session import SessionLocal; from app.infrastructure.db.models import Lead; s=SessionLocal(); l=s.query(Lead).first(); print(l.name if l else \\\"no leads\\\")\"'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-logs2",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-s18b",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-s18b",
+			"type": "shell",
+			"command": "docker compose build web; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-s18b",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-16",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 5 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "force-web",
+			"type": "shell",
+			"command": "docker compose build web --no-cache; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-force",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build-check-v",
+			"type": "shell",
+			"command": "& 'C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\check-build.bat'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "clear-next",
+			"type": "shell",
+			"command": "cmd /c \"rd /s /q C:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\web\\.next\"",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-simp",
+			"type": "shell",
+			"command": "docker compose build web --no-cache; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-final",
+			"type": "shell",
+			"command": "docker compose build web --no-cache; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-final",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-s19",
+			"type": "shell",
+			"command": "docker compose build api --no-cache; docker compose build web --no-cache; docker compose up -d --force-recreate api web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-s19",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-s19b",
+			"type": "shell",
+			"command": "docker compose build api --no-cache; docker compose build web --no-cache; docker compose up -d --force-recreate api web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "ps-s19b",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Status}}'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "rebuild-pnsfit",
+			"type": "shell",
+			"command": "docker compose build api --no-cache; docker compose up -d --force-recreate api",
+			"group": "build"
+		},
+		{
+			"label": "migrate-pnsfit",
+			"type": "shell",
+			"command": "docker compose exec api alembic revision --autogenerate -m \"add_pns_fit_score_to_leads\" ; docker compose exec api alembic upgrade head",
+			"group": "build"
+		},
+		{
+			"label": "migrate-pnsfit-v2",
+			"type": "shell",
+			"command": "docker compose exec api alembic upgrade head ; docker compose build api --no-cache ; docker compose build web --no-cache ; docker compose up -d --force-recreate api web",
+			"group": "build"
+		},
+		{
+			"label": "check-migrations",
+			"type": "shell",
+			"command": "docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "apply-migration",
+			"type": "shell",
+			"command": "docker compose exec api alembic upgrade head",
+			"group": "build"
+		},
+		{
+			"label": "check-api-logs",
+			"type": "shell",
+			"command": "docker compose logs api --tail 20",
+			"group": "build"
+		},
+		{
+			"label": "verify-column",
+			"type": "shell",
+			"command": "docker compose exec api alembic current ; docker compose exec postgres psql -U postgres -d crm -c \"SELECT column_name FROM information_schema.columns WHERE table_name='leads' AND column_name LIKE 'pns%';\"",
+			"group": "build"
+		},
+		{
+			"label": "force-migration",
+			"type": "shell",
+			"command": "docker compose exec api alembic downgrade 20260722_0001 ; docker compose exec api alembic upgrade head",
+			"group": "build"
+		},
+		{
+			"label": "verify-columns-v2",
+			"type": "shell",
+			"command": "docker compose exec api python -c \"from app.infrastructure.db.session import engine; from sqlalchemy import text; r = engine.connect().execute(text(\\\"SELECT column_name FROM information_schema.columns WHERE table_name='leads' AND column_name LIKE 'pns%%'\\\")); print([row[0] for row in r])\"",
+			"group": "build"
+		},
+		{
+			"label": "add-columns-sql",
+			"type": "shell",
+			"command": "docker compose exec api python -c \"from app.infrastructure.db.session import engine; from sqlalchemy import text; conn = engine.connect(); conn.execute(text('ALTER TABLE leads ADD COLUMN IF NOT EXISTS pns_fit_score INTEGER')); conn.execute(text('ALTER TABLE leads ADD COLUMN IF NOT EXISTS pns_fit_data TEXT')); conn.commit(); print('Columns added')\"",
+			"group": "build"
+		},
+		{
+			"label": "add-columns-v2",
+			"type": "shell",
+			"command": "docker compose exec api python add_columns.py",
+			"group": "build"
+		},
+		{
+			"label": "add-columns-v3",
+			"type": "shell",
+			"command": "docker compose exec api bash -c \"python -c 'from app.infrastructure.db.session import engine; from sqlalchemy import text; c=engine.connect(); c.execute(text(\\\"ALTER TABLE leads ADD COLUMN IF NOT EXISTS pns_fit_score INTEGER\\\")); c.execute(text(\\\"ALTER TABLE leads ADD COLUMN IF NOT EXISTS pns_fit_data TEXT\\\")); c.commit(); print(\\\"done\\\")'\"",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-and-migrate",
+			"type": "shell",
+			"command": "docker compose build api --no-cache ; docker compose up -d --force-recreate api ; docker compose exec api alembic downgrade 20260722_0001 ; docker compose exec api alembic upgrade head ; docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "sprint20-rebuild",
+			"type": "shell",
+			"command": "docker compose build api --no-cache ; docker compose build worker --no-cache ; docker compose build web --no-cache ; docker compose up -d --force-recreate api worker web ; docker compose exec api alembic upgrade head ; docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-web",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-web-v2",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "final-migrate",
+			"type": "shell",
+			"command": "docker compose exec api alembic upgrade head ; docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "check-worker",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 10",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-worker",
+			"type": "shell",
+			"command": "docker compose build worker --no-cache ; docker compose up -d --force-recreate worker",
+			"group": "build"
+		},
+		{
+			"label": "check-worker-logs",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 20",
+			"group": "build"
+		},
+		{
+			"label": "verify-containers",
+			"type": "shell",
+			"command": "docker ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"",
+			"group": "build"
+		},
+		{
+			"label": "verify-containers",
+			"type": "shell",
+			"command": "docker ps",
+			"group": "build"
+		},
+		{
+			"label": "docker-ps",
+			"type": "shell",
+			"command": "docker ps -a",
+			"group": "build"
+		},
+		{
+			"label": "sprint21-rebuild",
+			"type": "shell",
+			"command": "docker compose build api --no-cache ; docker compose build worker --no-cache ; docker compose build web --no-cache ; docker compose up -d --force-recreate api worker web ; docker compose exec api alembic upgrade head ; docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "check-migration",
+			"type": "shell",
+			"command": "docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "apply-gmaps-migration",
+			"type": "shell",
+			"command": "docker compose exec api alembic upgrade head",
+			"group": "build"
+		},
+		{
+			"label": "check-migration-v2",
+			"type": "shell",
+			"command": "docker compose exec api alembic current ; docker compose exec api alembic history",
+			"group": "build"
+		},
+		{
+			"label": "check-migration-file",
+			"type": "shell",
+			"command": "docker compose exec api ls alembic/versions/",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-api-only",
+			"type": "shell",
+			"command": "docker compose build api --no-cache ; docker compose up -d --force-recreate api",
+			"group": "build"
+		},
+		{
+			"label": "finalize-migration",
+			"type": "shell",
+			"command": "docker compose exec api ls alembic/versions/20260722_0004* ; docker compose exec api alembic upgrade head ; docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "check-pipeline",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 15",
+			"group": "build"
+		},
+		{
+			"label": "check-gmaps-queue",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 20",
+			"group": "build"
+		},
+		{
+			"label": "check-gmaps-task",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 30 | Select-String -Pattern 'google_maps|Queued|enqueue'",
+			"group": "build"
+		},
+		{
+			"label": "check-worker-errors",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 50",
+			"group": "build"
+		},
+		{
+			"label": "verify-tasks-file",
+			"type": "shell",
+			"command": "docker compose exec worker grep -c 'google_maps' tasks.py",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-worker-s21",
+			"type": "shell",
+			"command": "docker compose build worker --no-cache ; docker compose up -d --force-recreate worker",
+			"group": "build"
+		},
+		{
+			"label": "verify-worker-tasks",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 10",
+			"group": "build"
+		},
+		{
+			"label": "check-tasks-registered",
+			"type": "shell",
+			"command": "docker compose logs worker 2>&1 | Select-String -Pattern 'google_maps|tasks]'",
+			"group": "build"
+		},
+		{
+			"label": "check-pipeline-flow",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 15 ; docker compose logs worker --tail 20",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-worker-fix",
+			"type": "shell",
+			"command": "docker compose build worker --no-cache ; docker compose up -d --force-recreate worker",
+			"group": "build"
+		},
+		{
+			"label": "check-fix-then-test",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 5",
+			"group": "build"
+		},
+		{
+			"label": "check-gmaps-result",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 10 ; docker compose logs worker --tail 10",
+			"group": "build"
+		},
+		{
+			"label": "check-gmaps-done",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 15 ; docker compose logs worker --tail 10",
+			"group": "build"
+		},
+		{
+			"label": "check-gmaps-error",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 30 2>&1 | Select-String -Pattern 'google_maps|error|Error|FAIL'",
+			"group": "build"
+		},
+		{
+			"label": "check-gmaps-long",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 20 ; docker compose logs worker --tail 5",
+			"group": "build"
+		},
+		{
+			"label": "check-gmaps-final",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 15",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-final-fix",
+			"type": "shell",
+			"command": "docker compose build api --no-cache ; docker compose build worker --no-cache ; docker compose up -d --force-recreate api worker",
+			"group": "build"
+		},
+		{
+			"label": "final-test",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 3",
+			"group": "build"
+		},
+		{
+			"label": "check-pipeline-final",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 20 ; docker compose logs worker --tail 20",
+			"group": "build"
+		},
+		{
+			"label": "sprint22-rebuild",
+			"type": "shell",
+			"command": "docker compose build api --no-cache ; docker compose build worker --no-cache ; docker compose build web --no-cache ; docker compose up -d --force-recreate api worker web ; docker compose exec api alembic upgrade head ; docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "check-build-status",
+			"type": "shell",
+			"command": "docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "verify-worker-s22",
+			"type": "shell",
+			"command": "docker compose logs worker 2>&1 | Select-String -Pattern 'product_recommendation|tasks]'",
+			"group": "build"
+		},
+		{
+			"label": "check-pipeline-s22",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 30 ; docker compose logs worker --tail 20",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-web-s22",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-web-s22-v2",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "fix-buttons-rebuild",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose build worker --no-cache ; docker compose up -d --force-recreate web worker",
+			"group": "build"
+		},
+		{
+			"label": "fix-blink-rebuild",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "sprint23-rebuild",
+			"type": "shell",
+			"command": "docker compose build api --no-cache ; docker compose build worker --no-cache ; docker compose build web --no-cache ; docker compose up -d --force-recreate api worker web ; docker compose exec api alembic upgrade head ; docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "check-s23-status",
+			"type": "shell",
+			"command": "docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "verify-s23-tasks",
+			"type": "shell",
+			"command": "docker compose logs worker 2>&1 | Select-String -Pattern 'website|reviews|linkedin|tasks]'",
+			"group": "build"
+		},
+		{
+			"label": "check-s23-pipeline",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 25 ; docker compose logs worker --tail 25",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-worker-s23",
+			"type": "shell",
+			"command": "docker compose build worker --no-cache ; docker compose up -d --force-recreate worker",
+			"group": "build"
+		},
+		{
+			"label": "check-full-pipeline",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 20 ; docker compose logs worker --tail 25",
+			"group": "build"
+		},
+		{
+			"label": "sprint24-rebuild",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-web-s24",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-web-s24-v3",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-web-s24-v4",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "fix-blink-build",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "sprint25-rebuild",
+			"type": "shell",
+			"command": "docker compose build api --no-cache ; docker compose build web --no-cache ; docker compose up -d --force-recreate api web ; docker compose exec api alembic upgrade head ; docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "check-s25-migration",
+			"type": "shell",
+			"command": "docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "wait-and-migrate",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 30 ; docker compose exec api alembic upgrade head ; docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "start-api",
+			"type": "shell",
+			"command": "docker compose up -d api ; Start-Sleep -Seconds 5 ; docker compose exec api alembic upgrade head ; docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "api-logs",
+			"type": "shell",
+			"command": "docker compose logs api --tail 20",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-api-s25",
+			"type": "shell",
+			"command": "docker compose build api --no-cache ; docker compose up -d --force-recreate api ; Start-Sleep -Seconds 5 ; docker compose exec api alembic upgrade head ; docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "final-check-s25",
+			"type": "shell",
+			"command": "docker compose ps --format json 2>&1 | ConvertFrom-Json | Select-Object Name, State, Status | Format-Table",
+			"group": "build"
+		},
+		{
+			"label": "apply-s25-migration",
+			"type": "shell",
+			"command": "docker compose exec api alembic upgrade head ; docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-web-s25",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-web-s25-v2",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-web-s25-v3",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "delete-bad-dir",
+			"type": "shell",
+			"command": "cmd /c \"rmdir /s /q \\\"c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\web\\src\\app\\api\\documents\\[...path]\\\"\"",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-web-s25-v4",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-web-s25-v5",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "sprint26-rebuild",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "fix-docs-dir",
+			"type": "shell",
+			"command": "cmd /c \"rmdir /s /q \\\"c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\web\\src\\app\\api\\documents\\[id]\\\"\"",
+			"group": "build"
+		},
+		{
+			"label": "list-docs-dir",
+			"type": "shell",
+			"command": "cmd /c \"dir \\\"c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\web\\src\\app\\api\\documents\\\"\"",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-web-s26",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "rebuild-web-s26-v2",
+			"type": "shell",
+			"command": "docker compose build web --no-cache ; docker compose up -d --force-recreate web",
+			"group": "build"
+		},
+		{
+			"label": "sprint27-rebuild",
+			"type": "shell",
+			"command": "docker compose build api --no-cache ; docker compose build web --no-cache ; docker compose up -d --force-recreate api web ; docker compose exec api alembic upgrade head ; docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "check-s27-migration",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 30 ; docker compose exec api alembic current",
+			"group": "build"
+		},
+		{
+			"label": "test-telephony-call",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 python /app/test_call.py",
+			"isBackground": false
+		},
+		{
+			"label": "test-call-direct",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 python -c \"from fastapi.testclient import TestClient; import os; os.environ['CLERK_ISSUER']='https://clerk.test'; os.environ['CLERK_JWKS_URL']='https://clerk.test/.well-known/jwks.json'; from app.infrastructure.auth import clerk as ca; from app.main import app; ca._decode_clerk_token=lambda t:{'sub':'u1','email':'a@t.com','name':'T','org_id':'org_1','org_slug':'x','org_name':'X','org_role':'admin'}; c=TestClient(app); r=c.post('/api/v1/telephony/call?company_id=1&phone_number=7786786568',headers={'Authorization':'Bearer test-token'}); print('STATUS:',r.status_code); print('BODY:',r.text[:300])\"",
+			"isBackground": false
+		},
+		{
+			"label": "restart-api",
+			"type": "shell",
+			"command": "docker compose stop api; docker compose rm -f api; docker compose up -d api",
+			"isBackground": false
+		},
+		{
+			"label": "delete-middleware",
+			"type": "shell",
+			"command": "cmd /c \"rmdir /s /q \\\"c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\api\\app\\infrastructure\\middleware\\\"\" 2>nul & echo done\"",
+			"isBackground": false
+		},
+		{
+			"label": "move-middleware",
+			"type": "shell",
+			"command": "Move-Item -Path \"c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\api\\app\\infrastructure\\middleware\" -Destination \"c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\_temp_middleware\" -Force; Write-Host \"moved\"",
+			"isBackground": false
+		},
+		{
+			"label": "rename-mw",
+			"type": "shell",
+			"command": "Rename-Item -Path 'c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\api\\app\\infrastructure\\middleware' -NewName '_middleware_disabled' -Force; Write-Host 'done'",
+			"isBackground": false
+		},
+		{
+			"label": "inspect-container",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 sh -c \"echo '=== FILES CHECK ===' && echo '--- telephony routes ---' && ls -la app/presentation/api/v1/routes/telephony.py 2>&1 && echo '--- conversations routes ---' && ls -la app/presentation/api/v1/routes/conversations.py 2>&1 && echo '--- session manager ---' && ls -la app/application/telephony/session_manager.py 2>&1 && echo '--- telnyx provider ---' && ls -la app/application/telephony/telnyx.py 2>&1 && echo '--- middleware ---' && ls -la app/infrastructure/middleware/ 2>&1 && echo '--- clerk auth ---' && ls -la app/infrastructure/auth/clerk.py 2>&1 && echo '=== ENV CHECK ===' && echo 'TELEPHONY_PROVIDER=' && printenv TELEPHONY_PROVIDER && echo 'TELNYX_API_KEY length=' && printenv TELNYX_API_KEY | wc -c && echo 'CLERK_ISSUER=' && printenv CLERK_ISSUER && echo 'CLERK_JWKS_URL=' && printenv CLERK_JWKS_URL && echo 'DEEPSEEK_API_KEY length=' && printenv DEEPSEEK_API_KEY | wc -c\"",
+			"isBackground": false
+		},
+		{
+			"label": "copy-inspect-script",
+			"type": "shell",
+			"command": "docker cp \"c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\inspect.sh\" crmsystem-api-1:/app/inspect.sh",
+			"isBackground": false
+		},
+		{
+			"label": "copy-script",
+			"type": "shell",
+			"command": "docker cp 'c:/Users/vinic/OneDrive/Desktop/PacificNorthSystems/CRM System/inspect.sh' crmsystem-api-1:/app/inspect.sh",
+			"isBackground": false
+		},
+		{
+			"label": "run-inspect",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 sh /app/inspect.sh",
+			"isBackground": false
+		},
+		{
+			"label": "list-containers",
+			"type": "shell",
+			"command": "docker ps --format '{{.Names}} {{.Image}} {{.Status}}'",
+			"isBackground": false
+		},
+		{
+			"label": "compose-ps",
+			"type": "shell",
+			"command": "docker compose ps",
+			"isBackground": false
+		},
+		{
+			"label": "start-fresh",
+			"type": "shell",
+			"command": "docker compose up -d",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-all",
+			"type": "shell",
+			"command": "docker compose up -d --build",
+			"isBackground": false
+		},
+		{
+			"label": "check-status",
+			"type": "shell",
+			"command": "docker compose ps",
+			"isBackground": false
+		},
+		{
+			"label": "docker-up",
+			"type": "shell",
+			"command": "docker compose up -d",
+			"isBackground": false
+		},
+		{
+			"label": "final-rebuild",
+			"type": "shell",
+			"command": "docker compose up -d --build",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-web-nocache",
+			"type": "shell",
+			"command": "docker compose build --no-cache web",
+			"isBackground": false
+		},
+		{
+			"label": "bring-all-up",
+			"type": "shell",
+			"command": "docker compose up -d",
+			"isBackground": false
+		},
+		{
+			"label": "run-inspect-final",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 sh /app/inspect.sh",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-api-nocache",
+			"type": "shell",
+			"command": "docker compose build --no-cache api",
+			"isBackground": false
+		},
+		{
+			"label": "up-all",
+			"type": "shell",
+			"command": "docker compose up -d",
+			"isBackground": false
+		},
+		{
+			"label": "restart-api",
+			"type": "shell",
+			"command": "docker compose up -d api",
+			"isBackground": false
+		},
+		{
+			"label": "web-logs",
+			"type": "shell",
+			"command": "docker compose logs web --tail 20",
+			"isBackground": false
+		},
+		{
+			"label": "clean-routes",
+			"type": "shell",
+			"command": "Remove-Item -LiteralPath 'c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\web\\src\\app\\api\\telephony\\route.ts' -Force; Remove-Item -LiteralPath 'c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\web\\src\\app\\api\\telephony\\[...path]' -Recurse -Force; Remove-Item -LiteralPath 'c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\web\\src\\app\\api\\conversations\\route.ts' -Force; Remove-Item -LiteralPath 'c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\web\\src\\app\\api\\conversations\\[...path]' -Recurse -Force; Write-Host 'DONE'",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-web",
+			"type": "shell",
+			"command": "docker compose build --no-cache web; docker compose up -d web",
+			"isBackground": false
+		},
+		{
+			"label": "web-logs-404",
+			"type": "shell",
+			"command": "docker compose logs web --tail 30",
+			"isBackground": false
+		},
+		{
+			"label": "check-api-routes",
+			"type": "shell",
+			"command": "docker exec crmsystem-web-1 ls -R /app/.next/server/app/api 2>&1 | Select-Object -First 30",
+			"isBackground": false
+		},
+		{
+			"label": "check-tel-conv",
+			"type": "shell",
+			"command": "docker exec crmsystem-web-1 sh -c 'echo \"=== telephony ===\"; ls -la /app/.next/server/app/api/telephony/; echo \"=== conversations ===\"; ls -la /app/.next/server/app/api/conversations/'",
+			"isBackground": false
+		},
+		{
+			"label": "check-compiled",
+			"type": "shell",
+			"command": "docker exec crmsystem-web-1 sh -c 'ls -la /app/.next/server/app/api/telephony/[[...path]]/; head -20 /app/.next/server/app/api/companies/route.js'",
+			"isBackground": false
+		},
+		{
+			"label": "check-utils",
+			"type": "shell",
+			"command": "docker exec crmsystem-web-1 sh -c 'find /app/.next -name \"*_utils*\" 2>/dev/null; find /app/.next -name \"*route.js\" -path \"*/api/*\" 2>/dev/null | head -10'",
+			"isBackground": false
+		},
+		{
+			"label": "restart-web",
+			"type": "shell",
+			"command": "docker compose stop web; docker compose rm -f web; docker compose up -d web",
+			"isBackground": false
+		},
+		{
+			"label": "check-api-url",
+			"type": "shell",
+			"command": "docker exec crmsystem-web-1 sh -c 'echo API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL; curl -s http://api:8000/api/v1/health 2>&1; echo \"---\"; curl -s http://host.docker.internal:8000/api/v1/health 2>&1'",
+			"isBackground": false
+		},
+		{
+			"label": "restart-web-fix",
+			"type": "shell",
+			"command": "docker compose stop web; docker compose rm -f web; docker compose up -d web",
+			"isBackground": false
+		},
+		{
+			"label": "verify-api-url",
+			"type": "shell",
+			"command": "docker exec crmsystem-web-1 sh -c 'echo API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL; wget -qO- http://host.docker.internal:8000/api/v1/health 2>&1 || echo FAILED'",
+			"isBackground": false
+		},
+		{
+			"label": "docker-ps",
+			"type": "shell",
+			"command": "docker compose ps",
+			"isBackground": false
+		},
+		{
+			"label": "docker-up",
+			"type": "shell",
+			"command": "docker compose up -d",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-web",
+			"type": "shell",
+			"command": "docker compose build --no-cache web ; docker compose up -d web",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-web",
+			"type": "shell",
+			"command": "docker compose build --no-cache web ; docker compose up -d web",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-web",
+			"type": "shell",
+			"command": "docker compose build --no-cache web ; docker compose up -d web",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-web-v3",
+			"type": "shell",
+			"command": "docker compose build --no-cache web ; docker compose up -d web ; docker compose exec api alembic upgrade head",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-final",
+			"type": "shell",
+			"command": "docker compose build --no-cache web ; docker compose up -d web ; docker compose exec api alembic upgrade head",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-final-2",
+			"type": "shell",
+			"command": "docker compose build --no-cache web ; docker compose up -d web ; docker compose exec api alembic upgrade head",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-web",
+			"type": "shell",
+			"command": "docker compose build --no-cache web ; docker compose up -d web",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-web",
+			"type": "shell",
+			"command": "docker compose build --no-cache web ; docker compose up -d web",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-web",
+			"type": "shell",
+			"command": "docker compose build --no-cache web ; docker compose up -d web",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-web",
+			"type": "shell",
+			"command": "docker compose build --no-cache web ; docker compose up -d web",
+			"isBackground": false
+		},
+		{
+			"label": "delete-bad-dir",
+			"type": "shell",
+			"command": "Rename-Item -Path 'c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\web\\src\\app\\api\\copilot' -NewName '_copilot_disabled' -Force",
+			"isBackground": false
+		},
+		{
+			"label": "fix-docs-dir",
+			"type": "shell",
+			"command": "Rename-Item -LiteralPath 'c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\web\\src\\app\\api\\copilot' -NewName '_copilot_disabled' -Force; Write-Host 'DONE'",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-web",
+			"type": "shell",
+			"command": "docker compose build --no-cache web ; docker compose up -d web",
+			"isBackground": false
+		},
+		{
+			"label": "list-docs-dir",
+			"type": "shell",
+			"command": "cmd /c dir \"c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\web\\src\\app\\api\\copilot\"",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-web-final",
+			"type": "shell",
+			"command": "docker compose build --no-cache web ; docker compose up -d web",
+			"isBackground": false
+		},
+		{
+			"label": "fix-copilot-route",
+			"type": "shell",
+			"command": "cmd /c del \"\\\\?\\c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\web\\src\\app\\api\\copilot\\analyze\\route.ts\"",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-web",
+			"type": "shell",
+			"command": "docker compose build web ; docker compose up -d web",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-web",
+			"type": "shell",
+			"command": "docker compose build web ; docker compose up -d web",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-web",
+			"type": "shell",
+			"command": "docker compose build web ; docker compose up -d web",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-api",
+			"type": "shell",
+			"command": "docker compose build --no-cache api ; docker compose up -d api ; docker compose exec api alembic upgrade head",
+			"isBackground": false
+		},
+		{
+			"label": "restart-api",
+			"type": "shell",
+			"command": "docker compose stop api ; docker compose rm -f api ; docker compose up -d api ; docker compose exec api alembic upgrade head",
+			"isBackground": false
+		},
+		{
+			"label": "api-logs",
+			"type": "shell",
+			"command": "docker compose logs api --tail 15",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-api",
+			"type": "shell",
+			"command": "docker compose build --no-cache api ; docker compose up -d api ; docker compose exec api alembic upgrade head",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-api",
+			"type": "shell",
+			"command": "docker compose build --no-cache api ; docker compose up -d api ; docker compose exec api alembic upgrade head",
+			"isBackground": false
+		},
+		{
+			"label": "api-logs",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 5 2>&1",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-api",
+			"type": "shell",
+			"command": "docker compose build --no-cache api ; docker compose up -d api",
+			"isBackground": false
+		},
+		{
+			"label": "final-check",
+			"type": "shell",
+			"command": "docker compose exec api alembic upgrade head",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-api",
+			"type": "shell",
+			"command": "docker compose build --no-cache api ; docker compose up -d api ; docker compose exec api alembic upgrade head",
+			"isBackground": false
+		},
+		{
+			"label": "run-tests",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 python -m pytest tests/test_transcription.py -v 2>&1 | Select-Object -Last 25",
+			"isBackground": false
+		},
+		{
+			"label": "run-tests",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 pip install pytest pytest-asyncio -q ; docker exec crmsystem-api-1 python -m pytest tests/test_transcription.py -v 2>&1 | Select-Object -Last 20",
+			"isBackground": false
+		},
+		{
+			"label": "install-pytest",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 pip install pytest pytest-asyncio -q 2>&1",
+			"isBackground": false
+		},
+		{
+			"label": "run-tests",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 python -m pytest tests/test_transcription.py -v 2>&1 | Select-Object -Last 20",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-test",
+			"type": "shell",
+			"command": "docker compose build api ; docker compose up -d api ; docker exec crmsystem-api-1 python -m pytest tests/test_transcription.py -v 2>&1 | Select-Object -Last 10",
+			"isBackground": false
+		},
+		{
+			"label": "test-final",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 pip install pytest pytest-asyncio -q 2>&1 ; docker exec crmsystem-api-1 python -m pytest tests/test_transcription.py -v 2>&1 | Select-Object -Last 8",
+			"isBackground": false
+		},
+		{
+			"label": "final-test",
+			"type": "shell",
+			"command": "docker compose build api ; docker compose up -d api ; docker exec crmsystem-api-1 pip install pytest pytest-asyncio -q 2>&1 ; docker exec crmsystem-api-1 python -m pytest tests/test_transcription.py -v 2>&1 | Select-Object -Last 5",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-test",
+			"type": "shell",
+			"command": "docker compose build api ; docker compose up -d api ; docker exec crmsystem-api-1 pip install pytest pytest-asyncio -q 2>&1 ; docker exec crmsystem-api-1 python -m pytest tests/test_transcription.py -v 2>&1 | Select-Object -Last 8",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-api",
+			"type": "shell",
+			"command": "docker compose build api ; docker compose up -d api",
+			"isBackground": false
+		},
+		{
+			"label": "rebuild-api",
+			"type": "shell",
+			"command": "docker compose build --no-cache api ; docker compose up -d api",
+			"isBackground": false
+		},
+		{
+			"label": "Rebuild Sprint 47 Web",
+			"type": "shell",
+			"command": "docker compose build web --no-cache && docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Web (PS fix)",
+			"type": "shell",
+			"command": "docker compose build web --no-cache; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Web (lint fixed)",
+			"type": "shell",
+			"command": "docker compose build web; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Web v3",
+			"type": "shell",
+			"command": "docker compose build web; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Web v4",
+			"type": "shell",
+			"command": "docker compose build web; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Web v5",
+			"type": "shell",
+			"command": "docker compose build web; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Web Status",
+			"type": "shell",
+			"command": "docker compose ps; docker logs crmsystem-web-1 --tail 3",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild API + Web S47.7",
+			"type": "shell",
+			"command": "docker compose build api web; docker compose up -d --force-recreate api web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check API - S47.7",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 5",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Migrate + Rebuild API S47.7",
+			"type": "shell",
+			"command": "docker compose exec api alembic upgrade head; docker compose build api --no-cache; docker compose up -d --force-recreate api",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check API Status",
+			"type": "shell",
+			"command": "docker compose ps; docker logs crmsystem-api-1 --tail 5",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test Assessment API",
+			"type": "shell",
+			"command": "curl -s -X POST http://localhost:8000/api/v1/public/automation-assessment -H \"Content-Type: application/json\" -d \"{\"assessment_version\":\"1.0\",\"answers\":{\"businessType\":\"Construction / Trades\",\"mainProblems\":[\"Repetitive data entry\",\"Scheduling and dispatching\"],\"currentProcess\":\"Paper forms\",\"weeklyTimeSpent\":\"20-40 hours\",\"peopleInvolved\":\"6-15\",\"contactName\":\"John Smith\",\"contactEmail\":\"john@acmebuilders.com\",\"contactCompany\":\"Acme Builders Ltd\"},\"results\":{\"opportunityScore\":82,\"estimatedWeeklyHours\":30,\"estimatedAnnualHours\":1500,\"estimatedAnnualLabourCost\":67500,\"estimatedAnnualSavings\":23625,\"scoreInterpretation\":\"High - significant automation opportunity\"},\"contact\":{\"first_name\":\"John\",\"last_name\":\"Smith\",\"email\":\"john@acmebuilders.com\"},\"company\":{\"name\":\"Acme Builders Ltd\",\"industry\":\"Construction / Trades\",\"employee_range\":\"6-15\"},\"consent\":{\"privacy_accepted\":true,\"marketing_accepted\":false}}\" | python -m json.tool",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test Assessment (file)",
+			"type": "shell",
+			"command": "curl -s -X POST http://localhost:8000/api/v1/public/automation-assessment -H \"Content-Type: application/json\" -d @test_assessment.json",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test Assessment (cmd)",
+			"type": "shell",
+			"command": "cmd /c \"curl -s -X POST http://localhost:8000/api/v1/public/automation-assessment -H \"Content-Type: application/json\" -d @test_assessment.json\"",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test Assessment (PS)",
+			"type": "shell",
+			"command": "$body = Get-Content test_assessment.json -Raw; Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType \"application/json\" -Body $body | ConvertTo-Json",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check API Routes",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 python -c \"from app.main import app; routes = [r.path for r in app.routes]; print([r for r in routes if 'public' in r or 'assessment' in r])\"",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check API Routes v2",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 sh -c \"python -c 'from app.main import app; print([r.path for r in app.routes if chr(112)+chr(117)+chr(98)+chr(108)+chr(105)+chr(99) in r.path])\"\"",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check API Logs",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 2>&1 | Select-String -Pattern \"error|Error|assessment|public|import\" | Select-Object -Last 10",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Raw API Logs",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 20",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Force Rebuild API",
+			"type": "shell",
+			"command": "docker compose build api --no-cache; docker compose up -d --force-recreate api; Start-Sleep -Seconds 8; docker logs crmsystem-api-1 | Select-String \"mappers\"",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Wait + Check Mappers",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 15; docker logs crmsystem-api-1 --tail 5",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Mapper Count",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 2>&1 | Select-String mappers",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Container Files",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 ls app/application/assessment/ 2>&1; docker exec crmsystem-api-1 python -c \"import app.application.assessment.service; print('OK')\" 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Full No-Cache Rebuild",
+			"type": "shell",
+			"command": "DOCKER_BUILDKIT=1 docker compose build --no-cache api; docker compose up -d --force-recreate api",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "No-Cache Rebuild (PS)",
+			"type": "shell",
+			"command": "$env:DOCKER_BUILDKIT = \"1\"; docker compose build --no-cache api; docker compose up -d --force-recreate api; docker exec crmsystem-api-1 ls app/application/assessment/",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Assessment Dir",
+			"type": "shell",
+			"command": "docker exec crmsystem-api-1 ls app/application/assessment/; docker logs crmsystem-api-1 2>&1 | Select-String mappers",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Direct Docker Build",
+			"type": "shell",
+			"command": "docker build --no-cache -t crmsystem-api -f apps/api/Dockerfile apps/api; docker compose up -d --force-recreate api",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Direct Build from Root",
+			"type": "shell",
+			"command": "docker build --no-cache -t crmsystem-api -f apps/api/Dockerfile . ; docker compose up -d --force-recreate api",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild API + Test",
+			"type": "shell",
+			"command": "docker build --no-cache -t crmsystem-api -f apps/api/Dockerfile . ; docker compose up -d --force-recreate api; docker logs crmsystem-api-1 2>&1 | Select-String mappers",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify Mappers",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 15",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Apply Migration",
+			"type": "shell",
+			"command": "docker compose exec api alembic upgrade head; docker compose restart api; Start-Sleep -Seconds 5; docker logs crmsystem-api-1 --tail 5",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Find Alembic Head",
+			"type": "shell",
+			"command": "docker compose exec api alembic heads",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Alembic Current",
+			"type": "shell",
+			"command": "docker compose exec api alembic current 2>&1 | Select-Object -First 5",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Fix Migrate + Rebuild + Test",
+			"type": "shell",
+			"command": "docker build --no-cache -t crmsystem-api -f apps/api/Dockerfile . ; docker compose up -d --force-recreate api; Start-Sleep -Seconds 5; docker compose exec api alembic upgrade head",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test Assessment Endpoint",
+			"type": "shell",
+			"command": "$body = Get-Content test_assessment.json -Raw; $r = Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType \"application/json\" -Body $body; $r | ConvertTo-Json",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Final Rebuild + Test",
+			"type": "shell",
+			"command": "docker build -t crmsystem-api -f apps/api/Dockerfile . ; docker compose up -d --force-recreate api; Start-Sleep -Seconds 5; $body = Get-Content test_assessment.json -Raw; Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType \"application/json\" -Body $body -Headers @{\"Idempotency-Key\"=\"test-key-002\"} | ConvertTo-Json",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Quick Test",
+			"type": "shell",
+			"command": "docker compose restart api; Start-Sleep -Seconds 5; $body = Get-Content test_assessment.json -Raw; Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType \"application/json\" -Body $body | ConvertTo-Json",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Web Opening Mode",
+			"type": "shell",
+			"command": "docker compose build web; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Web Opening v2",
+			"type": "shell",
+			"command": "docker compose build web; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Web Status",
+			"type": "shell",
+			"command": "docker compose ps; docker logs crmsystem-web-1 --tail 3",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild API (visitor email event)",
+			"type": "shell",
+			"command": "docker build -t crmsystem-api -f apps/api/Dockerfile . ; docker compose up -d --force-recreate api; Start-Sleep -Seconds 5; docker logs crmsystem-api-1 --tail 3",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test + Verify Outbox Events",
+			"type": "shell",
+			"command": "$body = Get-Content test_assessment.json -Raw; $body = $body -replace 'john@acmebuilders.com', 'jane@hilltop-properties.com'; $body = $body -replace 'Acme Builders Ltd', 'Hilltop Properties Ltd'; $body = $body -replace 'John', 'Jane'; $body = $body -replace 'Smith', 'Doe'; $body = $body -replace 'Construction / Trades', 'Property Management'; $r = Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType \"application/json\" -Body $body; $r | ConvertTo-Json; Write-Host '--- Outbox Events ---'; docker compose exec -T postgres psql -U postgres -d pns -c \"SELECT event_type, status FROM outbox_events ORDER BY id DESC LIMIT 10;\"",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check API Logs for Error",
+			"type": "shell",
+			"command": "docker logs crmsystem-api-1 --tail 20",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild API + Test Assessment",
+			"type": "shell",
+			"command": "docker build -t crmsystem-api -f apps/api/Dockerfile . ; docker compose up -d --force-recreate api; Start-Sleep -Seconds 5; $body = Get-Content test_assessment.json -Raw; $body = $body -replace 'john@acmebuilders.com', 'jane@hilltop-properties.com' -replace 'Acme Builders Ltd', 'Hilltop Properties Ltd' -replace 'John', 'Jane' -replace 'Smith', 'Doe' -replace 'Construction / Trades', 'Property Management'; Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType \"application/json\" -Body $body | ConvertTo-Json",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Web Full Script",
+			"type": "shell",
+			"command": "docker compose build web; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Web Final",
+			"type": "shell",
+			"command": "docker compose build web; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Web v2",
+			"type": "shell",
+			"command": "docker compose build web; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Web Status",
+			"type": "shell",
+			"command": "docker compose ps; docker logs crmsystem-web-1 --tail 2",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Web Final",
+			"type": "shell",
+			"command": "docker compose build web; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Web v2",
+			"type": "shell",
+			"command": "docker compose build web; docker compose up -d --force-recreate web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify Node and project root",
+			"type": "shell",
+			"command": "node --version; npm --version; Set-Location \"c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\marketing\"; Get-Location; Get-ChildItem package.json,src,next.config.*,tsconfig.json 2>&1 | Select-Object Name",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Enable pnpm and fix env",
+			"type": "shell",
+			"command": "Set-Location apps\\marketing; Get-Location; Get-ChildItem -Name",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Enable pnpm",
+			"type": "shell",
+			"command": "Set-Location apps\\marketing; corepack enable 2>&1; corepack prepare pnpm@9.12.2 --activate 2>&1; pnpm --version",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Install pnpm globally",
+			"type": "shell",
+			"command": "npm install -g pnpm@9.12.2",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Install marketing deps",
+			"type": "shell",
+			"command": "Set-Location apps\\marketing; pnpm --version; pnpm install",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Fix env and start marketing",
+			"type": "shell",
+			"command": "Set-Location apps\\marketing; Set-Content -Path .env.local -Value \"CRM_API_BASE_URL=http://localhost:8000\" -Encoding ASCII; Get-Content .env.local; Write-Host \"--- Starting dev server ---\"; $env:CRM_API_BASE_URL=\"http://localhost:8000\"; pnpm dev",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Kill port 3001 + restart",
+			"type": "shell",
+			"command": "$p = Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue | Select-Object -First 1; if ($p) { Stop-Process -Id $p.OwningProcess -Force; Start-Sleep -Seconds 2 }; Set-Location apps\\marketing; pnpm dev",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test assessment from marketing",
+			"type": "shell",
+			"command": "$body = @{ contactName=\"Test User\"; contactEmail=\"test@pacificdemo.com\"; contactCompany=\"Pacific Demo Co\"; businessType=\"Construction / Trades\"; mainProblems=@(\"Repetitive data entry\",\"Scheduling and dispatching\"); currentProcess=\"Paper forms\"; weeklyTimeSpent=\"20-40 hours\"; peopleInvolved=\"6-15\"; results=@{ opportunityScore=82; estimatedWeeklyHours=30; estimatedAnnualHours=1500; estimatedAnnualLabourCost=67500; estimatedAnnualSavings=23625; scoreInterpretation=\"High\" } } | ConvertTo-Json; Write-Host \"Sending to marketing app...\"; $r = Invoke-RestMethod -Uri http://localhost:3001/api/assessment-submit -Method POST -ContentType \"application/json\" -Body $body; $r | ConvertTo-Json",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test assessment (JSON body)",
+			"type": "shell",
+			"command": "$json = '{\"contactName\":\"Test User\",\"contactEmail\":\"test@pacificdemo.com\",\"contactCompany\":\"Pacific Demo Co\",\"businessType\":\"Construction / Trades\",\"mainProblems\":[\"Repetitive data entry\",\"Scheduling and dispatching\"],\"currentProcess\":\"Paper forms\",\"weeklyTimeSpent\":\"20-40 hours\",\"peopleInvolved\":\"6-15\",\"results\":{\"opportunityScore\":82,\"estimatedWeeklyHours\":30,\"estimatedAnnualHours\":1500,\"estimatedAnnualLabourCost\":67500,\"estimatedAnnualSavings\":23625,\"scoreInterpretation\":\"High\"}}'; Write-Host \"Sending...\"; $r = Invoke-RestMethod -Uri http://localhost:3001/api/assessment-submit -Method POST -ContentType \"application/json\" -Body $json; $r | ConvertTo-Json",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Restart marketing dev",
+			"type": "shell",
+			"command": "$p = Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue | Select-Object -First 1; if ($p) { Stop-Process -Id $p.OwningProcess -Force; Start-Sleep -Seconds 2 }; Set-Location apps\\marketing; Get-Content .env.local; pnpm dev",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Force kill and restart",
+			"type": "shell",
+			"command": "$id = (Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue).OwningProcess | Select-Object -Unique; if ($id -and $id -ne 0) { taskkill /F /PID $id }; Start-Sleep -Seconds 2; Set-Location apps\\marketing; pnpm dev",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Kill PID 55368 and restart",
+			"type": "shell",
+			"command": "Stop-Process -Id 55368 -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2; Set-Location apps\\marketing; pnpm dev",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test assessment submission",
+			"type": "shell",
+			"command": "$json = '{\"contactName\":\"Test User\",\"contactEmail\":\"test@pacificdemo.com\",\"contactCompany\":\"Pacific Demo Co\",\"businessType\":\"Construction / Trades\",\"mainProblems\":[\"Repetitive data entry\",\"Scheduling and dispatching\"],\"currentProcess\":\"Paper forms\",\"weeklyTimeSpent\":\"20-40 hours\",\"peopleInvolved\":\"6-15\",\"results\":{\"opportunityScore\":82,\"estimatedWeeklyHours\":30,\"estimatedAnnualHours\":1500,\"estimatedAnnualLabourCost\":67500,\"estimatedAnnualSavings\":23625,\"scoreInterpretation\":\"High\"}}'; Invoke-RestMethod -Uri http://localhost:3001/api/assessment-submit -Method POST -ContentType \"application/json\" -Body $json | ConvertTo-Json",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test CRM API directly",
+			"type": "shell",
+			"command": "Invoke-RestMethod -Uri http://localhost:8000/api/v1/health/live; Write-Host \"---\"; $body = Get-Content test_assessment.json -Raw; $body = $body -replace 'john@acmebuilders.com', 'test@pacificdemo.com' -replace 'Acme Builders Ltd', 'Pacific Demo Co' -replace 'John', 'Test' -replace 'Smith', 'User'; Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType \"application/json\" -Body $body | ConvertTo-Json",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test assessment again",
+			"type": "shell",
+			"command": "$json = '{\"contactName\":\"Test User\",\"contactEmail\":\"test@pacificdemo.com\",\"contactCompany\":\"Pacific Demo Co\",\"businessType\":\"Construction / Trades\",\"mainProblems\":[\"Repetitive data entry\"],\"currentProcess\":\"Paper forms\",\"weeklyTimeSpent\":\"20-40 hours\",\"peopleInvolved\":\"6-15\",\"results\":{\"opportunityScore\":82,\"estimatedWeeklyHours\":30,\"estimatedAnnualHours\":1500,\"estimatedAnnualLabourCost\":67500,\"estimatedAnnualSavings\":23625,\"scoreInterpretation\":\"High\"}}'; Invoke-RestMethod -Uri http://localhost:3001/api/assessment-submit -Method POST -ContentType \"application/json\" -Body $json | ConvertTo-Json",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Kill + restart marketing",
+			"type": "shell",
+			"command": "$ids = (Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue).OwningProcess | Select-Object -Unique; foreach ($id in $ids) { if ($id -gt 0) { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue } }; Start-Sleep -Seconds 3; Set-Location apps\\marketing; pnpm dev",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Final test",
+			"type": "shell",
+			"command": "$json = '{\"contactName\":\"Demo User\",\"contactEmail\":\"demo@testcorp.com\",\"contactCompany\":\"Test Corp\",\"businessType\":\"Manufacturing\",\"mainProblems\":[\"Reporting\"],\"currentProcess\":\"Spreadsheets\",\"weeklyTimeSpent\":\"10-20 hours\",\"peopleInvolved\":\"2-5\",\"results\":{\"opportunityScore\":65,\"estimatedWeeklyHours\":15,\"estimatedAnnualHours\":750,\"estimatedAnnualLabourCost\":33750,\"estimatedAnnualSavings\":11812,\"scoreInterpretation\":\"Medium\"}}'; Invoke-RestMethod -Uri http://localhost:3001/api/assessment-submit -Method POST -ContentType \"application/json\" -Body $json | ConvertTo-Json",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test after crypto fix",
+			"type": "shell",
+			"command": "$json = '{\"contactName\":\"Demo User\",\"contactEmail\":\"demo@testcorp.com\",\"contactCompany\":\"Test Corp\",\"businessType\":\"Manufacturing\",\"mainProblems\":[\"Reporting\"],\"currentProcess\":\"Spreadsheets\",\"weeklyTimeSpent\":\"10-20 hours\",\"peopleInvolved\":\"2-5\",\"results\":{\"opportunityScore\":65,\"estimatedWeeklyHours\":15,\"estimatedAnnualHours\":750,\"estimatedAnnualLabourCost\":33750,\"estimatedAnnualSavings\":11812,\"scoreInterpretation\":\"Medium\"}}'; Invoke-RestMethod -Uri http://localhost:3001/api/assessment-submit -Method POST -ContentType \"application/json\" -Body $json | ConvertTo-Json",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Restart + test",
+			"type": "shell",
+			"command": "$ids = (Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue).OwningProcess | Select-Object -Unique; foreach ($id in $ids) { if ($id -gt 0) { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue } }; Start-Sleep -Seconds 2; Set-Location apps\\marketing; pnpm dev",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test simple route",
+			"type": "shell",
+			"command": "$json = '{\"contactName\":\"Demo User\",\"contactEmail\":\"demo@testcorp.com\",\"contactCompany\":\"Test Corp\",\"businessType\":\"Manufacturing\",\"mainProblems\":[\"Reporting\"],\"currentProcess\":\"Spreadsheets\",\"weeklyTimeSpent\":\"10-20 hours\",\"peopleInvolved\":\"2-5\",\"results\":{\"opportunityScore\":65}}'; Invoke-RestMethod -Uri http://localhost:3001/api/assessment-submit -Method POST -ContentType \"application/json\" -Body $json | ConvertTo-Json",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test and show error",
+			"type": "shell",
+			"command": "$json = '{\"contactName\":\"Demo User\",\"contactEmail\":\"demo@testcorp.com\",\"contactCompany\":\"Test Corp\",\"businessType\":\"Manufacturing\",\"mainProblems\":[\"Reporting\"]}'; $r = Invoke-WebRequest -Uri http://localhost:3001/api/assessment-submit -Method POST -ContentType \"application/json\" -Body $json; $r.Content",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Get error body",
+			"type": "shell",
+			"command": "$json = '{\"contactName\":\"Demo User\",\"contactEmail\":\"demo@testcorp.com\",\"contactCompany\":\"Test Corp\",\"businessType\":\"Manufacturing\",\"mainProblems\":[\"Reporting\"]}'; try { $r = Invoke-WebRequest -Uri http://localhost:3001/api/assessment-submit -Method POST -ContentType \"application/json\" -Body $json; $r.Content } catch { $_.Exception.Response | ForEach-Object { $resp = $_.Response; $stream = $resp.GetResponseStream(); $reader = New-Object System.IO.StreamReader($stream); $reader.ReadToEnd() } }",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check port 3001",
+			"type": "shell",
+			"command": "Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue | Select-Object State, OwningProcess",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Kill restart test",
+			"type": "shell",
+			"command": "Stop-Process -Id 55852 -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2; Set-Location apps\\marketing; pnpm dev",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Final test",
+			"type": "shell",
+			"command": "$json = '{\"contactName\":\"Demo User\",\"contactEmail\":\"demo@testcorp.com\",\"contactCompany\":\"Test Corp\",\"businessType\":\"Manufacturing\",\"mainProblems\":[\"Reporting\"]}'; Invoke-RestMethod -Uri http://localhost:3001/api/assessment-submit -Method POST -ContentType \"application/json\" -Body $json | ConvertTo-Json",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Curl test",
+			"type": "shell",
+			"command": "cmd /c curl -s -X POST http://localhost:3001/api/assessment-submit -H \"Content-Type: application/json\" -d \"{\\\"contactName\\\":\\\"X\\\",\\\"contactEmail\\\":\\\"x@x.com\\\",\\\"contactCompany\\\":\\\"X Co\\\"}\"",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Kill restart test",
+			"type": "shell",
+			"command": "$ids = (Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue).OwningProcess | Select-Object -Unique; foreach ($id in $ids) { if ($id -gt 0) { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue } }; Start-Sleep -Seconds 2; Set-Location apps\\marketing; pnpm dev",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify CRM Assessment Data",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d postgres -c \"SELECT id, public_id, automation_score, industry, created_at FROM automation_assessments ORDER BY created_at DESC LIMIT 5;\" 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check CRM data",
+			"type": "shell",
+			"command": "echo 'SELECT count(*) FROM automation_assessments;' | docker compose exec -T postgres psql -U postgres",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Apply migration + check",
+			"type": "shell",
+			"command": "docker compose exec api alembic upgrade head; echo 'SELECT count(*) FROM automation_assessments;' | docker compose exec -T postgres psql -U postgres",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check alembic status",
+			"type": "shell",
+			"command": "docker compose exec api alembic history --verbose 2>&1 | Select-String 'assessment|Current|head' | Select-Object -Last 5",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check current migration",
+			"type": "shell",
+			"command": "docker compose exec api alembic current",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Force reapply migration",
+			"type": "shell",
+			"command": "docker compose exec api alembic downgrade -1; docker compose exec api alembic upgrade head",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Migrate up and verify",
+			"type": "shell",
+			"command": "docker compose exec api alembic upgrade head; echo 'SELECT count(*) FROM automation_assessments;' | docker compose exec -T postgres psql -U postgres",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Stamp and force upgrade",
+			"type": "shell",
+			"command": "docker compose exec api alembic stamp 20260723_worker_runtime; docker compose exec api alembic upgrade head",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check assessments in DB",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d postgres -c \"SELECT count(*), max(created_at) FROM automation_assessments;\"",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check assessments",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d postgres -c 'SELECT count(*) as total FROM automation_assessments;'",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Fix migration + list tables",
+			"type": "shell",
+			"command": "docker compose exec api alembic stamp 20260731_assessment_outbox; docker compose exec -T postgres psql -U postgres -d postgres -c \"SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE '%assess%' OR tablename LIKE '%outbox%';\"",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test API endpoint directly",
+			"type": "shell",
+			"command": "Invoke-RestMethod -Uri http://localhost:8000/api/v1/health/live | Select-Object status, phase",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Worker + Web S47.8",
+			"type": "shell",
+			"command": "docker compose build worker worker-beat web --no-cache 2>&1 | Select-Object -Last 50",
+			"problemMatcher": []
+		},
+		{
+			"label": "Restart Worker + Web S47.8",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate worker worker-beat web 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Worker Logs S47.8",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 30 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Worker S47.8",
+			"type": "shell",
+			"command": "docker compose build worker worker-beat --no-cache 2>&1 | Select-Object -Last 30",
+			"problemMatcher": []
+		},
+		{
+			"label": "Restart Worker Containers S47.8",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate worker worker-beat 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Worker Tasks S47.8",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 20 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Beat Schedule S47.8",
+			"type": "shell",
+			"command": "docker compose logs worker-beat --tail 15 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Beat + Worker S47.8",
+			"type": "shell",
+			"command": "docker compose logs worker-beat worker --tail 35 --since 30s 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Worker + Outbox Status",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 10 2>&1; echo '---BEAT---'; docker compose logs worker-beat --tail 5 2>&1; echo '---OUTBOX---'; docker compose exec postgres psql -U postgres -d pns_crm -c \"SELECT id, event_type, status, attempt_count, created_at FROM outbox_events ORDER BY created_at DESC LIMIT 10;\" 2>&1"
+		},
+		{
+			"label": "Check Outbox DB",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c \"SELECT count(*) as total FROM outbox_events;\" 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "List DB Tables",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c \"\\dt\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Outbox Events",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c \"SELECT count(1) FROM outbox_events;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Count Outbox Events",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT count(1) FROM outbox_events;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Outbox Event Details",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT event_type, status, attempt_count, count(1) FROM outbox_events GROUP BY 1,2,3 ORDER BY 1,2;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Recent Worker Logs",
+			"type": "shell",
+			"command": "docker compose logs worker --since 2m 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Worker Env Vars",
+			"type": "shell",
+			"command": "docker compose exec -T worker python -c 'import os; print(\"SMTP_USER:\", os.getenv(\"SMTP_USER\", \"NOT SET\")); print(\"SMTP_PASS:\", \"***\" if os.getenv(\"SMTP_PASS\") else \"EMPTY\"); print(\"SMTP_HOST:\", os.getenv(\"SMTP_HOST\", \"NOT SET\"));'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Worker SMTP Env",
+			"type": "shell",
+			"command": "docker compose exec -T worker sh -c 'echo SMTP_USER=$SMTP_USER SMTP_HOST=$SMTP_HOST SMTP_PASS_SET=$([ -n \"$SMTP_PASS\" ] && echo YES || echo NO)'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check SMTP PASS Value",
+			"type": "shell",
+			"command": "docker compose exec -T worker sh -c 'echo PASS_LEN=${#SMTP_PASS}'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Restart Worker + Web S47.8",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate worker worker-beat 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Worker Logs S47.8",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 20; docker compose logs worker --tail 15 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Worker + Outbox Status",
+			"type": "shell",
+			"command": "docker compose logs worker-beat --tail 5 2>&1; echo '---WORKER---'; docker compose logs worker --tail 10 --since 30s 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Reset Outbox + Rebuild Worker",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'UPDATE outbox_events SET status=''pending'', attempt_count=0, last_error=NULL WHERE status IN (''processing'',''failed'');' ; docker compose build worker worker-beat --no-cache 2>&1 | Select-Object -Last 15",
+			"problemMatcher": []
+		},
+		{
+			"label": "Restart Worker Containers S47.8",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate worker worker-beat 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Worker Tasks S47.8",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 22; docker compose logs worker --tail 20 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Reset Outbox + Restart Workers",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'UPDATE outbox_events SET status=''pending'', attempt_count=0, last_error=NULL WHERE event_type IN (''assessment.internal_notification.requested'',''assessment.visitor_email.requested'');' ; docker compose up -d --force-recreate worker worker-beat 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Beat Schedule S47.8",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 22; docker compose logs worker --tail 15 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Worker Logs S47.8",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 20 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Worker Logs S47.8",
+			"type": "shell",
+			"command": "docker compose logs worker --tail 30 --since 30s 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Purge Celery Queue + Fresh Worker",
+			"type": "shell",
+			"command": "docker compose exec -T redis redis-cli -a redis_dev FLUSHDB 2>&1; docker compose restart worker worker-beat 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Reset Outbox + Wait for Beat",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'UPDATE outbox_events SET status=''pending'', attempt_count=0, last_error=NULL WHERE event_type IN (''assessment.internal_notification.requested'',''assessment.visitor_email.requested'');' ; Start-Sleep -Seconds 25; docker compose logs worker --tail 10 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test SMTP from Worker",
+			"type": "shell",
+			"command": "docker compose exec -T worker python3 -c \"import smtplib; s=smtplib.SMTP('$SMTP_HOST',587,timeout=15); s.starttls(); print('Connected'); s.login('$SMTP_USER','$SMTP_PASS'); print('Auth OK'); s.quit()\" 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test SMTP Auth Directly",
+			"type": "shell",
+			"command": "docker compose exec -T worker python /app/test_smtp.py",
+			"problemMatcher": []
+		},
+		{
+			"label": "Copy + Run SMTP Test",
+			"type": "shell",
+			"command": "docker compose cp test_smtp.py worker:/app/test_smtp.py; docker compose exec -T worker python /app/test_smtp.py",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test SMTP Auth Directly",
+			"type": "shell",
+			"command": "docker compose exec -T worker sh -c 'nslookup smtp.zoho.com 2>&1; echo ---; nslookup smtp.zoho.ca 2>&1'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test Zoho SMTP Hosts",
+			"type": "shell",
+			"command": "docker compose cp test_smtp2.py worker:/app/; docker compose exec -T worker python /app/test_smtp2.py",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test Zoho Auth .com",
+			"type": "shell",
+			"command": "docker compose cp test_smtp3.py worker:/app/; docker compose exec -T -e SMTP_HOST=smtp.zoho.com -e SMTP_USER=vinidias@pacificnorthsystems.com -e SMTP_PASS=UrqFcP5EFV5t worker python /app/test_smtp3.py",
+			"problemMatcher": []
+		},
+		{
+			"label": "Restart + Test SMTP",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate worker 2>&1; Start-Sleep -Seconds 5; docker compose cp test_smtp4.py worker:/app/; docker compose exec -T worker python /app/test_smtp4.py",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check SMTP PASS Value",
+			"type": "shell",
+			"command": "docker compose exec -T worker sh -c 'echo PASS=[$SMTP_PASS] LEN=${#SMTP_PASS} USER=[$SMTP_USER] HOST=[$SMTP_HOST]'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test SMTP After MFA",
+			"type": "shell",
+			"command": "docker compose cp test_smtp5.py worker:/app/; docker compose exec -T worker python /app/test_smtp5.py",
+			"problemMatcher": []
+		},
+		{
+			"label": "Restart Worker + Test SMTP",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate worker worker-beat 2>&1; Start-Sleep -Seconds 5; docker compose cp test_smtp5.py worker:/app/; docker compose exec -T worker python /app/test_smtp5.py",
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify SMTP Env in Worker",
+			"type": "shell",
+			"command": "docker compose exec -T worker sh -c 'echo PASS_LEN=${#SMTP_PASS} USER=[$SMTP_USER] HOST=[$SMTP_HOST] FROM=[$SMTP_FROM_EMAIL]'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test SMTP Alternate",
+			"type": "shell",
+			"command": "docker compose exec -T worker python3 -c \"import smtplib; [print(f'{h}: ', end='') or print('OK' if (lambda: (s:=smtplib.SMTP(h,587,timeout=10)).ehlo() and s.quit())(), end='') for h in ['smtppro.zoho.com','smtp.zoho.com','smtp.zoho.ca']]\" 2>&1; echo; docker compose exec -T worker python3 -c \"import smtplib,os; s=smtplib.SMTP('smtppro.zoho.com',587,timeout=15); s.starttls(); s.login(os.environ['SMTP_USER'],os.environ['SMTP_PASS']); print('AUTH OK')\" 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test All SMTP Hosts",
+			"type": "shell",
+			"command": "docker compose cp test_smtp6.py worker:/app/; docker compose exec -T worker python /app/test_smtp6.py",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test Both Users SMTP",
+			"type": "shell",
+			"command": "docker compose cp test_smtp7.py worker:/app/; docker compose exec -T worker python /app/test_smtp7.py",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test IMAP + SMTP",
+			"type": "shell",
+			"command": "docker compose cp test_imap.py worker:/app/; docker compose exec -T worker python /app/test_imap.py",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test SMTP Auth Directly",
+			"type": "shell",
+			"command": "docker compose exec -T worker python3 -c \"import smtplib,base64; s=smtplib.SMTP('smtp.zoho.com',587,timeout=15); s.starttls(); code,msg=s.docmd('AUTH LOGIN'); print('CHALLENGE:',msg); code,msg=s.docmd(base64.b64encode(b'vinidias@pacificnorthsystems.com').decode()); print('USER:',code,msg); code,msg=s.docmd(base64.b64encode(b'1ev7rYbyqyeR').decode()); print('PASS:',code,msg); s.quit()\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Final SMTP Test",
+			"type": "shell",
+			"command": "docker compose cp test_imap.py worker:/app/; docker compose exec -T worker python /app/test_imap.py",
+			"problemMatcher": []
+		},
+		{
+			"label": "DNS + SMTP Test",
+			"type": "shell",
+			"command": "docker compose exec -T worker sh -c 'echo ===DNS===; nslookup smtp.zoho.com 2>&1; nslookup smtp.zoho.ca 2>&1; nslookup smtpmail.zoho.com 2>&1; echo ===MX===; nslookup -type=MX pacificnorthsystems.com 2>&1'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify Password Bytes",
+			"type": "shell",
+			"command": "docker compose exec -T worker python3 -c \"pwd='1ev7rYbyqyeR'; print('Length:',len(pwd), 'Bytes:', [hex(b) for b in pwd.encode()], 'Repr:', repr(pwd))\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Restart Worker + Verify + Test SMTP",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate worker worker-beat 2>&1; Start-Sleep -Seconds 5; echo '===ENV==='; docker compose exec -T worker sh -c 'echo SMTP_HOST=$SMTP_HOST SMTP_USER=$SMTP_USER SMTP_PASS_PRESENT=$([ -n \"$SMTP_PASS\" ] && echo true || echo false)'; echo '===SMTP AUTH TEST==='; docker compose exec -T worker python3 -c \"import smtplib,os; s=smtplib.SMTP(os.environ['SMTP_HOST'],int(os.environ['SMTP_PORT']),timeout=15); s.starttls(); s.login(os.environ['SMTP_USER'],os.environ['SMTP_PASS']); print('AUTH OK')\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Restart Worker + Check Env",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate worker worker-beat 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Worker Env + Test Auth",
+			"type": "shell",
+			"command": "docker compose exec -T worker sh -c 'echo SMTP_HOST=$SMTP_HOST; echo SMTP_USER=$SMTP_USER; echo SMTP_PASS_PRESENT=$([ -n \"$SMTP_PASS\" ] && echo true || echo false)'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Final SMTP Auth Test",
+			"type": "shell",
+			"command": "docker compose cp test_smtp_final.py worker:/app/; docker compose exec -T worker python /app/test_smtp_final.py",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild + Restart Worker + Test",
+			"type": "shell",
+			"command": "docker compose build worker worker-beat --no-cache 2>&1 | Select-Object -Last 10",
+			"problemMatcher": []
+		},
+		{
+			"label": "Restart + Verify + Test SMTP",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate worker worker-beat 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "SMTP Auth Test zohocloud.ca",
+			"type": "shell",
+			"command": "docker compose cp test_auth.py worker:/app/; docker compose exec -T worker python /app/test_auth.py",
+			"problemMatcher": []
+		},
+		{
+			"label": "Reset Outbox + Verify Delivery",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c \"UPDATE outbox_events SET status='pending', attempt_count=0, last_error=NULL WHERE event_type IN ('assessment.internal_notification.requested','assessment.visitor_email.requested');\" ; Start-Sleep -Seconds 20; docker compose logs worker --tail 12 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Reset Events + Check Status",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'UPDATE outbox_events SET status=''pending'', attempt_count=0, last_error=NULL WHERE event_type IN (''assessment.internal_notification.requested'',''assessment.visitor_email.requested'');'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Wait for Delivery + Check",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 22; docker compose logs worker --tail 8 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify Final Outbox Status",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT event_type, status, count(1) FROM outbox_events GROUP BY 1,2 ORDER BY 1,2;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Apply migration + check",
+			"type": "shell",
+			"command": "docker compose exec -T api alembic upgrade head 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check alembic status",
+			"type": "shell",
+			"command": "docker compose exec -T api alembic current 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild API (visitor email event)",
+			"type": "shell",
+			"command": "docker compose build api worker worker-beat --no-cache 2>&1 | Select-Object -Last 15",
+			"problemMatcher": []
+		},
+		{
+			"label": "Migrate up and verify",
+			"type": "shell",
+			"command": "docker compose exec -T api alembic upgrade head 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Worker S47.8",
+			"type": "shell",
+			"command": "docker compose build worker worker-beat --no-cache 2>&1 | Select-Object -Last 8; docker compose up -d --force-recreate worker worker-beat 2>&1 | Select-Object -Last 5",
+			"problemMatcher": []
+		},
+		{
+			"label": "Restart Worker Containers S47.8",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate worker worker-beat 2>&1 | Select-Object -Last 3",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild API + Test Assessment",
+			"type": "shell",
+			"command": "docker compose build api --no-cache 2>&1 | Select-Object -Last 8; docker compose up -d --force-recreate api 2>&1 | Select-Object -Last 3",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test assessment from marketing",
+			"type": "shell",
+			"command": "Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType application/json -Body '{\"assessment_version\":\"1.0\",\"answers\":{\"businessType\":\"Construction\",\"mainProblems\":[\"Repetitive data entry\",\"Reporting\",\"Managing documents\"],\"currentProcess\":\"Paper forms\",\"weeklyTimeSpent\":\"20-40 hours\",\"peopleInvolved\":\"6-15\",\"additionalDetails\":\"Field supervisors complete paper inspection forms and office staff enter them into Excel.\"},\"results\":{\"opportunityScore\":84,\"estimatedWeeklyHours\":30,\"estimatedAnnualHours\":1560,\"estimatedAnnualLabourCost\":78000,\"estimatedAnnualSavings\":62400,\"scoreInterpretation\":\"Very High Opportunity\"},\"contact\":{\"first_name\":\"John\",\"last_name\":\"Smith\",\"email\":\"john@acmebuilders.com\",\"phone\":\"604-555-0123\"},\"company\":{\"name\":\"Acme Builders Ltd\",\"industry\":\"Construction / Trades\",\"employee_range\":\"6-15\"},\"consent\":{\"privacy_accepted\":true,\"marketing_accepted\":false}}' | ConvertTo-Json -Depth 5",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test assessment (JSON body)",
+			"type": "shell",
+			"command": "$body = Get-Content test_assessment.json -Raw; Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType 'application/json' -Body $body | ConvertTo-Json -Depth 5",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test CRM API directly",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT public_id, automation_score, primary_pain_point, urgency, next_best_action FROM automation_assessments ORDER BY created_at DESC LIMIT 1;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check assessments in DB",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT public_id, automation_score, primary_pain_point, urgency, project_size_band, array_length(recommended_solution_categories,1) as sol_count, next_best_action FROM automation_assessments ORDER BY created_at DESC LIMIT 3;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check CRM Assessment Data",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT public_id, automation_score, primary_pain_point, urgency, project_size_band, next_best_action FROM automation_assessments ORDER BY created_at DESC LIMIT 3;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check CRM data",
+			"type": "shell",
+			"command": "docker compose exec -T api python -c 'from app.application.assessment.intelligence import generate_intelligence; print(\"OK\")'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify intelligence module loaded",
+			"type": "shell",
+			"command": "docker compose exec -T api python -c 'from app.application.assessment.intelligence import generate_intelligence; print(\"module OK\")'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify Module v2",
+			"type": "shell",
+			"command": "docker compose exec -T api sh -c 'python -c \"from app.application.assessment.intelligence import generate_intelligence; print(42)\"'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check API Logs for Error",
+			"type": "shell",
+			"command": "docker compose logs api --tail 30 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check intelligence file",
+			"type": "shell",
+			"command": "docker compose exec -T api ls -la /app/app/application/assessment/",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild API v2",
+			"type": "shell",
+			"command": "docker compose build api --no-cache 2>&1 | Select-Object -Last 5; docker compose up -d --force-recreate api 2>&1 | Select-Object -Last 3",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test fresh assessment",
+			"type": "shell",
+			"command": "$body = '{\"assessment_version\":\"1.0\",\"answers\":{\"businessType\":\"Construction\",\"mainProblems\":[\"Repetitive data entry\",\"Reporting\",\"Managing documents\"],\"currentProcess\":\"Paper forms\",\"weeklyTimeSpent\":\"20-40 hours\",\"peopleInvolved\":\"6-15\",\"additionalDetails\":\"Field supervisors complete paper inspection forms and office staff enter them into Excel.\"},\"results\":{\"opportunityScore\":84,\"estimatedWeeklyHours\":30,\"estimatedAnnualHours\":1560,\"estimatedAnnualLabourCost\":78000,\"estimatedAnnualSavings\":62400,\"scoreInterpretation\":\"Very High Opportunity\"},\"contact\":{\"first_name\":\"John\",\"last_name\":\"Smith\",\"email\":\"john@acmebuilders-test.com\",\"phone\":\"604-555-0123\"},\"company\":{\"name\":\"Acme Builders Ltd - Test\",\"industry\":\"Construction / Trades\",\"employee_range\":\"6-15\"},\"consent\":{\"privacy_accepted\":true,\"marketing_accepted\":false}}'; $r = Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType 'application/json' -Body $body; $r | ConvertTo-Json -Depth 3",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test Acme Submit",
+			"type": "shell",
+			"command": "$body = Get-Content test_acme.json -Raw; Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType 'application/json' -Body $body | ConvertTo-Json -Depth 3",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Acme Intelligence",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT public_id, primary_pain_point, urgency, next_best_action, array_length(recommended_solution_categories,1) as sols, intelligence_confidence FROM automation_assessments ORDER BY created_at DESC LIMIT 1;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Acme Intel v2",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT public_id, primary_pain_point, urgency, next_best_action, jsonb_array_length(recommended_solution_categories) as sols, intelligence_confidence FROM automation_assessments ORDER BY created_at DESC LIMIT 1;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Emails Delivered",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c \"SELECT event_type, status, created_at FROM outbox_events WHERE event_type IN ('assessment.internal_notification.requested','assessment.visitor_email.requested') ORDER BY created_at DESC LIMIT 4;\" ; docker compose logs worker --tail 8 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check KG Facts",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT key, value FROM knowledge_facts WHERE source=''website_assessment'' ORDER BY created_at DESC LIMIT 10;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check current migration",
+			"type": "shell",
+			"command": "docker compose exec -T api alembic current 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild All S48.1",
+			"type": "shell",
+			"command": "docker compose build api worker worker-beat --no-cache 2>&1 | Select-Object -Last 8",
+			"problemMatcher": []
+		},
+		{
+			"label": "Migrate Up S48.1",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate api; Start-Sleep -Seconds 5; docker compose exec -T api alembic upgrade head 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Restart Workers S48.1",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate worker worker-beat 2>&1 | Select-Object -Last 3",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check API Health + Workers",
+			"type": "shell",
+			"command": "docker compose exec -T api python -c \"from app.infrastructure.db.models import Call; print('Call model OK')\" 2>&1; docker compose logs worker --tail 5 2>&1; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT count(*) FROM calls;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Telnyx + API Status",
+			"type": "shell",
+			"command": "docker compose logs api --tail 20 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check existing calls + simulate lifecycle",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c \"SELECT public_uuid, direction, status, duration_seconds, connected_at, ended_at FROM calls ORDER BY created_at DESC LIMIT 3;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check calls in DB",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT public_uuid, direction, status, duration_seconds, connected_at, ended_at FROM calls ORDER BY created_at DESC LIMIT 3;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "TEST 1: Simulate full call lifecycle",
+			"type": "shell",
+			"command": "$callId = 'test-call-' + (Get-Date -Format 'HHmmss'); Write-Host '=== TEST CALL ID:' $callId; Write-Host '=== 1. call.initiated ==='; $r1 = Invoke-RestMethod -Uri http://localhost:8000/api/v1/telephony/webhook -Method POST -ContentType application/json -Body \"{\\\"data\\\":{\\\"event_type\\\":\\\"call.initiated\\\",\\\"payload\\\":{\\\"call_control_id\\\":\\\"$callId\\\",\\\"call_leg_id\\\":\\\"leg-$callId\\\",\\\"from\\\":\\\"+16045550123\\\",\\\"to\\\":\\\"+16045550987\\\"}}}\" -ErrorAction Stop; $r1 | ConvertTo-Json; Write-Host '=== 2. call.answered ==='; $r2 = Invoke-RestMethod -Uri http://localhost:8000/api/v1/telephony/webhook -Method POST -ContentType application/json -Body \"{\\\"data\\\":{\\\"event_type\\\":\\\"call.answered\\\",\\\"payload\\\":{\\\"call_control_id\\\":\\\"$callId\\\",\\\"call_leg_id\\\":\\\"leg-$callId\\\"}}}\" -ErrorAction Stop; $r2 | ConvertTo-Json; Write-Host '=== 3. call.hangup ==='; $r3 = Invoke-RestMethod -Uri http://localhost:8000/api/v1/telephony/webhook -Method POST -ContentType application/json -Body \"{\\\"data\\\":{\\\"event_type\\\":\\\"call.hangup\\\",\\\"payload\\\":{\\\"call_control_id\\\":\\\"$callId\\\",\\\"call_leg_id\\\":\\\"leg-$callId\\\"}}}\" -ErrorAction Stop; $r3 | ConvertTo-Json",
+			"problemMatcher": []
+		},
+		{
+			"label": "TEST: Full call lifecycle simulation",
+			"type": "shell",
+			"command": "Write-Host '=== 1. INITIATED ==='; Invoke-RestMethod -Uri http://localhost:8000/api/v1/telephony/webhook -Method POST -ContentType application/json -InFile test_call_init.json | ConvertTo-Json; Write-Host '=== 2. ANSWERED ==='; Invoke-RestMethod -Uri http://localhost:8000/api/v1/telephony/webhook -Method POST -ContentType application/json -InFile test_call_answer.json | ConvertTo-Json; Start-Sleep -Seconds 2; Write-Host '=== 3. HANGUP ==='; Invoke-RestMethod -Uri http://localhost:8000/api/v1/telephony/webhook -Method POST -ContentType application/json -InFile test_call_hangup.json | ConvertTo-Json",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check API error logs",
+			"type": "shell",
+			"command": "docker compose logs api --tail 30 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild API + Retest lifecycle",
+			"type": "shell",
+			"command": "docker compose build api --no-cache 2>&1 | Select-Object -Last 5; docker compose up -d --force-recreate api 2>&1 | Select-Object -Last 3; Start-Sleep -Seconds 5; Write-Host '=== TEST: Full call lifecycle ==='; Write-Host '--- INITIATED ---'; Invoke-RestMethod -Uri http://localhost:8000/api/v1/telephony/webhook -Method POST -ContentType application/json -InFile test_call_init.json | ConvertTo-Json; Write-Host '--- ANSWERED ---'; Invoke-RestMethod -Uri http://localhost:8000/api/v1/telephony/webhook -Method POST -ContentType application/json -InFile test_call_answer.json | ConvertTo-Json; Start-Sleep -Seconds 3; Write-Host '--- HANGUP ---'; Invoke-RestMethod -Uri http://localhost:8000/api/v1/telephony/webhook -Method POST -ContentType application/json -InFile test_call_hangup.json | ConvertTo-Json",
+			"problemMatcher": []
+		},
+		{
+			"label": "Get API error traceback",
+			"type": "shell",
+			"command": "docker compose logs api --tail 25 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild API + Run lifecycle test",
+			"type": "shell",
+			"command": "docker compose build api --no-cache 2>&1 | Select-Object -Last 3; docker compose up -d --force-recreate api 2>&1 | Select-Object -Last 2; Start-Sleep -Seconds 5; Write-Host '=== CALL INIT ==='; Invoke-RestMethod -Uri http://localhost:8000/api/v1/telephony/webhook -Method POST -ContentType application/json -InFile test_call_init.json; Write-Host '=== CALL ANSWER ==='; Invoke-RestMethod -Uri http://localhost:8000/api/v1/telephony/webhook -Method POST -ContentType application/json -InFile test_call_answer.json; Start-Sleep -Seconds 3; Write-Host '=== CALL HANGUP ==='; Invoke-RestMethod -Uri http://localhost:8000/api/v1/telephony/webhook -Method POST -ContentType application/json -InFile test_call_hangup.json; Write-Host '=== DONE ==='",
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify call in DB after lifecycle",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT public_uuid, direction, status, outcome, provider_call_id, started_at, connected_at, ended_at, duration_seconds, transcript_status, post_call_status, correlation_id FROM calls WHERE provider_call_id=''sim-call-001'';'; echo '---ACTIVITIES---'; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT id, activity_type, subject FROM activities WHERE subject LIKE ''%sim-call-001%'';'; echo '---OUTBOX---'; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT event_type, status FROM outbox_events WHERE payload_json->>''call_uuid'' LIKE ''6a67%'';'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check activities + wait for workers",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT id, activity_type, subject FROM activities ORDER BY id DESC LIMIT 5;'; Start-Sleep -Seconds 20; docker compose logs worker --tail 12 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check outbox after workers",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT event_type, status FROM outbox_events WHERE payload_json->>''call_uuid'' LIKE ''6a67%'' ORDER BY event_type;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "TEST: Idempotency + Failure",
+			"type": "shell",
+			"command": "Write-Host '=== REPLAY HANGUP (idempotency) ==='; Invoke-RestMethod -Uri http://localhost:8000/api/v1/telephony/webhook -Method POST -ContentType application/json -InFile test_call_hangup.json; Write-Host '=== FAILURE CASE ==='; Invoke-RestMethod -Uri http://localhost:8000/api/v1/telephony/webhook -Method POST -ContentType application/json -InFile test_call_failed.json; Write-Host '=== VERIFY ==='; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT provider_call_id, status, outcome FROM calls WHERE provider_call_id IN (''sim-call-001'',''sim-call-002'') ORDER BY provider_call_id;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "TEST: Restart durability",
+			"type": "shell",
+			"command": "Write-Host '=== RESTARTING ALL ==='; docker compose restart api worker worker-beat 2>&1 | Select-Object -Last 3; Start-Sleep -Seconds 8; Write-Host '=== AFTER RESTART: Query call ==='; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT public_uuid, status, duration_seconds, connected_at, ended_at FROM calls WHERE provider_call_id=''sim-call-001'';'; Write-Host '=== API query ==='; Invoke-RestMethod -Uri http://localhost:8000/api/v1/calls/sim-call-001 -ErrorAction SilentlyContinue; Write-Host '=== Workers ==='; docker compose logs worker --tail 3 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Final verification + API query",
+			"type": "shell",
+			"command": "Write-Host '=== CALL API ==='; Invoke-RestMethod -Uri http://localhost:8000/api/v1/calls/6a67eab3-b120-4dba-b930-f996e365e339 | ConvertTo-Json; Write-Host '=== COUNTS ==='; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT (SELECT count(*) FROM calls) as total_calls, (SELECT count(*) FROM activities WHERE activity_type LIKE ''call_%'') as call_activities, (SELECT count(*) FROM outbox_events WHERE event_type LIKE ''call.%'') as call_outbox_events;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild All + Migrate S48.2",
+			"type": "shell",
+			"command": "docker compose build api worker worker-beat web --no-cache 2>&1 | Select-Object -Last 5; docker compose up -d --force-recreate api 2>&1 | Select-Object -Last 2; Start-Sleep -Seconds 5; docker compose exec -T api alembic upgrade head 2>&1; docker compose up -d --force-recreate worker worker-beat web 2>&1 | Select-Object -Last 3",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild API + Migrate S48.2",
+			"type": "shell",
+			"command": "docker compose build api worker worker-beat --no-cache 2>&1 | Select-Object -Last 5; docker compose up -d --force-recreate api; Start-Sleep -Seconds 5; docker compose exec -T api alembic upgrade head 2>&1; docker compose up -d --force-recreate worker worker-beat 2>&1 | Select-Object -Last 3",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test EmailMessage logging",
+			"type": "shell",
+			"command": "$body = Get-Content test_acme.json -Raw; $body = $body -replace 'john@acmebuilders-test2.com', 'test-email-log@example.com' -replace 'Acme Builders Ltd Test2', 'Email Log Test Co'; Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType 'application/json' -Body $body | ConvertTo-Json; Start-Sleep -Seconds 25; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT public_uuid, direction, status, from_address, to_address, subject FROM email_messages ORDER BY created_at DESC LIMIT 3;'; echo '---WORKER---'; docker compose logs worker --tail 6 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild Worker + Restart S48.2",
+			"type": "shell",
+			"command": "docker compose build worker worker-beat --no-cache 2>&1 | Select-Object -Last 4; docker compose up -d --force-recreate worker worker-beat 2>&1 | Select-Object -Last 2; Start-Sleep -Seconds 8; docker compose logs worker --tail 8 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify IMAP worker + final state S48.2",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 65; docker compose logs worker-beat --tail 5 2>&1; echo '---'; docker compose logs worker --tail 10 2>&1; echo '---EMAILS---'; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT public_uuid, direction, status, from_address, subject FROM email_messages ORDER BY created_at DESC LIMIT 5;'; echo '---COUNTS---'; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT count(*) as email_count FROM email_messages; SELECT count(*) as total_tables FROM information_schema.tables WHERE table_schema=''public'';'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test downstream processing survives browser close",
+			"type": "shell",
+			"command": "Write-Host '=== 1. Submit assessment ==='; $body = Get-Content test_acme.json -Raw; $body = $body -replace 'john@acmebuilders-test2.com', 'policy-a-test@example.com' -replace 'Acme Builders Ltd Test2', 'Policy A Test Co'; $r = Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType 'application/json' -Body $body; Write-Host \"submissionId: $($r.submission_id)\"; Write-Host '=== 2. Simulate browser close (immediate — no more HTTP from this client) ==='; Write-Host '=== 3. Restart API + workers ==='; docker compose restart api worker worker-beat 2>&1 | Select-Object -Last 3; Start-Sleep -Seconds 8; Write-Host '=== 4. Verify assessment persisted ==='; docker compose exec -T postgres psql -U postgres -d pns_crm -c \"SELECT public_id, automation_score, primary_pain_point, next_best_action FROM automation_assessments WHERE public_id='$($r.submission_id)';\" ; Write-Host '=== 5. Verify outbox events + emails delivered ==='; Start-Sleep -Seconds 20; docker compose exec -T postgres psql -U postgres -d pns_crm -c \"SELECT event_type, status FROM outbox_events WHERE payload_json->>'assessment_id'='$($r.submission_id)' ORDER BY event_type;\" ; Write-Host '=== 6. Verify EmailMessages ==='; docker compose exec -T postgres psql -U postgres -d pns_crm -c \"SELECT direction, status, to_address FROM email_messages ORDER BY created_at DESC LIMIT 2;\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify downstream processing after restart",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT public_id, automation_score, primary_pain_point, next_best_action FROM automation_assessments ORDER BY created_at DESC LIMIT 1;'; echo '---OUTBOX---'; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT event_type, status FROM outbox_events ORDER BY created_at DESC LIMIT 8;'; echo '---EMAILS---'; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT direction, status, to_address, subject FROM email_messages ORDER BY created_at DESC LIMIT 4;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild All + Final Acceptance S48.2",
+			"type": "shell",
+			"command": "docker compose build api worker worker-beat --no-cache 2>&1 | Select-Object -Last 5; docker compose up -d --force-recreate api worker worker-beat 2>&1 | Select-Object -Last 3; Start-Sleep -Seconds 5; docker compose exec -T api alembic upgrade head 2>&1 | Select-Object -Last 3",
+			"problemMatcher": []
+		},
+		{
+			"label": "FINAL ACCEPTANCE: Policy A hardening",
+			"type": "shell",
+			"command": "Write-Host '=== TEST 1: Submit (idempotency key) ==='; $key1 = 'test-key-' + (Get-Date -Format 'HHmmss'); $body = Get-Content test_acme.json -Raw; $body = $body -replace 'john@acmebuilders-test2.com','final-test@pns.com' -replace 'Acme Builders Ltd Test2','Final Test Co'; $r1 = Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType 'application/json' -Headers @{'Idempotency-Key'=$key1} -Body $body; Write-Host \"submissionId: $($r1.submission_id)\"; Write-Host ''; Write-Host '=== TEST 2: Same key + same payload → idempotent (200/ok) ==='; $r2 = Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType 'application/json' -Headers @{'Idempotency-Key'=$key1} -Body $body; Write-Host \"idempotent replay: same_id=$($r2.submission_id -eq $r1.submission_id) status=$($r2.status)\"; Write-Host ''; Write-Host '=== TEST 3: Same key + different payload → 409 ==='; $body3 = $body -replace 'Construction','Manufacturing'; try { Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType 'application/json' -Headers @{'Idempotency-Key'=$key1} -Body $body3; Write-Host 'FAIL: should have been 409' } catch { Write-Host \"409 conflict: $($_.Exception.Message)\" } ; Write-Host ''; Write-Host '=== TEST 4: Wait for emails + IMAP ==='; Start-Sleep -Seconds 25; Write-Host '=== TEST 5: Check EmailMessages for internal filter ==='; docker compose exec -T postgres psql -U postgres -d pns_crm -c \"SELECT direction, status, from_address, subject FROM email_messages WHERE subject LIKE '%Final Test Co%' ORDER BY created_at DESC;\" ; Write-Host '=== TEST 6: Verify no duplicate outbox ==='; docker compose exec -T postgres psql -U postgres -d pns_crm -c \"SELECT count(*) as outbox_count FROM outbox_events WHERE payload_json->>'assessment_id'='$($r1.submission_id)';\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Final DB verification S48 Hardening",
+			"type": "shell",
+			"command": "docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT direction, status, from_address, subject FROM email_messages WHERE subject LIKE ''%Final Test Co%'' ORDER BY created_at DESC;' ; echo '---OUTBOX---'; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT count(1) FROM outbox_events WHERE payload_json->>''assessment_id''=''e262a0be-1827-4c11-af07-26c563b57645'';' ; echo '---INTERNAL_EMAIL_CHECK---'; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT direction, status FROM email_messages WHERE status=''received-internal'' ORDER BY created_at DESC LIMIT 3;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Wait IMAP cycle + check internal filter",
+			"type": "shell",
+			"command": "Start-Sleep -Seconds 65; docker compose logs worker --tail 8 2>&1; echo '---ALL RECENT---'; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT direction, status, from_address FROM email_messages ORDER BY created_at DESC LIMIT 6;'",
+			"problemMatcher": []
+		}
+	]
+}

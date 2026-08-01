@@ -1,0 +1,28 @@
+# Node
+node_modules/
+.pnpm-store/
+.next/
+coverage/
+
+# Python
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+*.pyc
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+version.json
+*.log
+
+# IDE
+.vscode/*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db

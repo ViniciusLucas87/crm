@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @pns/web lint
+      - run: pnpm --dir apps/web exec tsc --noEmit
+      - run: pnpm --filter @pns/web test
+      - run: pnpm --filter @pns/web build
+
+  api:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pns_crm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d pns_crm"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: apps/api
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/pns_crm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check app tests
+      - run: black --check app tests
+      - run: pytest -q
+      - run: python -m alembic upgrade head
+      # ── Runtime validation ──
+      - name: Validate models at runtime
+        run: python -c "from app.infrastructure.db.base import Base; from app.infrastructure.db import models; Base.registry.configure(); print(f'{len(Base.registry.mappers)} mappers OK')"
+      - name: Compute model fingerprint
+        run: python -c "from app.core.build_id import compute_model_fingerprint; print(f'Fingerprint: {compute_model_fingerprint()}')"
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build images
+        run: docker compose build
+      - name: Verify OCI labels
+        run: |
+          API_LABELS=$(docker inspect crmsystem-api:latest --format '{{json .Config.Labels}}')
+          echo "API labels: $API_LABELS"
+          echo "$API_LABELS" | python3 -c "import sys,json; l=json.load(sys.stdin); assert 'com.pns.build_id' in l, 'Missing build_id label'"
+          echo "$API_LABELS" | python3 -c "import sys,json; l=json.load(sys.stdin); assert 'org.opencontainers.image.version' in l, 'Missing version label'"
+          echo "✓ OCI labels verified"
+      - name: Start services
+        run: docker compose up -d
+      - name: Wait for readiness
+        run: |
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s http://localhost:8000/api/v1/health/ready | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+            if [ "$STATUS" = "ready" ]; then
+              echo "✓ API ready after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+      - name: Verify health endpoint
+        run: |
+          curl -s http://localhost:8000/api/v1/health | python3 -m json.tool
+          curl -s http://localhost:8000/api/v1/health/live | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status']=='alive'"
+          curl -s http://localhost:8000/api/v1/health/ready | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status']=='ready'"
+          echo "✓ Health endpoints verified"
+      - name: Run migrations
+        run: docker compose exec -T api alembic upgrade head
+      - name: Smoke test
+        run: |
+          WEB_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000)
+          echo "Web status: $WEB_STATUS"
+          # Accept 200 (authenticated) or 307 (redirect to sign-in) as valid
+          if [ "$WEB_STATUS" != "200" ] && [ "$WEB_STATUS" != "307" ]; then
+            echo "Unexpected web status: $WEB_STATUS"
+            exit 1
+          fi
+          echo "✓ Smoke test passed"
+      - name: Verify model fingerprint
+        run: |
+          FINGERPRINT=$(curl -s http://localhost:8000/api/v1/health | python3 -c "import sys,json; print(json.load(sys.stdin)['model_fingerprint'])")
+          echo "Model fingerprint: $FINGERPRINT"
+          if [ "$FINGERPRINT" = "unknown" ] || [ -z "$FINGERPRINT" ]; then
+            echo "✗ Model fingerprint missing"
+            exit 1
+          fi
+          echo "✓ Model fingerprint verified"
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v

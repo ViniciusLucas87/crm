@@ -1,0 +1,30 @@
+{
+  "name": "pacific-north-systems-os",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.12.2",
+  "pnpm": {
+    "overrides": {
+      "postcss": "8.5.19"
+    }
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "corepack pnpm --filter @pns/web build",
+    "dev": "docker compose up -d && docker compose exec api alembic upgrade head && echo 'Ready. API: http://localhost:8000 Web: http://localhost:3000'",
+    "dev:web": "corepack pnpm --filter @pns/web dev",
+    "dev:api": "echo 'Use uvicorn for API in Python environment'",
+    "rebuild": "docker compose down && docker compose build --no-cache && docker compose up -d && docker compose exec api alembic upgrade head",
+    "doctor": "docker compose ps && curl -s http://localhost:8000/api/v1/health",
+    "migrate": "docker compose exec api alembic upgrade head",
+    "lint": "corepack pnpm --filter @pns/web lint",
+    "lint:web": "corepack pnpm --filter @pns/web lint",
+    "test": "corepack pnpm --filter @pns/web test",
+    "test:web": "corepack pnpm --filter @pns/web test",
+    "typecheck": "corepack pnpm --dir apps/web exec tsc --noEmit",
+    "format:web": "corepack pnpm --filter @pns/web format"
+  }
+}

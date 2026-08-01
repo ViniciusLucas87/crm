@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Brand colors ── */
+  --color-pns-bg: #F7FAFC;
+  --color-pns-white: #FFFFFF;
+  --color-pns-dark-hero: #071B33;
+  --color-pns-dark-hero-secondary: #0A223D;
+  --color-pns-dark-footer: #061426;
+  --color-pns-soft-blue: #EAF3FA;
+
+  /* ── Text colors ── */
+  --color-pns-text-primary: #0B1526;
+  --color-pns-text-primary-alt: #10243C;
+  --color-pns-text-muted: rgb(82, 99, 114);
+  --color-pns-text-light: rgb(198, 213, 227);
+  --color-pns-text-soft-white: rgb(238, 247, 255);
+  --color-pns-text-footer-muted: rgb(155, 175, 193);
+
+  /* ── Accent ── */
+  --color-pns-accent-light: #DCE6F7;
+
+  /* ── Assessment ── */
+  --color-pns-assessment-error: #9A1D1D;
+  --color-pns-assessment-input-bg: #F5F5F5;
+  --color-pns-assessment-input-border: #DDDDDD;
+  --color-pns-assessment-panel: #EAF0F7;
+
+  /* ── Fonts ── */
+  --font-sans: "General Sans", sans-serif;
+  --font-inter: "Inter", sans-serif;
+
+  /* ── Radius ── */
+  --radius-card: 16px;
+  --radius-input: 10px;
+}
+
+/* ── Base ── */
+body {
+  font-family: var(--font-sans);
+  color: var(--color-pns-text-primary);
+  background-color: var(--color-pns-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Focus styles ── */
+:focus-visible {
+  outline: 2px solid var(--color-pns-text-primary);
+  outline-offset: 2px;
+}
