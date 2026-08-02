@@ -301,8 +301,8 @@ export function useTranscription() {
         // ── 2. WebSocket ──
         channel.state = "socket_connecting";
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsHost = window.location.hostname === "localhost" ? "localhost:8000" : window.location.host;
-        const wsUrl = `${protocol}//${wsHost}/api/v1/transcription/ws/${sessionId}`;
+        const apiHost = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000").replace(/^https?:\/\//, "");
+        const wsUrl = `${protocol}//${apiHost}/api/v1/transcription/ws/${sessionId}`;
         const ws = new WebSocket(wsUrl);
         channel.ws = ws;
 

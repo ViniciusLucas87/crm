@@ -59,7 +59,8 @@ export default function AssessmentDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    fetch(`http://localhost:8000/api/v1/assessments/${id}`)
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+    fetch(`${apiBase}/api/v1/assessments/${id}`)
       .then(r => { if (!r.ok) throw new Error("Not found"); return r.json(); })
       .then(setData)
       .catch(e => setError(e.message))

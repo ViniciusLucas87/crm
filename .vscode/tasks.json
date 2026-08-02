@@ -4050,6 +4050,36 @@
 			"type": "shell",
 			"command": "Start-Sleep -Seconds 65; docker compose logs worker --tail 8 2>&1; echo '---ALL RECENT---'; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT direction, status, from_address FROM email_messages ORDER BY created_at DESC LIMIT 6;'",
 			"problemMatcher": []
+		},
+		{
+			"label": "Git branch + status",
+			"type": "shell",
+			"command": "git branch --show-current; git status --short",
+			"problemMatcher": []
+		},
+		{
+			"label": "Build all containers production",
+			"type": "shell",
+			"command": "docker compose build api worker worker-beat web --no-cache 2>&1 | Select-Object -Last 8",
+			"problemMatcher": []
+		},
+		{
+			"label": "Restart + migrate + health check",
+			"type": "shell",
+			"command": "docker compose up -d --force-recreate api worker worker-beat web 2>&1 | Select-Object -Last 3; Start-Sleep -Seconds 5; docker compose exec -T api alembic upgrade head 2>&1; docker compose exec -T api alembic current 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Quick E2E verify",
+			"type": "shell",
+			"command": "$body = Get-Content test_acme.json -Raw; $body = $body -replace 'john@acmebuilders-test2.com','prod-ready@pns.com' -replace 'Acme Builders Ltd Test2','Prod Ready Co'; $r = Invoke-RestMethod -Uri http://localhost:8000/api/v1/public/automation-assessment -Method POST -ContentType 'application/json' -Body $body; Write-Host \"OK: $($r.submission_id) score=$($r.automation_score)\"; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT count(*) as assessments FROM automation_assessments;'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Commit production hardening changes",
+			"type": "shell",
+			"command": "git add -A; git status --short",
+			"problemMatcher": []
 		}
 	]
 }

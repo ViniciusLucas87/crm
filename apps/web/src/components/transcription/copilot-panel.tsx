@@ -351,7 +351,7 @@ export function CopilotPanel({ callId, isCallActive, segments, contacts }: Props
     if (!callId || !isCallActive) return;
     setStatus("connecting");
     const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.hostname === "localhost" ? "localhost:8000" : window.location.host;
+    const host = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000").replace(/^https?:\/\//, "");
     const ws = new WebSocket(`${proto}//${host}/api/v1/sales-coach/coach/ws/${callId}`);
     wsRef.current = ws;
     ws.onopen = () => { setConnected(true); setStatus("listening"); };
