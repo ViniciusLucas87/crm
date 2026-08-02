@@ -28,6 +28,7 @@ import os
 import smtplib
 import imaplib
 import email as email_lib
+import httpx
 from datetime import UTC, datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -895,9 +896,12 @@ def outbox_process_email(self, event_id: int | None = None, **context):
             "from_name": os.getenv("SMTP_FROM_NAME", "Pacific North Systems"),
             "use_tls": os.getenv("SMTP_USE_TLS", "true").lower() == "true",
             "internal_email": os.getenv("INTERNAL_NOTIFICATION_EMAIL", "hello@pacificnorthsystems.com"),
+            "resend_api_key": os.getenv("RESEND_API_KEY", ""),
         }
 
-        if not smtp_config["user"] or not smtp_config["password"]:
+        if not smtp_config["resend_api_key"] and (
+            not smtp_config["user"] or not smtp_config["password"]
+        ):
             logger.warning("SMTP not configured — skipping email delivery")
             return {"processed": 0, "reason": "smtp_not_configured"}
 
@@ -1034,7 +1038,7 @@ def _send_visitor_email(smtp_config: dict, payload: dict, db):
     msg["To"] = contact_email
     msg.attach(MIMEText(html, "html"))
 
-    _send_smtp(smtp_config, msg)
+    _send_email(smtp_config, msg)
 
 
 def _send_internal_notification(smtp_config: dict, payload: dict, db):
@@ -1269,11 +1273,37 @@ def _send_internal_notification(smtp_config: dict, payload: dict, db):
     msg["X-PNS-Correlation-ID"] = assessment_id or ""
     msg.attach(MIMEText(html, "html"))
 
-    _send_smtp(smtp_config, msg)
+    _send_email(smtp_config, msg)
 
 
-def _send_smtp(config: dict, msg):
-    """Send email via SMTP with SSL (Zoho Canada: smtp.zohocloud.ca:465)."""
+def _send_email(config: dict, msg):
+    """Send through an HTTPS provider when configured, otherwise use SMTP."""
+    if config.get("resend_api_key"):
+        html = ""
+        for part in msg.walk():
+            if part.get_content_type() == "text/html":
+                payload = part.get_payload(decode=True)
+                html = payload.decode(part.get_content_charset() or "utf-8") if payload else ""
+                break
+
+        response = httpx.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {config['resend_api_key']}",
+                "Content-Type": "application/json",
+                "User-Agent": "PacificNorthSystems-CRM/1.0",
+            },
+            json={
+                "from": str(msg["From"]),
+                "to": [str(msg["To"])],
+                "subject": str(msg["Subject"]),
+                "html": html,
+            },
+            timeout=15,
+        )
+        response.raise_for_status()
+        return
+
     import ssl
     ctx = ssl.create_default_context()
     with smtplib.SMTP_SSL(config["host"], config["port"], timeout=30, context=ctx) as server:
