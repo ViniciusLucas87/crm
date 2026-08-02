@@ -85,7 +85,8 @@ export function CompanyConversationTab({ companyId }: { companyId: number }) {
         // ── Sprint 48.1: Fetch real call data ──
         let callStats = { call_count: 0, talk_time: 0, last_call_at: null as string | null };
         try {
-          const callsR = await fetch(`http://localhost:8000/api/v1/calls?company_id=${companyId}`);
+          const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+          const callsR = await fetch(`${apiBase}/api/v1/calls?company_id=${companyId}`);
           if (callsR.ok) {
             const callsData = await callsR.json();
             const completed = callsData.filter((c: Record<string, unknown>) => c.status === "COMPLETED");

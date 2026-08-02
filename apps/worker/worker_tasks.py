@@ -1001,6 +1001,8 @@ def _send_internal_notification(smtp_config: dict, payload: dict, db):
     # Lead reasons
     reasons_html = "".join(f'<li style="font-size:13px;color:#3D3D5C;margin-bottom:3px">{r}</li>' for r in lead_reasons)
 
+    crm_app_url = os.getenv("CRM_APP_URL", "http://localhost:3000")
+
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -1133,7 +1135,7 @@ def _send_internal_notification(smtp_config: dict, payload: dict, db):
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
           <td style="padding-right:10px">
-            <a href="http://localhost:3000/leads" style="display:inline-block;background:#0B1526;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">View in CRM →</a>
+            <a href="{crm_app_url}/leads" style="display:inline-block;background:#0B1526;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">View in CRM →</a>
           </td>
           <td style="padding-right:10px">
             <a href="mailto:{contact_email}" style="display:inline-block;background:#3D3D5C;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">Email Contact</a>

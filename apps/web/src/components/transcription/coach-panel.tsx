@@ -48,8 +48,8 @@ export function CoachPanel({ callId, isCallActive, segments }: Props) {
     if (!callId || !isCallActive) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsHost = window.location.hostname === "localhost" ? "localhost:8000" : window.location.host;
-    const ws = new WebSocket(`${protocol}//${wsHost}/api/v1/sales-coach/coach/ws/${callId}`);
+    const apiHost = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000").replace(/^https?:\/\//, "");
+    const ws = new WebSocket(`${protocol}//${apiHost}/api/v1/sales-coach/coach/ws/${callId}`);
     wsRef.current = ws;
 
     ws.onopen = () => setConnected(true);

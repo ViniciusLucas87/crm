@@ -28,7 +28,8 @@ export default function AssessmentIntelligenceCard({ leadId }: { leadId: number 
 
   useEffect(() => {
     // Fetch the most recent assessment for this lead's company
-    fetch(`http://localhost:8000/api/v1/assessments/by-lead/${leadId}`)
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+    fetch(`${apiBase}/api/v1/assessments/by-lead/${leadId}`)
       .then(r => r.ok ? r.json() : null)
       .then(setData)
       .catch(() => setData(null))
