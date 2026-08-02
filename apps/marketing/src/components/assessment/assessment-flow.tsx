@@ -37,6 +37,28 @@ const STEP_LABELS = [
 
 const TOTAL_STEPS = 7;
 
+type SubmissionResponse = {
+  requestId?: string;
+  error?: string;
+};
+
+async function readSubmissionResponse(res: Response): Promise<SubmissionResponse> {
+  const contentType = res.headers.get("content-type")?.toLowerCase() || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      "Our submission service returned an unexpected response. Please refresh the page and try again.",
+    );
+  }
+
+  try {
+    return (await res.json()) as SubmissionResponse;
+  } catch {
+    throw new Error(
+      "We couldn't read the submission response. Please refresh the page and try again.",
+    );
+  }
+}
+
 const EMPTY_STATE: AssessmentState = {
   version: ASSESSMENT_VERSION,
   mainProblems: [],
@@ -128,7 +150,7 @@ export function AssessmentFlow() {
         body: JSON.stringify(submissionPayload),
       });
 
-      const data = await res.json();
+      const data = await readSubmissionResponse(res);
       const rid = data.requestId || null;
 
       if (res.status === 201) {
@@ -188,7 +210,7 @@ export function AssessmentFlow() {
         body: JSON.stringify({ requestId, ...(saved as Record<string, unknown>) }),
       });
 
-      const data = await res.json();
+      const data = await readSubmissionResponse(res);
 
       if (res.status === 201 || res.status === 200) {
         removeSubmission(requestId);
