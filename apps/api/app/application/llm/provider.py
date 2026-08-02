@@ -205,13 +205,8 @@ class AnthropicProvider(LLMProvider):
 
 PROVIDER_MAP: dict[str, type[LLMProvider]] = {
     "openai": OpenAIProvider,
+    "deepseek": OpenAIProvider,  # DeepSeek uses OpenAI-compatible API
     "anthropic": AnthropicProvider,
-    # Additional providers registered here:
-    # "google": GoogleProvider,
-    # "deepseek": DeepSeekProvider,
-    # "openrouter": OpenRouterProvider,
-    # "azure": AzureOpenAIProvider,
-    # "ollama": OllamaProvider,
 }
 
 

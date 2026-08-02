@@ -1,9 +1,10 @@
 from fastapi import APIRouter
 
-from app.presentation.api.v1.routes import actions, agents, ai, assessments, auth, companies, contacts, conversations, copilot, dashboard, decision_maker, demand, documents, enrich, health, intelligence, knowledge, leads, mcp, reports, sales, sales_coach, scoring, search, telemetry, telephony, timeline, transcription, workers, assessment_public
+from app.presentation.api.v1.routes import actions, agents, ai, assessments, auth, companies, contacts, conversations, copilot, dashboard, decision_maker, demand, documents, enrich, health, health_llm, intelligence, knowledge, leads, mcp, reports, sales, sales_coach, scoring, search, telemetry, telephony, timeline, transcription, workers, assessment_public
 
 api_router = APIRouter()
 api_router.include_router(health.router, tags=["health"])
+api_router.include_router(health_llm.router, tags=["health"])
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 api_router.include_router(companies.router, prefix="/companies", tags=["companies"])
