@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.application.llm import LLMConfig, LLMMessage, create_provider, get_memory_store, get_prompt
+from app.application.llm import LLMMessage, get_memory_store, get_prompt
 from app.application.llm.prompt_components import CHAT_SYSTEM_PROMPT
 from app.core.config import get_settings
 from app.infrastructure.auth.clerk import AuthContext, require_permission
@@ -127,23 +127,6 @@ async def mcp_chat(
     memory = get_memory_store().get_or_create(session_id)
     tools = registry.list_openai_functions()
 
-    # Configure LLM — default to DeepSeek
-    settings = get_settings()
-    if not settings.deepseek_api_key:
-        return {
-            "error": "The CRM AI provider is not configured",
-            "session_id": session_id,
-        }
-    llm_config = LLMConfig(
-        # DeepSeek exposes an OpenAI-compatible API.
-        provider="openai",
-        model=settings.deepseek_model,
-        api_key=settings.deepseek_api_key,
-        api_base=settings.deepseek_api_base,
-        temperature=provider_cfg.get("temperature", 0.3),
-        max_tokens=provider_cfg.get("max_tokens", 4096),
-    )
-
     # Build context
     enriched_context = _build_chat_context(session, ctx.organization_id, user_message)
 
@@ -152,7 +135,8 @@ async def mcp_chat(
     memory.add_message("system", enriched_context.get("summary", ""))
 
     try:
-        llm = create_provider(llm_config)
+        from app.application.llm.gateway import get_llm_gateway, GatewayConfig
+        gateway = get_llm_gateway()
 
         # Build messages with context
         llm_messages = [
@@ -161,16 +145,23 @@ async def mcp_chat(
             LLMMessage(role="user", content=user_message),
         ]
 
+        gcfg = GatewayConfig(
+            feature="mcp", organization_id=ctx.organization_id,
+            temperature=provider_cfg.get("temperature", 0.3),
+            max_tokens=provider_cfg.get("max_tokens", 4096),
+            tools=tools,
+        )
+
         if stream:
-            return await _handle_stream(request, llm, llm_messages, tools, memory, session_id, registry)
+            return await _handle_stream(request, gateway, llm_messages, gcfg, memory, session_id, registry)
         else:
-            return await _handle_chat(llm, llm_messages, tools, memory, session_id, registry, user_message)
+            return await _handle_chat(gateway, llm_messages, gcfg, memory, session_id, registry, user_message)
 
     except Exception as e:
         return {"error": str(e), "session_id": session_id, "fallback": "I encountered an error processing your request. Please try again or check that the LLM API key is configured correctly."}
 
 
-async def _handle_chat(llm, llm_messages, tools, memory, session_id, registry, user_message):
+async def _handle_chat(gateway, llm_messages, gcfg, memory, session_id, registry, user_message):
     """Handle non-streaming chat with multi-tool reasoning loop."""
     max_iterations = 6
     iteration = 0
@@ -179,30 +170,30 @@ async def _handle_chat(llm, llm_messages, tools, memory, session_id, registry, u
 
     while iteration < max_iterations:
         iteration += 1
-        response = await llm.chat(llm_messages, tools if tools else None)
+        resp = await gateway.chat(llm_messages, gcfg)
 
-        if not response.tool_calls:
+        if not resp.tool_calls:
             # No more tools needed — return final answer
-            memory.add_message("assistant", response.content)
+            memory.add_message("assistant", resp.content)
             return {
                 "session_id": session_id,
-                "content": response.content,
+                "content": resp.content,
                 "tools_called": all_tools_called,
                 "tool_results": all_tool_results,
                 "iterations": iteration,
-                "usage": response.usage,
+                "usage": resp.usage,
                 "memory_context": memory.get_context_summary(),
             }
 
         # Execute each tool call
-        for tc in response.tool_calls:
+        for tc in resp.tool_calls:
             tool_result = await registry.execute(tc.name, **tc.arguments)
             all_tools_called.append(tc.name)
             all_tool_results.append({"tool": tc.name, "arguments": tc.arguments, "result_summary": str(tool_result)[:500]})
             memory.add_tool_execution(tc.name, tc.arguments, tool_result)
 
             # Add to conversation
-            llm_messages.append(LLMMessage(role="assistant", content=response.content or f"Calling {tc.name}..."))
+            llm_messages.append(LLMMessage(role="assistant", content=resp.content or f"Calling {tc.name}..."))
             llm_messages.append(LLMMessage(role="tool", content=str(tool_result)[:4000], tool_call_id=tc.id, name=tc.name))
 
     # Max iterations reached
@@ -211,13 +202,13 @@ async def _handle_chat(llm, llm_messages, tools, memory, session_id, registry, u
     return {"session_id": session_id, "content": final, "tools_called": all_tools_called, "iterations": iteration}
 
 
-async def _handle_stream(request, llm, llm_messages, tools, memory, session_id, registry):
+async def _handle_stream(request, gateway, llm_messages, gcfg, memory, session_id, registry):
     """Handle streaming chat."""
     async def event_stream():
         yield f"data: {json.dumps({'type': 'start', 'session_id': session_id})}\n\n"
         full_response = ""
 
-        async for chunk in llm.chat_stream(llm_messages, tools):
+        async for chunk in gateway.chat_stream(llm_messages, gcfg):
             if await request.is_disconnected():
                 break
             full_response += chunk

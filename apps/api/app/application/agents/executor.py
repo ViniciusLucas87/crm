@@ -18,7 +18,7 @@ from typing import Any
 from app.application.agents.execution_log import ExecutionRecord, get_execution_log
 from app.application.agents.reasoning import ActionType, ApprovalStatus, ApprovalWorkflow, ReasoningStep, ReasoningTrace
 from app.application.agents.registry import AgentDefinition
-from app.application.llm.provider import LLMConfig, LLMMessage, LLMResponse, create_provider
+from app.application.llm.provider import LLMConfig, LLMMessage
 from app.infrastructure.mcp.tool_registry import ToolRegistry
 
 
@@ -105,7 +105,8 @@ class AgentExecutor:
         record: ExecutionRecord,
     ) -> dict[str, Any]:
         """ReAct reasoning loop: Think → Act → Observe → Repeat."""
-        llm = create_provider(self._llm_config)
+        from app.application.llm.gateway import get_llm_gateway, GatewayConfig
+        gateway = get_llm_gateway()
         iteration = 0
         pending_approvals: list[dict[str, Any]] = []
 
@@ -113,15 +114,17 @@ class AgentExecutor:
             iteration += 1
 
             # Step 1: Think — get LLM response
-            response: LLMResponse = await llm.chat(messages, tools if tools else None)
+            gcfg = GatewayConfig(feature="mcp", organization_id=1, temperature=0.3,
+                                 tools=tools if tools else None, max_tokens=4096)
+            gresp = await gateway.chat(messages, gcfg)
 
-            if not response.tool_calls:
+            if not gresp.tool_calls:
                 # Agent is done — return final answer
-                self._trace.final_answer = response.content
-                return {"answer": response.content, "iterations": iteration}
+                self._trace.final_answer = gresp.content
+                return {"answer": gresp.content, "iterations": iteration}
 
             # Step 2: Act — execute tool calls
-            for tc in response.tool_calls:
+            for tc in gresp.tool_calls:
                 # Check approval
                 approval = ApprovalWorkflow.classify(tc.name)
 
@@ -133,7 +136,7 @@ class AgentExecutor:
                         "risk": ApprovalWorkflow.risk_level(tc.name),
                     })
                     # Add tool response indicating approval is needed
-                    messages.append(LLMMessage(role="assistant", content=response.content or ""))
+                    messages.append(LLMMessage(role="assistant", content=gresp.content or ""))
                     messages.append(LLMMessage(
                         role="tool",
                         content=f"Action '{tc.name}' requires human approval. It has been queued for review.",
@@ -152,7 +155,7 @@ class AgentExecutor:
                 record.tools_called.append(tc.name)
 
                 # Add to conversation
-                messages.append(LLMMessage(role="assistant", content=response.content or ""))
+                messages.append(LLMMessage(role="assistant", content=gresp.content or ""))
                 messages.append(LLMMessage(
                     role="tool",
                     content=json.dumps(tool_result, default=str)[:4000],

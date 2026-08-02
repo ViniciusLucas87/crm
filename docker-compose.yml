@@ -58,6 +58,7 @@ services:
       dockerfile: apps/worker/Dockerfile
     env_file:
       - .env
+    command: ["celery", "-A", "worker_tasks.celery_app", "worker", "--loglevel=INFO", "--concurrency=4", "-Q", "high,normal,low,background"]
     depends_on:
       postgres:
         condition: service_healthy

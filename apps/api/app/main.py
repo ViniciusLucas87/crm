@@ -17,6 +17,7 @@ from app.presentation.api.v1.router import api_router
 startup_report = run_startup_checks()
 
 settings = get_settings()
+is_production = settings.pns_env.strip().lower() == "production"
 
 # ── Worker Manager (global, initialized at startup) ──
 # Workers are now Celery tasks (see apps/worker/worker_tasks.py).
@@ -83,6 +84,9 @@ app = FastAPI(
     title="Pacific North Systems OS API",
     version="0.1.0",
     lifespan=lifespan,
+    docs_url=None if is_production else "/docs",
+    redoc_url=None if is_production else "/redoc",
+    openapi_url=None if is_production else "/openapi.json",
 )
 
 app.state.startup_report = startup_report

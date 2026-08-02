@@ -128,13 +128,15 @@ class PostCallPipeline:
     async def _llm_generate(self, system: str, prompt: str, max_tokens: int = 500) -> str:
         """Run an LLM generation with error handling."""
         try:
-            provider = create_provider(self._llm_config)
+            from app.application.llm.gateway import get_llm_gateway, GatewayConfig
+            gateway = get_llm_gateway()
+            gcfg = GatewayConfig(feature="enrichment", organization_id=1, temperature=0.3, max_tokens=max_tokens)
             messages = [
                 LLMMessage(role="system", content=system),
                 LLMMessage(role="user", content=prompt),
             ]
-            response = await provider.complete(messages, temperature=0.3, max_tokens=max_tokens)
-            return response.content.strip()
+            resp = await gateway.chat(messages, gcfg)
+            return resp.content.strip()
         except Exception as e:
             logger.error("LLM generation failed: %s", e)
             return ""

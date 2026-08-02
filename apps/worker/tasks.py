@@ -246,29 +246,31 @@ def enrich_lead(self, lead_id: int, organization_id: int, company_name: str,
         )
         db.commit()
 
-        # ── Call LLM ──
+        # ── Call LLM via gateway ──
         prompt = ENRICHMENT_PROMPT.format(
             name=company_name, industry=industry, city=city,
             province=province, employees=employees or "unknown",
             description=description or "unknown",
         )
 
-        llm = create_provider(_llm_config)
-        messages = [
-            LLMMessage(role="system", content="You are an expert B2B sales researcher. Return JSON only. Explain every score and recommendation."),
-            LLMMessage(role="user", content=prompt),
-        ]
+        from app.application.llm.gateway import get_llm_gateway, GatewayConfig
+        from app.application.llm.provider import LLMMessage as LLMMsg
 
-        # Celery tasks are sync, so we need to run async code
+        gateway = get_llm_gateway()
+        messages = [
+            LLMMsg(role="system", content="You are an expert B2B sales researcher. Return JSON only. Explain every score and recommendation."),
+            LLMMsg(role="user", content=prompt),
+        ]
+        gcfg = GatewayConfig(feature="enrichment", organization_id=1, temperature=0.3)
         import asyncio
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            response = loop.run_until_complete(llm.chat(messages))
+            gresp = loop.run_until_complete(gateway.chat(messages, gcfg))
         finally:
             loop.close()
 
-        data = _parse_json(response.content)
+        data = _parse_json(gresp.content)
 
         # ── Update lead with enrichment data ──
         explainability = json.dumps({
@@ -627,25 +629,22 @@ def product_recommendation(self, lead_id: int, organization_id: int) -> dict:
             founder_rec=pns_fit_data.get("founder_recommendation", "LATER"),
         )
 
-        llm = create_provider(LLMConfig(
-            provider="openai", model="deepseek-chat",
-            api_key=os.environ.get("DEEPSEEK_API_KEY", ""),
-            api_base="https://api.deepseek.com/v1",
-            temperature=0.3, max_tokens=1024,
-        ))
+        from app.application.llm.gateway import get_llm_gateway, GatewayConfig
+        gateway = get_llm_gateway()
+        gcfg = GatewayConfig(feature="enrichment", organization_id=1, temperature=0.3)
         messages = [
-            LLMMessage(role="system", content="You are a senior sales engineer. Return JSON only."),
-            LLMMessage(role="user", content=prompt),
+            LLMMsg(role="system", content="You are a senior sales engineer. Return JSON only."),
+            LLMMsg(role="user", content=prompt),
         ]
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            response = loop.run_until_complete(llm.chat(messages))
+            gresp = loop.run_until_complete(gateway.chat(messages, gcfg))
         finally:
             loop.close()
 
-        data = _parse_json(response.content)
+        data = _parse_json(gresp.content)
 
         rec_json = json.dumps({
             "recommended_product": data.get("recommended_product", ""),

@@ -32,7 +32,7 @@ export const siteConfig = {
       { label: "Demo Systems", href: "/#demo-systems" },
       { label: "Process", href: "/#process" },
       { label: "About", href: "/#about" },
-      { label: "Contact", href: "/#contact" },
+      { label: "Contact", href: "/contact" },
     ],
     solutions: [
       { label: "Custom Applications", href: "/solutions#custom-business-software" },

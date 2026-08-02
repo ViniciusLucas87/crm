@@ -33,6 +33,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any
 
+from celery import Task as CeleryTask
 from celery import Celery
 from celery.signals import task_failure, task_postrun, task_prerun, task_retry, worker_process_init
 from celery.schedules import crontab
@@ -57,6 +58,26 @@ def init_worker(**kwargs):
     logger.info("Celery worker initialized — DB factory ready")
 
 
+_active_runs: dict[str, tuple[int | None, int | None]] = {}
+_overlap_locks_held: dict[str, str] = {}  # task_id → lock_key
+
+
+def _release_overlap_lock(task_id: str) -> None:
+    """Release overlap lock if this task held one. Safe no-op if not."""
+    lock_key = _overlap_locks_held.pop(task_id, None)
+    if lock_key:
+        r = _get_redis_sync()
+        if r:
+            try:
+                # Atomic compare-delete via Lua
+                r.eval(
+                    "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) else return 0 end",
+                    1, lock_key, str(task_id),
+                )
+            except Exception:
+                pass  # Redis down — lock will expire via TTL
+
+
 def _get_db():
     """Get a new DB session."""
     if _db_factory is None:
@@ -65,8 +86,86 @@ def _get_db():
     return _db_factory()
 
 
+# ═══════════════════════════════════════════════════════════
+# Overlap Prevention — Redis lock per scheduled task
+# ═══════════════════════════════════════════════════════════
+
+def _get_redis_sync():
+    """Synchronous Redis for Celery signals."""
+    import redis
+    url = os.getenv("REDIS_URL", "")
+    if not url:
+        return None
+    try:
+        return redis.from_url(url, socket_timeout=2, socket_connect_timeout=2)
+    except Exception:
+        return None
+
+OVERLAP_LOCKS: dict[str, int] = {
+    "workers.company_enrichment": 1800,     # 30m
+    "workers.fact_verification": 900,       # 15m
+    "workers.entity_resolution": 3600,      # 1h
+    "workers.relationship_discovery": 1800,
+    "workers.technology_detection": 1800,
+    "workers.buying_signal_detector": 600,
+    "workers.knowledge_decay": 7200,
+    "workers.reasoning": 1800,
+    "workers.timeline_generator": 3600,
+    "workers.opportunity_scoring": 900,
+    "workers.search_indexer": 3600,
+    "workers.recommendation_engine": 1800,
+    "workers.outbox_process_email": 30,
+    "workers.knowledge_assessment_ingestion": 60,
+    "workers.call_timeline_projection": 30,
+    "workers.call_metrics_recalculation": 60,
+    "workers.call_knowledge_ingestion": 60,
+    "workers.email_timeline_projection": 30,
+    "workers.email_metrics_recalculation": 60,
+    "workers.imap_ingestion": 120,
+}
+
+
 def _worker_name_from_task(task_name: str) -> str:
     return task_name.replace("workers.", "") if task_name.startswith("workers.") else task_name
+
+
+class _OverlapSkipped(Exception):
+    """Raised when a scheduled task is skipped due to overlap prevention."""
+
+
+class _UniqueTask(CeleryTask):
+    """Task base that prevents overlapping scheduled runs via Redis lock.
+
+    The lock is acquired in __call__ BEFORE the task body executes.
+    Release happens in on_success/on_failure/after_return via atomic Lua.
+    If Redis is down, the lock defaults to open (tasks run normally).
+    Lock TTL ensures stale locks expire without manual intervention.
+    """
+
+    def __call__(self, *args, **kwargs):
+        task_id = self.request.id
+        task_name = self.name
+
+        if task_name.startswith("workers."):
+            r = _get_redis_sync()
+            if r:
+                lock_ttl = OVERLAP_LOCKS.get(task_name, 60)
+                lock_key = f"celery:overlap:{task_name}"
+                acquired = r.set(lock_key, str(task_id), nx=True, ex=lock_ttl)
+                if not acquired:
+                    logger.warning("Skipping overlapping run of %s (lock held)", task_name)
+                    raise _OverlapSkipped(task_name)
+                _overlap_locks_held[task_id] = lock_key
+
+        return super().__call__(*args, **kwargs)
+
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        if not (einfo and isinstance(einfo.exception, _OverlapSkipped)):
+            _release_overlap_lock(task_id)
+        super().after_return(status, retval, task_id, args, kwargs, einfo)
+
+
+celery_app.Task = _UniqueTask
 
 
 @task_prerun.connect

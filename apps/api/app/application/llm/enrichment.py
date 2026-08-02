@@ -14,7 +14,7 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
-from app.application.llm.provider import LLMConfig, LLMMessage, create_provider
+from app.application.llm.provider import LLMMessage
 from app.application.llm.prompt_components import (
     ANTI_HALLUCINATION_FOOTER,
     ENRICHMENT_SYSTEM_PROMPT,
@@ -63,41 +63,25 @@ class EnrichmentService:
         if not prompt:
             return EnrichmentResult(enriched=False, content="", model_used=None)
 
-        start = time.time()
-        success = True
-        error_msg = ""
         try:
-            llm = create_provider(self._config)
+            from app.application.llm.gateway import get_llm_gateway, GatewayConfig
+            gateway = get_llm_gateway()
             messages = [
                 LLMMessage(role="system", content=ENRICHMENT_SYSTEM_PROMPT),
                 LLMMessage(role="user", content=prompt),
             ]
-            response = await llm.chat(messages)
-            result = EnrichmentResult(enriched=True, content=response.content, model_used=self._config.model)
-        except Exception as e:
-            success = False
-            error_msg = str(e)
-            result = EnrichmentResult(enriched=False, content="", model_used=None)
-
-        # Async telemetry — never blocks
-        latency = int((time.time() - start) * 1000)
-        try:
-            from app.infrastructure.telemetry import get_telemetry
-            get_telemetry().log_request(
-                org_id=context.get("_org_id", 0),
-                feature=enrichment_type,
-                provider=self._config.provider,
-                model=self._config.model,
-                prompt_name=enrichment_type,
-                input_tokens=len(prompt) // 4,
-                output_tokens=len(result.content) // 4 if result.content else 0,
-                latency_ms=latency,
-                success=success,
-                fallback_used=not result.enriched,
-                error_message=error_msg,
+            gcfg = GatewayConfig(
+                feature="enrichment", organization_id=context.get("_org_id", 1),
+                temperature=0.3, max_tokens=FEATURE_OUTPUT_TOKENS.get("enrichment", 600),
             )
-        except Exception:
-            pass
+            resp = await gateway.chat(messages, gcfg)
+            result = EnrichmentResult(
+                enriched=resp.model not in ("disabled", "redis_unavailable", "budget_blocked", "error", "lock_timeout"),
+                content=resp.content,
+                model_used=resp.model,
+            )
+        except Exception as e:
+            result = EnrichmentResult(enriched=False, content="", model_used=None)
 
         return result
 

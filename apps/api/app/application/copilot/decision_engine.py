@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
-from app.application.llm.provider import LLMConfig, LLMMessage, create_provider
+from app.application.llm.provider import LLMMessage
 
 logger = logging.getLogger(__name__)
 
@@ -187,19 +187,6 @@ class DecisionEngine:
 
     def __init__(self, llm_api_key: str | None = None):
         self._api_key = llm_api_key
-        self._provider = None
-
-    def _get_provider(self):
-        if self._provider is None and self._api_key:
-            config = LLMConfig(
-                provider="deepseek",
-                model="deepseek-chat",
-                api_key=self._api_key,
-                temperature=0.3,
-                max_tokens=1500,
-            )
-            self._provider = create_provider(config)
-        return self._provider
 
     async def analyze(
         self,
@@ -208,16 +195,10 @@ class DecisionEngine:
         conversation_history: list[dict] | None = None,
         previous_recommendations: dict | None = None,
     ) -> CoachRecommendation:
-        """Analyze the current conversation state and return coaching recommendations.
+        """Analyze the current conversation state and return coaching recommendations."""
+        from app.application.llm.gateway import get_llm_gateway, GatewayConfig
 
-        Args:
-            transcript: Recent transcript text (last ~60 seconds)
-            company_context: Known company info (industry, size, etc.)
-            conversation_history: Previous call/meeting summaries
-            previous_recommendations: Last recommendation state for continuity
-        """
-        provider = self._get_provider()
-        if not provider:
+        if not self._api_key:
             return self._empty_recommendation(error="LLM not configured")
 
         context_parts = []
@@ -235,14 +216,17 @@ class DecisionEngine:
         user_prompt = "\n\n".join(context_parts)
 
         try:
-            response = await provider.chat(
+            gateway = get_llm_gateway()
+            gcfg = GatewayConfig(feature="coaching", organization_id=1, temperature=0.3, max_tokens=1500)
+            resp = await gateway.chat(
                 messages=[
                     LLMMessage(role="system", content=COPILOT_SYSTEM_PROMPT),
                     LLMMessage(role="user", content=user_prompt),
                 ],
+                config=gcfg,
             )
 
-            data = self._parse_response(response.content)
+            data = self._parse_response(resp.content)
             return self._build_recommendation(data)
 
         except Exception as e:

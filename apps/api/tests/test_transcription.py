@@ -55,20 +55,37 @@ class TestAcceptanceFullPipeline:
 
     @pytest.mark.asyncio
     async def test_construction_company_call(self):
-        """Full pipeline with deterministic mock — no external LLM required."""
+        """Full pipeline routes through gateway — mock gateway for test."""
+        from unittest.mock import AsyncMock, patch
+        import json
+        from app.application.llm.gateway import GatewayResponse
+
         intel = ConversationIntelligence(api_key="test-key")
-        # Inject deterministic mock provider
-        intel._provider = DeterministicLLMProvider(LLMConfig(provider="mock", model="mock", api_key="x"))
+
+        # Mock gateway to return deterministic result
+        mock_gateway = AsyncMock()
+        mock_gateway.chat = AsyncMock(return_value=GatewayResponse(
+            content=json.dumps({
+                "insights": [
+                    {"category": "pain_point", "value": "outdated scheduling", "confidence": 85,
+                     "evidence": "Speaker mentioned they still use spreadsheets"},
+                    {"category": "budget", "value": "$100k-$200k allocated", "confidence": 70,
+                     "evidence": "Discussed budget for Q3 implementation"},
+                ]
+            }),
+            model="deepseek-chat",
+        ))
 
         report = IntelligenceReport()
         chunk_size = 3
-        for i in range(0, len(CONSTRUCTION_CONVERSATION), chunk_size):
-            chunk = CONSTRUCTION_CONVERSATION[i:i + chunk_size]
-            result = await intel.analyze(chunk)
-            report.insights.extend(result.insights)
+        with patch("app.application.llm.gateway.get_llm_gateway", return_value=mock_gateway):
+            for i in range(0, len(CONSTRUCTION_CONVERSATION), chunk_size):
+                chunk = CONSTRUCTION_CONVERSATION[i:i + chunk_size]
+                result = await intel.analyze(chunk)
+                report.insights.extend(result.insights)
 
         assert isinstance(report, IntelligenceReport)
-        assert len(report.insights) > 0  # Deterministic mock returns insights
+        assert len(report.insights) > 0
         assert report.analyzed_at != ""
 
     def test_segment_streaming_incremental(self):
