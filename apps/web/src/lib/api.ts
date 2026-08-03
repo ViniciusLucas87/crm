@@ -216,7 +216,7 @@ export async function listContacts(companyId: number, params: { page?: number; p
   const r = await fetch(`${API_BASE_URL}/contacts?${q}`, { cache: "no-store" });
   if (!r.ok) throw new ApiError(`Failed: ${r.status}`, r.status);
   const p = await r.json();
-  return { items: p.items.map((c: Record<string, unknown>) => ({ id: c.id, companyId: c.company_id, firstName: c.first_name, lastName: c.last_name, jobTitle: c.job_title, department: c.department, email: c.email, phone: c.phone, mobile: c.mobile, linkedin: c.linkedin, preferredContact: c.preferred_contact, isDecisionMaker: c.is_decision_maker, isPrimary: c.is_primary, confidence: c.confidence, notes: c.notes, status: c.status, createdAt: c.created_at, updatedAt: c.updated_at })), total: p.total, page: p.page, pageSize: p.page_size };
+  return { items: p.items.map((c: Record<string, unknown>) => ({ id: c.id, companyId: c.companyId ?? c.company_id, firstName: c.firstName ?? c.first_name, lastName: c.lastName ?? c.last_name, jobTitle: c.jobTitle ?? c.job_title, department: c.department, email: c.email, phone: c.phone, mobile: c.mobile, linkedin: c.linkedin, preferredContact: c.preferredContact ?? c.preferred_contact, isDecisionMaker: c.isDecisionMaker ?? c.is_decision_maker, isPrimary: c.isPrimary ?? c.is_primary, confidence: c.confidence, notes: c.notes, status: c.status, createdAt: c.createdAt ?? c.created_at, updatedAt: c.updatedAt ?? c.updated_at })), total: p.total, page: p.page, pageSize: p.pageSize ?? p.page_size };
 }
 
 export async function createContact(input: ContactCreateInput): Promise<Contact> {

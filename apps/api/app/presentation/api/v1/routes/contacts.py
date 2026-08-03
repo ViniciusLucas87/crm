@@ -81,6 +81,7 @@ def list_contacts(
     company_id: int = Query(..., description="Company ID"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
+    include_archived: bool = Query(False),
     ctx: AuthContext = Depends(require_permission("companies:read")),
     session: Session = Depends(get_db_session),
 ):
@@ -88,16 +89,20 @@ def list_contacts(
     if not company or company.organization_id != ctx.organization_id:
         raise HTTPException(404, "Company not found")
 
+    filters = [
+        Contact.company_id == company_id,
+        Contact.organization_id == ctx.organization_id,
+    ]
+    if not include_archived:
+        filters.append(Contact.status == "active")
+
     total = session.execute(
-        select(func.count()).select_from(Contact).where(
-            Contact.company_id == company_id,
-            Contact.organization_id == ctx.organization_id,
-        )
+        select(func.count()).select_from(Contact).where(*filters)
     ).scalar() or 0
 
     contacts = session.execute(
         select(Contact)
-        .where(Contact.company_id == company_id, Contact.organization_id == ctx.organization_id)
+        .where(*filters)
         .order_by(Contact.is_primary.desc(), Contact.last_name.asc())
         .offset((page - 1) * page_size)
         .limit(page_size)
