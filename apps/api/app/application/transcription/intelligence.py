@@ -136,40 +136,17 @@ class ConversationIntelligence:
 
     def __init__(self, api_key: str | None = None):
         self._api_key = api_key
-        self._provider = None
-
-    def _get_provider(self):
-        if self._provider is None and self._api_key:
-            try:
-                config = LLMConfig(
-                    provider="deepseek",
-                    model="deepseek-chat",
-                    api_key=self._api_key,
-                    temperature=0.1,
-                    max_tokens=2000,
-                )
-                self._provider = create_provider(config)
-            except (ValueError, Exception):
-                logger.warning("ConversationIntelligence: provider not available")
-                return None
-        return self._provider
 
     async def analyze(
         self,
         segments: list[TranscriptSegment],
         previous_insights: list[ConversationInsight] | None = None,
     ) -> IntelligenceReport:
-        """Analyze transcript segments and extract business intelligence.
+        """Analyze transcript segments and extract business intelligence."""
+        if not self._api_key or not segments:
+            return IntelligenceReport(analyzed_at=datetime.now(UTC).isoformat())
 
-        Args:
-            segments: Transcript segments to analyze
-            previous_insights: Previously extracted insights for continuity
-        """
-        provider = self._get_provider()
-        if not provider or not segments:
-            return IntelligenceReport(
-                analyzed_at=datetime.now(UTC).isoformat(),
-            )
+        from app.application.llm.gateway import get_llm_gateway, GatewayConfig
 
         # Build transcript text with speaker labels
         transcript_text = "\n".join(
@@ -187,13 +164,16 @@ class ConversationIntelligence:
         user_prompt = f"{previous_context}\nTranscript:\n{transcript_text}"
 
         try:
-            response = await provider.chat(
+            gateway = get_llm_gateway()
+            gcfg = GatewayConfig(feature="classification", organization_id=1, temperature=0.1, max_tokens=2000)
+            resp = await gateway.chat(
                 messages=[
                     LLMMessage(role="system", content=EXTRACTOR_SYSTEM_PROMPT),
                     LLMMessage(role="user", content=user_prompt[:8000]),
                 ],
+                config=gcfg,
             )
-            data = self._parse_json(response.content)
+            data = self._parse_json(resp.content)
             return self._build_report(data, segments)
 
         except Exception as e:

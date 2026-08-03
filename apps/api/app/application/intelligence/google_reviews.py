@@ -55,7 +55,8 @@ class GoogleReviewsProvider(IntelligenceProvider):
         return "Google Reviews Intelligence"
 
     async def collect(self, company: dict[str, Any]) -> dict[str, Any]:
-        from app.application.llm.provider import LLMConfig, LLMMessage, create_provider
+        from app.application.llm.gateway import get_llm_gateway, GatewayConfig
+        from app.application.llm.provider import LLMMessage
 
         prompt = REVIEWS_PROMPT.format(
             name=company.get("name", ""),
@@ -67,16 +68,14 @@ class GoogleReviewsProvider(IntelligenceProvider):
             category=company.get("gmaps_category", "unknown"),
         )
 
-        llm = create_provider(LLMConfig(
-            provider="openai", model=self._model, api_key=self._api_key,
-            api_base="https://api.deepseek.com/v1", temperature=0.3, max_tokens=1024,
-        ))
+        gateway = get_llm_gateway()
+        gcfg = GatewayConfig(feature="enrichment", organization_id=company.get("organization_id", 1), temperature=0.3)
         messages = [
             LLMMessage(role="system", content="You are a business intelligence researcher. Return JSON only."),
             LLMMessage(role="user", content=prompt),
         ]
-        response = await llm.chat(messages)
-        return self._parse_json(response.content)
+        resp = await gateway.chat(messages, gcfg)
+        return self._parse_json(resp.content)
 
     def normalize(self, raw: dict[str, Any]) -> dict[str, Any]:
         return {

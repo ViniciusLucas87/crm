@@ -570,7 +570,9 @@ class CoachEngine:
             return
         
         try:
-            provider = create_provider(self._llm_config)
+            from app.application.llm.gateway import get_llm_gateway, GatewayConfig
+            gateway = get_llm_gateway()
+            gcfg = GatewayConfig(feature="coaching", organization_id=1, temperature=0.3, max_tokens=200)
             
             # Compact prompt — incremental state, not full transcript
             state = self._state
@@ -620,10 +622,9 @@ class CoachEngine:
             # Stream tokens
             full_response = ""
             first_token_sent = False
-            async for token in provider.chat_stream(
+            async for token in gateway.chat_stream(
                 messages,
-                temperature=0.3,
-                max_tokens=200,
+                gcfg,
             ):
                 full_response += token
                 
@@ -732,7 +733,9 @@ class CoachEngine:
             return None
 
         try:
-            provider = create_provider(self._llm_config)
+            from app.application.llm.gateway import get_llm_gateway, GatewayConfig
+            gateway = get_llm_gateway()
+            gcfg = GatewayConfig(feature="coaching", organization_id=1, temperature=0.3, max_tokens=200)
             messages = [
                 LLMMessage(role="system", content=(
                     "You are a sales coach analyzing a live conversation. "
@@ -742,8 +745,8 @@ class CoachEngine:
                 )),
                 LLMMessage(role="user", content=f"Transcript:\n{transcript_text[-3000:]}"),
             ]
-            response = await provider.chat(messages, temperature=0.3, max_tokens=200)
-            data = json.loads(response.content)
+            resp = await gateway.chat(messages, gcfg)
+            data = json.loads(resp.content)
 
             suggestions = []
             if data.get("objection"):

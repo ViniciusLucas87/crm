@@ -28,7 +28,7 @@ from typing import Any
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from app.application.llm.provider import LLMConfig, LLMMessage, create_provider
+from app.application.llm.provider import LLMMessage
 from app.infrastructure.db.models import Company, Lead, LeadTimelineEvent
 
 logger = logging.getLogger(__name__)
@@ -164,17 +164,16 @@ class LLMDiscoveryProvider(DiscoveryProvider):
         query += ". Return JSON with company name, industry, city, province, employees, description."
 
         try:
-            llm = create_provider(LLMConfig(
-                provider="openai", model=self._model, api_key=self._api_key,
-                api_base="https://api.deepseek.com/v1", temperature=0.4, max_tokens=2048,
-            ))
+            from app.application.llm.gateway import get_llm_gateway, GatewayConfig
+            gateway = get_llm_gateway()
+            gcfg = GatewayConfig(feature="enrichment", organization_id=1, temperature=0.4, max_tokens=2048)
             messages = [
                 LLMMessage(role="system", content=DISCOVERY_SYSTEM_PROMPT),
                 LLMMessage(role="user", content=query),
             ]
-            response = await llm.chat(messages)
+            resp = await gateway.chat(messages, gcfg)
 
-            companies = self._parse_companies(response.content)
+            companies = self._parse_companies(resp.content)
             return companies
         except Exception as e:
             logger.exception("LLM discovery failed: %s", e)
@@ -269,17 +268,16 @@ Act as Pacific North Systems' founder. Think about: would I spend MY limited tim
 }}"""
 
         try:
-            llm = create_provider(LLMConfig(
-                provider="openai", model=self._model, api_key=self._api_key,
-                api_base="https://api.deepseek.com/v1", temperature=0.3, max_tokens=1536,
-            ))
+            from app.application.llm.gateway import get_llm_gateway, GatewayConfig
+            gateway = get_llm_gateway()
+            gcfg = GatewayConfig(feature="enrichment", organization_id=1, temperature=0.3, max_tokens=1536)
             messages = [
                 LLMMessage(role="system", content="You are an expert B2B sales researcher. Return JSON only. Explain every score and recommendation."),
                 LLMMessage(role="user", content=prompt),
             ]
-            response = await llm.chat(messages)
+            resp = await gateway.chat(messages, gcfg)
 
-            data = self._parse_json(response.content)
+            data = self._parse_json(resp.content)
 
             company.executive_summary = data.get("executive_summary", "") or self._fallback_summary(company)
             company.buying_signals = data.get("buying_signals", "") or ""

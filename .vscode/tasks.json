@@ -4050,6 +4050,24 @@
 			"type": "shell",
 			"command": "Start-Sleep -Seconds 65; docker compose logs worker --tail 8 2>&1; echo '---ALL RECENT---'; docker compose exec -T postgres psql -U postgres -d pns_crm -c 'SELECT direction, status, from_address FROM email_messages ORDER BY created_at DESC LIMIT 6;'",
 			"problemMatcher": []
+		},
+		{
+			"label": "Build API + verify gateway",
+			"type": "shell",
+			"command": "docker compose build api --no-cache 2>&1 | Select-Object -Last 3; docker compose up -d --force-recreate api 2>&1 | Select-Object -Last 2; Start-Sleep -Seconds 5; docker compose exec -T api python -c 'from app.application.llm.gateway import get_llm_gateway, get_budget_summary; print(\"gateway OK\"); print(get_budget_summary())'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify LLM gateway module",
+			"type": "shell",
+			"command": "docker compose exec -T api python -c 'from app.application.llm.gateway import get_llm_gateway, get_budget_summary; print(get_budget_summary())'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Commit LLM governance hardening",
+			"type": "shell",
+			"command": "git add -A; git status --short",
+			"problemMatcher": []
 		}
 	]
 }
