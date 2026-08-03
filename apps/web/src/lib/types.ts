@@ -131,7 +131,7 @@ export type Task = {
   description: string | null;
   priority: string;
   status: string;
-  dueDate: string;
+  dueDate: string | null;
   isCompleted: boolean;
   createdAt: string;
 };

@@ -5,12 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle, Circle, Clock } from "lucide-react";
-
-type Task = {
-  id: number; title: string; description?: string;
-  priority: string; status: string; dueDate: string;
-  isCompleted: boolean;
-};
+import { listTasks } from "@/lib/api";
+import type { Task } from "@/lib/types";
 
 const PRIORITY_COLORS: Record<string, "success" | "warning" | "danger" | "neutral"> = {
   high: "danger", medium: "warning", low: "neutral",
@@ -22,9 +18,8 @@ export function CompanyTasksTab({ companyId }: { companyId: number }) {
 
   const fetchTasks = useCallback(async () => {
     try {
-      const r = await fetch(`/api/tasks?company_id=${companyId}`);
-      const d = await r.json();
-      setTasks(d.items || []);
+      const data = await listTasks(companyId);
+      setTasks(data.items);
     } finally { setLoading(false); }
   }, [companyId]);
 
@@ -52,7 +47,9 @@ export function CompanyTasksTab({ companyId }: { companyId: number }) {
             {t.description && <p className="text-xs text-slate-500 mt-0.5">{t.description}</p>}
             <div className="flex items-center gap-2 mt-1">
               <Badge variant={PRIORITY_COLORS[t.priority] || "neutral"}>{t.priority}</Badge>
-              <span className="text-xs text-slate-600">{new Date(t.dueDate).toLocaleDateString()}</span>
+              {t.dueDate && (
+                <span className="text-xs text-slate-600">{new Date(t.dueDate).toLocaleDateString()}</span>
+              )}
             </div>
           </div>
         </Card>

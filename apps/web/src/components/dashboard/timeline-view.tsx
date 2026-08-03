@@ -32,7 +32,18 @@ export function TimelineView({ companyId }: { companyId?: number }) {
     if (companyId) params.set("company_id", String(companyId));
     fetch(`/api/timeline?${params}`)
       .then(r => r.json())
-      .then(d => { setEvents(d.items ?? []); setLoading(false); })
+      .then(d => {
+        setEvents((d.items ?? []).map((event: Record<string, unknown>) => ({
+          id: event.id,
+          eventType: event.event_type,
+          entityType: event.entity_type,
+          title: event.title,
+          description: event.description,
+          companyName: event.company_name,
+          occurredAt: event.occurred_at,
+        })) as TimelineEvent[]);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, [companyId]);
 
