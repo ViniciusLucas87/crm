@@ -69,18 +69,11 @@ export function PostCallQueue() {
   const pending = items.filter(i => i.status === "pending");
 
   if (pending.length === 0 && !loading) {
-    return (
-      <Card className="p-4 bg-gray-900 border-gray-700">
-        <div className="flex items-center gap-2 text-gray-500 text-sm">
-          <FileText className="w-4 h-4" />
-          No pending deliverables
-        </div>
-      </Card>
-    );
+    return null;
   }
 
   return (
-    <Card className="flex flex-col bg-gray-900 border-gray-700">
+    <Card className="fixed bottom-4 right-4 z-40 flex max-h-[70vh] w-96 flex-col bg-gray-900 border-gray-700 shadow-2xl">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
         <h3 className="text-sm font-semibold text-gray-200">Approval Queue</h3>
         <span className="text-[10px] text-gray-400">{pending.length} pending</span>

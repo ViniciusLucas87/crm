@@ -1,14 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-const API = process.env.API_URL ?? "http://api:8000";
+import { NextRequest } from "next/server";
+import { proxyAuthenticatedApi } from "@/app/api/_utils";
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ type: string }> }) {
-  const { type } = await params; const sesh = await auth();
-  const body = await req.json();
-  const res = await fetch(`${API}/api/v1/enrich/${type}`, {
-    method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${await sesh.getToken()}` },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) return NextResponse.json({ error: await res.text() }, { status: res.status });
-  return NextResponse.json(await res.json());
+type Ctx = { params: Promise<{ type: string }> };
+export async function POST(request: NextRequest, ctx: Ctx) {
+  const { type } = await ctx.params;
+  return proxyAuthenticatedApi(request, `/enrich/${type}`);
 }

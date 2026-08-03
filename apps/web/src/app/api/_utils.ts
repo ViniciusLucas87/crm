@@ -29,7 +29,11 @@ export async function proxyAuthenticatedApi(request: NextRequest, path: string):
     headers.set("Content-Type", contentType);
   }
 
-  const body = request.method === "GET" || request.method === "HEAD" ? undefined : await request.text();
+  // Preserve the exact request body. Reading uploads as text corrupts multipart
+  // files (PDFs, recordings, images) before they reach FastAPI.
+  const body = request.method === "GET" || request.method === "HEAD"
+    ? undefined
+    : await request.arrayBuffer();
 
   try {
     const response = await fetch(apiUrl, {
