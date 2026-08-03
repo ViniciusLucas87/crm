@@ -14,7 +14,7 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
-from app.application.llm.provider import LLMMessage
+from app.application.llm.provider import LLMConfig, LLMMessage
 from app.application.llm.prompt_components import (
     ANTI_HALLUCINATION_FOOTER,
     ENRICHMENT_SYSTEM_PROMPT,
@@ -64,7 +64,7 @@ class EnrichmentService:
             return EnrichmentResult(enriched=False, content="", model_used=None)
 
         try:
-            from app.application.llm.gateway import get_llm_gateway, GatewayConfig
+            from app.application.llm.gateway import FEATURE_OUTPUT_TOKENS, GatewayConfig, get_llm_gateway
             gateway = get_llm_gateway()
             messages = [
                 LLMMessage(role="system", content=ENRICHMENT_SYSTEM_PROMPT),
