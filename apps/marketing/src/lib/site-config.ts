@@ -17,6 +17,7 @@ export const siteConfig = {
     primary: [
       { label: "Home", href: "/" },
       { label: "Solutions", href: "/solutions" },
+      { label: "Free Tools", href: "/free-tools" },
       { label: "Assessment", href: "/assessment" },
       { label: "Blog", href: "/blog" },
     ],
@@ -29,6 +30,8 @@ export const siteConfig = {
     navigation: [
       { label: "Home", href: "/" },
       { label: "Solutions", href: "/solutions" },
+      { label: "Free Tools", href: "/free-tools" },
+      { label: "Business Guides", href: "/business-guides" },
       { label: "Demo Systems", href: "/#demo-systems" },
       { label: "Process", href: "/#process" },
       { label: "About", href: "/#about" },
