@@ -27,6 +27,8 @@ describe("CRM API proxy wiring", () => {
   });
 
   it("includes proxies used by document actions and decision-maker screens", () => {
+    expect(readFileSync(join(apiRoot, "documents", "route.ts"), "utf8"))
+      .toContain("`/documents${request.nextUrl.search}`");
     expect(readFileSync(join(apiRoot, "documents", "[id]", "route.ts"), "utf8"))
       .toContain("/documents/${id}");
     expect(readFileSync(join(apiRoot, "decision-maker", "[companyId]", "route.ts"), "utf8"))
