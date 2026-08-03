@@ -73,6 +73,8 @@ class DiscoveryCriteria:
     keyword: str = ""
     business_type: str = ""
     count: int = 5
+    organization_id: int = 1
+    excluded_names: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -159,22 +161,35 @@ class LLMDiscoveryProvider(DiscoveryProvider):
         if criteria.keyword:
             parts.append(f"Keywords: {criteria.keyword}")
 
-        query = "Find " + (f"{criteria.count} " if criteria.count else "5 ")
+        query = "Find exactly " + (f"{criteria.count} " if criteria.count else "5 ")
         query += "real companies matching: " + "; ".join(parts) if parts else "companies in the Pacific Northwest"
-        query += ". Return JSON with company name, industry, city, province, employees, description."
+        query += ". Return JSON with company name, industry, city, province, employees, website, and description."
+        if criteria.excluded_names:
+            query += " Do not return any of these companies already in our CRM: " + "; ".join(criteria.excluded_names[:100]) + "."
+        query += f" The companies array must contain {criteria.count or 5} distinct, non-empty results."
 
         try:
             from app.application.llm.gateway import get_llm_gateway, GatewayConfig
             gateway = get_llm_gateway()
-            gcfg = GatewayConfig(feature="enrichment", organization_id=1, temperature=0.4, max_tokens=2048)
+            gcfg = GatewayConfig(
+                feature="discovery",
+                organization_id=criteria.organization_id,
+                temperature=0.55,
+                max_tokens=1200,
+                bypass_cache=True,
+            )
             messages = [
                 LLMMessage(role="system", content=DISCOVERY_SYSTEM_PROMPT),
                 LLMMessage(role="user", content=query),
             ]
             resp = await gateway.chat(messages, gcfg)
 
+            if resp.model in {"disabled", "redis_unavailable", "budget_blocked", "error", "lock_timeout"}:
+                logger.warning("LLM discovery unavailable: %s", resp.model)
+                return []
+
             companies = self._parse_companies(resp.content)
-            return companies
+            return companies[: criteria.count or 5]
         except Exception as e:
             logger.exception("LLM discovery failed: %s", e)
             return self._fallback_discover(criteria)
@@ -360,8 +375,13 @@ Act as Pacific North Systems' founder. Think about: would I spend MY limited tim
 
         result: list[DiscoveredCompany] = []
         for c in companies_raw:
+            if not isinstance(c, dict):
+                continue
+            name = str(c.get("name", "")).strip()
+            if not name:
+                continue
             result.append(DiscoveredCompany(
-                name=str(c.get("name", "")).strip(),
+                name=name,
                 industry=str(c.get("industry", "")).strip(),
                 city=str(c.get("city", "")).strip(),
                 province=str(c.get("province", c.get("state", ""))).strip(),
@@ -417,6 +437,8 @@ class DiscoveryEngine:
         # Stage 1: Discover companies (fast — no enrichment)
         result.stage = "searching"
         result.progress_pct = 20
+        criteria.organization_id = organization_id
+        criteria.excluded_names = self._existing_company_names(organization_id)
         companies = await self._provider.discover(criteria)
         if not companies:
             result.stage = "complete"
@@ -473,6 +495,19 @@ class DiscoveryEngine:
         result.total_time_ms = int((time.time() - start) * 1000)
 
         return result
+
+    def _existing_company_names(self, org_id: int) -> list[str]:
+        """Names to exclude so repeated discovery searches produce new prospects."""
+        lead_names = self._session.execute(
+            select(Lead.name).where(Lead.organization_id == org_id).limit(100)
+        ).scalars().all()
+        company_names = self._session.execute(
+            select(Company.name).where(
+                Company.organization_id == org_id,
+                Company.is_archived.is_(False),
+            ).limit(100)
+        ).scalars().all()
+        return sorted({str(name).strip() for name in [*lead_names, *company_names] if name and str(name).strip()})
 
     def _create_lead_fast(self, org_id: int, company: DiscoveredCompany) -> Lead:
         """Create a lead immediately with discovery data only — enrichment comes later."""

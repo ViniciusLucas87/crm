@@ -34,16 +34,17 @@ LLM_MAX_INPUT_TOKENS   = _env_int("LLM_MAX_INPUT_TOKENS", 8000)
 LLM_OUT_CLASSIFICATION = _env_int("LLM_OUTPUT_CLASSIFICATION", 300)
 LLM_OUT_COACHING       = _env_int("LLM_OUTPUT_COACHING", 200)
 LLM_OUT_ENRICHMENT     = _env_int("LLM_OUTPUT_ENRICHMENT", 600)
+LLM_OUT_DISCOVERY      = _env_int("LLM_OUTPUT_DISCOVERY", 1200)
 LLM_OUT_PROPOSAL       = _env_int("LLM_OUTPUT_PROPOSAL", 800)
 LLM_OUT_MCP            = 2000
 
 FEATURE_OUTPUT_TOKENS = {
     "coaching":LLM_OUT_COACHING, "classification":LLM_OUT_CLASSIFICATION,
-    "enrichment":LLM_OUT_ENRICHMENT, "proposal":LLM_OUT_PROPOSAL,
+    "enrichment":LLM_OUT_ENRICHMENT, "discovery":LLM_OUT_DISCOVERY, "proposal":LLM_OUT_PROPOSAL,
     "mcp":LLM_OUT_MCP, "default":LLM_OUT_CLASSIFICATION,
 }
 FEATURE_CACHE_TTL = {
-    "enrichment":86400, "coaching":60, "classification":3600,
+    "enrichment":86400, "discovery":300, "coaching":60, "classification":3600,
     "proposal":3600, "mcp":300, "default":3600,
 }
 # ═══════════════════════════════════════════════════════════
@@ -53,7 +54,7 @@ FEATURE_CACHE_TTL = {
 # Feature floors: minimum tokens to reserve per feature (conservative estimate).
 # Used only when actual message tokens are below this floor.
 _FEATURE_INPUT_FLOOR = {
-    "coaching": 3000, "classification": 4000, "enrichment": 2000,
+    "coaching": 3000, "classification": 4000, "enrichment": 2000, "discovery": 1200,
     "proposal": 6000, "mcp": 6000, "default": 4000,
 }
 
@@ -634,6 +635,8 @@ def _fallback(feature: str) -> str:
         return json.dumps({"type":"observation","message":"Stay engaged with the prospect.","confidence":0.5})
     if "classification" in feature:
         return json.dumps({"result":"unknown","confidence":0.0})
+    if "discovery" in feature:
+        return json.dumps({"companies": [], "status": "llm_unavailable"})
     if "enrichment" in feature:
         return json.dumps({"summary":"LLM temporarily unavailable.","status":"pending"})
     if "proposal" in feature or "mcp" in feature:
