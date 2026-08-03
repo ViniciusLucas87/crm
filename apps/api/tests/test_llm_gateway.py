@@ -424,6 +424,14 @@ def test_cache_key_same_content_same_key():
     k2 = _cache_key("enrichment", "deepseek-chat", msgs, 0.3, 600, [], None)
     assert k1 == k2
 
+
+def test_budget_lua_uses_valid_redis_incr_signature():
+    """Redis INCR accepts only the key; an extra amount blocks every AI call."""
+    from app.application.llm.gateway import LUA_RESERVE
+
+    assert "redis.call('INCR',        KEYS[5])" in LUA_RESERVE
+    assert "redis.call('INCR',        KEYS[5], 1)" not in LUA_RESERVE
+
 # ═══════════════════════════════════════════════════════════
 # 7. FALLBACKS PER FEATURE
 # ═══════════════════════════════════════════════════════════

@@ -180,7 +180,7 @@ redis.call('INCRBYFLOAT', KEYS[1], res_cost)
 redis.call('INCRBYFLOAT', KEYS[2], res_cost)
 redis.call('INCRBYFLOAT', KEYS[3], res_cost)
 redis.call('INCRBYFLOAT', KEYS[4], res_cost)
-redis.call('INCR',        KEYS[5], 1)
+redis.call('INCR',        KEYS[5])
 redis.call('INCRBY',      KEYS[6], res_in)
 redis.call('INCRBY',      KEYS[7], res_out)
 for _, k in ipairs(KEYS) do redis.call('EXPIRE', k, ttl) end
