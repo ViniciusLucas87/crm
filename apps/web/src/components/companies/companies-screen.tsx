@@ -238,6 +238,8 @@ export function CompaniesScreen() {
                   <td className="px-4 py-3">
                     <Link
                       href={getCompanyHref(company.id)}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="font-medium text-slate-100 transition hover:text-cyan-300 focus:outline-none focus-visible:underline"
                     >
                       {company.name}

@@ -66,7 +66,7 @@ export default function BuyingSignalsPage() {
           </Card>
 
           {leadsWithSignals.map(lead => (
-            <Link key={lead.id} href={`/leads/${lead.id}` as Route}>
+            <Link key={lead.id} href={`/leads/${lead.id}` as Route} target="_blank" rel="noopener noreferrer">
               <Card className="flex items-center justify-between transition hover:bg-white/[0.02]">
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-amber-400/10 p-2"><Signal className="h-5 w-5 text-amber-400" /></div>

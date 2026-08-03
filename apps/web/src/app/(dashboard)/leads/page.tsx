@@ -165,7 +165,7 @@ export default function LeadIntelligenceHome() {
             ) : (
               <div className="space-y-1">
                 {leads.map(l => (
-                  <Link key={l.id} href={`/leads/${l.id}` as Route} className="flex items-center justify-between rounded-lg border border-white/5 px-4 py-3 transition hover:bg-white/[0.02]">
+                  <Link key={l.id} href={`/leads/${l.id}` as Route} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-lg border border-white/5 px-4 py-3 transition hover:bg-white/[0.02]">
                     <div>
                       <p className="text-sm font-medium text-white">{l.name}</p>
                       <p className="text-xs text-slate-500">{l.industry || "Unknown"} {l.city ? `· ${l.city}` : ""}</p>

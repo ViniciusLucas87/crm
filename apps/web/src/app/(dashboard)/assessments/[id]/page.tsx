@@ -89,10 +89,10 @@ export default function AssessmentDetailPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href={`/leads/${data.lead_id || ""}`} className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border hover:bg-gray-50">
+          <Link href={`/leads/${data.lead_id || ""}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border hover:bg-gray-50">
             View Lead <ArrowRight className="w-4 h-4" />
           </Link>
-          <Link href={`/companies/${data.company_id || ""}`} className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border hover:bg-gray-50">
+          <Link href={`/companies/${data.company_id || ""}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border hover:bg-gray-50">
             View Company <ExternalLink className="w-4 h-4" />
           </Link>
         </div>

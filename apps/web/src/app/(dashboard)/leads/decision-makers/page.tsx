@@ -75,7 +75,7 @@ export default function DecisionMakersPage() {
               <Card key={`${lead.id}-${i}`}>
                 <div className="flex items-start justify-between">
                   <div>
-                    <Link href={`/leads/${lead.id}` as Route} className="font-medium text-white hover:text-cyan-300">
+                    <Link href={`/leads/${lead.id}` as Route} target="_blank" rel="noopener noreferrer" className="font-medium text-white hover:text-cyan-300">
                       {dm.full_name || "Unknown Contact"}
                     </Link>
                     <p className="text-xs text-slate-400">{dm.job_title || "Unknown Role"} · {lead.name}</p>

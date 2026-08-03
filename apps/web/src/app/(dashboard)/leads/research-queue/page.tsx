@@ -90,7 +90,7 @@ export default function ResearchQueuePage() {
               <Card key={lead.id}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <Link href={`/leads/${lead.id}` as Route} className="font-medium text-white hover:text-cyan-300">{lead.name}</Link>
+                    <Link href={`/leads/${lead.id}` as Route} target="_blank" rel="noopener noreferrer" className="font-medium text-white hover:text-cyan-300">{lead.name}</Link>
                     {lead.opportunity_score != null && <Badge variant={lead.opportunity_score >= 70 ? "success" : "warning"}>{lead.opportunity_score}</Badge>}
                     {running && <Badge variant="neutral" className="animate-pulse">Running</Badge>}
                   </div>

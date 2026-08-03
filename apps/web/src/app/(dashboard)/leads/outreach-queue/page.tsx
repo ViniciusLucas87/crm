@@ -78,14 +78,14 @@ export default function OutreachQueuePage() {
                       <Send className={`h-5 w-5 ${ready ? "text-emerald-400" : "text-amber-400"}`} />
                     </div>
                     <div>
-                      <Link href={`/leads/${lead.id}` as Route} className="font-medium text-white hover:text-cyan-300">{lead.name}</Link>
+                      <Link href={`/leads/${lead.id}` as Route} target="_blank" rel="noopener noreferrer" className="font-medium text-white hover:text-cyan-300">{lead.name}</Link>
                       <p className="text-xs text-slate-400">{lead.industry} {lead.city ? `· ${lead.city}` : ""}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {lead.opportunity_score != null && <Badge variant={lead.opportunity_score >= 70 ? "success" : "warning"}>{lead.opportunity_score}</Badge>}
                     {ready ? (
-                      <Link href={`/leads/${lead.id}` as Route}>
+                      <Link href={`/leads/${lead.id}` as Route} target="_blank" rel="noopener noreferrer">
                         <Button variant="secondary" size="sm">View Outreach</Button>
                       </Link>
                     ) : (

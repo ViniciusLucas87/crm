@@ -34,7 +34,7 @@ function Section({ title, icon: Icon, items }: { title: string; icon: typeof Spa
               {item.reason && <p className="mt-1 text-xs text-cyan-400/70">{item.reason}</p>}
             </div>
             {item.companyId ? (
-              <Link href={`/companies/${item.companyId}` as Route} className="shrink-0 rounded-lg p-1.5 text-slate-600 transition hover:bg-white/5 hover:text-cyan-400">
+              <Link href={`/companies/${item.companyId}` as Route} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-lg p-1.5 text-slate-600 transition hover:bg-white/5 hover:text-cyan-400">
                 <ChevronRight className="h-4 w-4" />
               </Link>
             ) : item.score ? (

@@ -67,7 +67,7 @@ export default function OpportunityExplorerPage() {
           ) : (
             <div className="space-y-2">
               {data.results.map(r => (
-                <Link key={r.companyId} href={`/companies/${r.companyId}` as Route} className="block">
+                <Link key={r.companyId} href={`/companies/${r.companyId}` as Route} target="_blank" rel="noopener noreferrer" className="block">
                   <Card className="transition hover:border-cyan-400/20 hover:bg-white/[0.02]">
                     <div className="flex items-start justify-between">
                       <div>

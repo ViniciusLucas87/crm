@@ -132,7 +132,7 @@ export default function ImportReviewPage() {
                     <input type="checkbox" checked={selected.has(lead.id)} onChange={() => toggleSelect(lead.id)} className="mt-1 rounded" />
                     <div>
                       <div className="flex items-center gap-2">
-                        <Link href={`/leads/${lead.id}` as Route} className="font-medium text-white hover:text-cyan-300">{lead.name}</Link>
+                        <Link href={`/leads/${lead.id}` as Route} target="_blank" rel="noopener noreferrer" className="font-medium text-white hover:text-cyan-300">{lead.name}</Link>
                         {lead.opportunity_score != null && <Badge variant={lead.opportunity_score >= 70 ? "success" : "warning"}>{lead.opportunity_score}</Badge>}
                       </div>
                       <p className="text-xs text-slate-400">{lead.industry} {lead.city ? `· ${lead.city}` : ""}</p>
@@ -152,7 +152,7 @@ export default function ImportReviewPage() {
                       </div>
                     </div>
                   </div>
-                  <Link href={`/leads/${lead.id}` as Route}><ArrowRight className="h-4 w-4 text-slate-600 hover:text-cyan-400" /></Link>
+                  <Link href={`/leads/${lead.id}` as Route} target="_blank" rel="noopener noreferrer" aria-label={`Open ${lead.name} in a new tab`}><ArrowRight className="h-4 w-4 text-slate-600 hover:text-cyan-400" /></Link>
                 </div>
               </Card>
             ))}

@@ -206,7 +206,7 @@ export default function LeadWorkspacePage() {
                     <tr key={l.id} className="border-b border-white/[0.02] transition hover:bg-white/[0.01]">
                       <td className="py-3 pl-4"><input type="checkbox" checked={selected.has(l.id)} onChange={() => toggleSelect(l.id)} className="rounded" /></td>
                       <td className="py-3 pr-4">
-                        <Link href={`/leads/${l.id}` as Route} className="font-medium text-white hover:text-cyan-300">{l.name}</Link>
+                        <Link href={`/leads/${l.id}` as Route} target="_blank" rel="noopener noreferrer" className="font-medium text-white hover:text-cyan-300">{l.name}</Link>
                         <p className="text-xs text-slate-500">{l.industry || "—"} {l.city ? `· ${l.city}` : ""}</p>
                       </td>
                       <td className="py-3 pr-4">
@@ -217,7 +217,7 @@ export default function LeadWorkspacePage() {
                       <td className="py-3 pr-4"><Badge variant="neutral">{statusLabel(l.status)}</Badge></td>
                       <td className="py-3 pr-4">{enrichmentBadge(l)}</td>
                       <td className="py-3 pr-4 text-xs text-slate-500">{l.tags || "—"}</td>
-                      <td className="py-3 pr-4"><Link href={`/leads/${l.id}` as Route}><ArrowRight className="h-4 w-4 text-slate-600 hover:text-cyan-400" /></Link></td>
+                      <td className="py-3 pr-4"><Link href={`/leads/${l.id}` as Route} target="_blank" rel="noopener noreferrer" aria-label={`Open ${l.name} in a new tab`}><ArrowRight className="h-4 w-4 text-slate-600 hover:text-cyan-400" /></Link></td>
                     </tr>
                   ))}
                 </tbody>

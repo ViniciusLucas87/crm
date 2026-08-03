@@ -72,11 +72,11 @@ export default function ComparePage() {
             <tr className="border-b border-white/5">
               <th className="py-3 pr-4 text-left text-xs text-slate-500">Metric</th>
               <th className="py-3 pr-4 text-left">
-                <Link href={`/leads/${data.a.id}`} className="font-medium text-white hover:text-cyan-300">{data.a.name}</Link>
+                <Link href={`/leads/${data.a.id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-white hover:text-cyan-300">{data.a.name}</Link>
                 <p className="text-xs text-slate-500">{data.a.industry} · {data.a.city}</p>
               </th>
               <th className="py-3 pr-4 text-left">
-                <Link href={`/leads/${data.b.id}`} className="font-medium text-white hover:text-cyan-300">{data.b.name}</Link>
+                <Link href={`/leads/${data.b.id}`} target="_blank" rel="noopener noreferrer" className="font-medium text-white hover:text-cyan-300">{data.b.name}</Link>
                 <p className="text-xs text-slate-500">{data.b.industry} · {data.b.city}</p>
               </th>
             </tr>

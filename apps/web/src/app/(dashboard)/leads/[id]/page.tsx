@@ -274,7 +274,7 @@ export default function LeadDetailPage() {
       {/* Imported badge */}
       {lead.imported_company_id && (
         <Card className="border-emerald-400/10 bg-emerald-400/5">
-          <p className="text-sm text-emerald-400">✅ Imported to CRM as <Link href={`/companies/${lead.imported_company_id}` as Route} className="underline">Company #{lead.imported_company_id}</Link></p>
+          <p className="text-sm text-emerald-400">✅ Imported to CRM as <Link href={`/companies/${lead.imported_company_id}` as Route} target="_blank" rel="noopener noreferrer" className="underline">Company #{lead.imported_company_id}</Link></p>
         </Card>
       )}
 
@@ -423,7 +423,7 @@ export default function LeadDetailPage() {
                     <Card>
                       <div className="flex items-center gap-2 mb-2">
                         <Phone className="h-4 w-4 text-amber-400" /><p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Cold Call Script</p>
-                        {lead.imported_company_id && <Link href={`/companies/${lead.imported_company_id}` as Route} className="ml-auto"><Button variant="primary" size="sm">Open Company & Call</Button></Link>}
+                        {lead.imported_company_id && <Link href={`/companies/${lead.imported_company_id}` as Route} target="_blank" rel="noopener noreferrer" className="ml-auto"><Button variant="primary" size="sm">Open Company & Call</Button></Link>}
                       </div>
                       <p className="text-sm text-slate-300">{o.cold_call_script as string}</p>
                       {!lead.imported_company_id && <p className="mt-2 text-xs text-amber-300">Approve and import this lead to place and track the call in CRM.</p>}

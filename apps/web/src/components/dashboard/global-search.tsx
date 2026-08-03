@@ -1,16 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { Building2, Search, UserPlus, ClipboardList, Target, Phone, Radar } from "lucide-react";
-import type { Route } from "next";
 
 type SearchResult = {
   id: number; type: string; title: string; subtitle: string; href: string;
 };
 
 export function GlobalSearch() {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -59,7 +56,10 @@ export function GlobalSearch() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const goTo = useCallback((href: string) => { setOpen(false); router.push(href as Route); }, [router]);
+  const goTo = useCallback((href: string) => {
+    setOpen(false);
+    window.open(href, "_blank", "noopener,noreferrer");
+  }, []);
 
   const iconMap: Record<string, typeof Building2> = { Company: Building2, Contact: UserPlus, Task: ClipboardList, Opportunity: Target, Activity: Phone, Lead: Radar, Signal: Radar, Knowledge: Building2 };
 
