@@ -61,6 +61,26 @@ const STAGE_LABELS: Record<string, string> = {
 
 type Tab = "overview" | "research" | "timeline" | "outreach" | "explainability";
 
+function outreachChannels(lead: LeadFull): { email?: string; phone?: string } {
+  try {
+    const parsed = JSON.parse(lead.decision_makers_data || "{}");
+    const people = Array.isArray(parsed) ? parsed : parsed.decision_makers || [];
+    const person = people.find((item: Record<string, unknown>) => item?.email || item?.phone);
+    if (person) return { email: person.email as string | undefined, phone: person.phone as string | undefined };
+  } catch { /* use attributable website channels below */ }
+  try {
+    const website = JSON.parse(lead.website_data || "{}");
+    if (website.evidence?.redirected_cross_domain) return {};
+    return { email: website.evidence?.emails?.[0], phone: website.evidence?.phones?.[0] };
+  } catch { return {}; }
+}
+
+function emailParts(value: string): { subject: string; body: string } {
+  const lines = value.split("\n");
+  const first = lines[0]?.match(/^Subject:\s*(.+)$/i);
+  return first ? { subject: first[1], body: lines.slice(1).join("\n").trim() } : { subject: "Quick question", body: value };
+}
+
 export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [lead, setLead] = useState<LeadFull | null>(null);
@@ -69,6 +89,8 @@ export default function LeadDetailPage() {
   const [tab, setTab] = useState<Tab>("overview");
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState("");
+  const [researching, setResearching] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   const fetchLead = () => {
     setLoading(true);
@@ -92,7 +114,7 @@ export default function LeadDetailPage() {
     const r = await fetch(`/api/leads/${id}/import`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ create_company: true, create_opportunity: false }),
+      body: JSON.stringify({ create_company: true, create_contacts: true, create_opportunity: true }),
     });
     const d = await r.json();
     if (d.company_id) {
@@ -104,8 +126,17 @@ export default function LeadDetailPage() {
   };
 
   const startResearch = async () => {
-    await fetch(`/api/leads/${id}/research/run-all`, { method: "POST" });
-    fetchLead();
+    setResearching(true);
+    setActionError("");
+    try {
+      const response = await fetch(`/api/leads/${id}/research/run-all`, { method: "POST" });
+      if (!response.ok) throw new Error(`Research failed (${response.status})`);
+      await fetchLead();
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Research failed. Please retry.");
+    } finally {
+      setResearching(false);
+    }
   };
 
   const generateOutreach = async () => {
@@ -137,6 +168,7 @@ export default function LeadDetailPage() {
 
   if (loading) return <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>;
   if (!lead) return <Card><p className="text-red-400">Lead not found.</p></Card>;
+  const channels = outreachChannels(lead);
 
   return (
     <div className="space-y-6">
@@ -177,13 +209,14 @@ export default function LeadDetailPage() {
             </>
           )}
           {(lead.status === "new" || lead.status === "ready_for_review") && (
-            <Button variant="secondary" onClick={startResearch}><FlaskConical className="mr-1 h-3.5 w-3.5" />Research</Button>
+            <Button variant="secondary" onClick={startResearch} disabled={researching}><FlaskConical className="mr-1 h-3.5 w-3.5" />{researching ? "Researching website & company…" : "Research"}</Button>
           )}
           {lead.status === "approved" && !lead.outreach_data && (
             <Button variant="secondary" onClick={generateOutreach}><Send className="mr-1 h-3.5 w-3.5" />Generate Outreach</Button>
           )}
         </div>
       </div>
+      {actionError && <p className="rounded-lg border border-red-400/20 bg-red-400/5 px-3 py-2 text-sm text-red-300">{actionError}</p>}
 
       {/* Quick Stats */}
       <div className="grid gap-3 sm:grid-cols-5">
@@ -366,8 +399,18 @@ export default function LeadDetailPage() {
                 <>
                   {o.cold_email && (
                     <Card>
-                      <div className="flex items-center gap-2 mb-2"><Mail className="h-4 w-4 text-cyan-400" /><p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Cold Email</p></div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Mail className="h-4 w-4 text-cyan-400" /><p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Cold Email</p>
+                        <div className="ml-auto flex gap-2">
+                          <Button variant="secondary" size="sm" onClick={() => navigator.clipboard.writeText(o.cold_email as string)}>Copy</Button>
+                          {channels.email && (() => {
+                            const parts = emailParts(o.cold_email as string);
+                            return <a href={`mailto:${encodeURIComponent(channels.email)}?subject=${encodeURIComponent(parts.subject)}&body=${encodeURIComponent(parts.body)}`}><Button variant="primary" size="sm">Open Email to {channels.email}</Button></a>;
+                          })()}
+                        </div>
+                      </div>
                       <pre className="whitespace-pre-wrap text-sm text-slate-300 font-sans">{o.cold_email as string}</pre>
+                      {!channels.email && <p className="mt-2 text-xs text-amber-300">Add or verify a decision-maker email before sending.</p>}
                     </Card>
                   )}
                   {o.linkedin_message && (
@@ -378,8 +421,12 @@ export default function LeadDetailPage() {
                   )}
                   {o.cold_call_script && (
                     <Card>
-                      <div className="flex items-center gap-2 mb-2"><Phone className="h-4 w-4 text-amber-400" /><p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Cold Call Script</p></div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Phone className="h-4 w-4 text-amber-400" /><p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">Cold Call Script</p>
+                        {lead.imported_company_id && <Link href={`/companies/${lead.imported_company_id}` as Route} className="ml-auto"><Button variant="primary" size="sm">Open Company & Call</Button></Link>}
+                      </div>
                       <p className="text-sm text-slate-300">{o.cold_call_script as string}</p>
+                      {!lead.imported_company_id && <p className="mt-2 text-xs text-amber-300">Approve and import this lead to place and track the call in CRM.</p>}
                     </Card>
                   )}
                   {Array.isArray(o.discovery_questions) && (o.discovery_questions as string[]).length > 0 && (

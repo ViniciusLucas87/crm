@@ -115,8 +115,12 @@ async def collect_website_evidence(website: str) -> dict[str, object]:
     parser.feed(raw.decode(response.encoding or "utf-8", errors="replace"))
     text = " ".join(parser.text)
     text = re.sub(r"\s+", " ", text)[:MAX_TEXT_CHARS]
+    requested_host = (urlparse(url).hostname or "").removeprefix("www.")
+    final_host = (urlparse(final_url).hostname or "").removeprefix("www.")
     return {
+        "requested_url": url,
         "source_url": final_url,
+        "redirected_cross_domain": requested_host != final_host,
         "title": parser.title[:300],
         "meta_description": parser.description[:1_000],
         "emails": sorted(filter(None, parser.emails))[:10],

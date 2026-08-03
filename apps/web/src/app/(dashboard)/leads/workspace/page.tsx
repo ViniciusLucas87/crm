@@ -33,6 +33,8 @@ export default function LeadWorkspacePage() {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [page, setPage] = useState(1);
   const [pollingActive, setPollingActive] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkError, setBulkError] = useState("");
 
   const fetchLeads = useCallback(() => {
     const params = new URLSearchParams();
@@ -78,14 +80,23 @@ export default function LeadWorkspacePage() {
   };
 
   const bulkAction = async (action: string) => {
-    const endpoint = action === "research" ? "/api/leads/research/bulk" : "/api/leads/bulk";
-    await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: Array.from(selected), action }),
-    });
-    setSelected(new Set());
-    fetchLeads();
+    setBulkBusy(true);
+    setBulkError("");
+    try {
+      const endpoint = action === "research" ? "/api/leads/research/bulk" : "/api/leads/bulk";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selected), action }),
+      });
+      if (!response.ok) throw new Error(`${action} failed (${response.status})`);
+      setSelected(new Set());
+      fetchLeads();
+    } catch (error) {
+      setBulkError(error instanceof Error ? error.message : `${action} failed. Please retry.`);
+    } finally {
+      setBulkBusy(false);
+    }
   };
 
   const statusLabel = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
@@ -115,11 +126,12 @@ export default function LeadWorkspacePage() {
               <Button variant="secondary" size="sm" onClick={() => bulkAction("archive")}><Archive className="mr-1 h-3.5 w-3.5" />Archive</Button>
             </>
           )}
-          <Button variant="secondary" size="sm" onClick={() => bulkAction("research")} disabled={selected.size === 0}>
-            <FlaskConical className="mr-1 h-3.5 w-3.5" />Research
+          <Button variant="secondary" size="sm" onClick={() => bulkAction("research")} disabled={selected.size === 0 || bulkBusy}>
+            <FlaskConical className="mr-1 h-3.5 w-3.5" />{bulkBusy ? "Researching selected leads…" : "Research"}
           </Button>
         </div>
       </div>
+      {bulkError && <p className="rounded-lg border border-red-400/20 bg-red-400/5 px-3 py-2 text-sm text-red-300">{bulkError}</p>}
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">

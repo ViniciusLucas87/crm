@@ -23,7 +23,8 @@ type WebsiteData = {
     technology_references?: string[];
   };
   evidence?: {
-    source_url?: string; title?: string; meta_description?: string;
+    requested_url?: string; source_url?: string; redirected_cross_domain?: boolean;
+    title?: string; meta_description?: string;
     emails?: string[]; phones?: string[]; important_links?: Record<string, string>;
     evidence_chars?: number;
   };
@@ -53,6 +54,11 @@ export function WebsiteIntelCard({ data }: { data: string | null | undefined }) 
         {d.office_locations && d.office_locations.length > 0 && <div><span className="text-slate-500">Offices: </span><span className="text-slate-400">{d.office_locations.join(", ")}</span></div>}
         {d.certifications && d.certifications.length > 0 && <div><span className="text-slate-500">Certs: </span><span className="text-slate-400">{d.certifications.join(", ")}</span></div>}
       </div>
+      {evidence?.redirected_cross_domain && (
+        <p className="mt-2 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs text-amber-300">
+          Verify identity: the supplied website redirected to a different domain before using this evidence for outreach.
+        </p>
+      )}
       {parsed.analysis && <p className="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-slate-400">{parsed.analysis}</p>}
       <div className="mt-2 pt-2 border-t border-white/5 text-xs text-slate-600">
         Source: {evidence?.source_url ? <a href={evidence.source_url} target="_blank" rel="noopener noreferrer" className="text-cyan-500 hover:underline">live website evidence</a> : "Website analysis"}
