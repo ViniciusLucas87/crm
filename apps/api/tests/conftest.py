@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 from app.core.config import get_settings
 from app.infrastructure.auth import clerk as clerk_auth
 from app.infrastructure.db.base import Base
+from app.infrastructure.db import models as _models  # noqa: F401 - register all tables
 from app.infrastructure.db.session import get_db_session
 from app.main import app
 
@@ -73,6 +74,7 @@ def client(monkeypatch: pytest.MonkeyPatch) -> Generator[TestClient, None, None]
         bind=engine, autocommit=False, autoflush=False, class_=Session
     )
     Base.metadata.create_all(bind=engine)
+    monkeypatch.setattr("app.infrastructure.db.session.SessionLocal", testing_session_local)
 
     def override_db() -> Generator[Session, None, None]:
         session = testing_session_local()

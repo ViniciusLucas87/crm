@@ -12,6 +12,8 @@ export function DiagnosticsPanel() {
   const d = diagnostics;
   const t = transcription;
 
+  if (process.env.NODE_ENV === "production") return null;
+
   if (!expanded) {
     return (
       <button

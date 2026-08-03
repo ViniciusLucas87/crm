@@ -1,10 +1,4 @@
-import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-const API = process.env.API_URL ?? "http://api:8000";
+import { NextRequest } from "next/server";
+import { proxyAuthenticatedApi } from "@/app/api/_utils";
 
-export async function GET() {
-  const sesh = await auth();
-  const res = await fetch(`${API}/api/v1/agents/`, { headers: { Authorization: `Bearer ${await sesh.getToken()}` } });
-  if (!res.ok) return NextResponse.json({ error: await res.text() }, { status: res.status });
-  return NextResponse.json(await res.json());
-}
+export async function GET(request: NextRequest) { return proxyAuthenticatedApi(request, "/agents/"); }

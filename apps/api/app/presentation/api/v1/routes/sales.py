@@ -3,40 +3,19 @@ from sqlalchemy.orm import Session
 
 from app.application.events.bridge import emit
 from app.application.workers.events import EventType
-from app.application.sales.services import ActivityService, ContactService, OpportunityService, TaskService
+from app.application.sales.services import ActivityService, OpportunityService, TaskService
 from app.domain.sales.entities import (
     ActivityCreate, ActivityListResponse, ActivityRead, ActivityUpdate,
-    ContactCreate, ContactListResponse, ContactRead, ContactUpdate,
     OpportunityCreate, OpportunityListResponse, OpportunityRead, OpportunityUpdate,
     TaskCreate, TaskListResponse, TaskRead, TaskUpdate,
 )
 from app.infrastructure.auth.clerk import AuthContext, require_permission
 from app.infrastructure.db.session import get_db_session
-from app.presentation.api.v1.deps import get_activity_service, get_contact_service, get_opportunity_service, get_task_service
+from app.presentation.api.v1.deps import get_activity_service, get_opportunity_service, get_task_service
 
 router = APIRouter()
 
 # ── Contacts ──
-
-@router.post("/contacts", response_model=ContactRead)
-def create_contact(payload: ContactCreate, ctx: AuthContext = Depends(require_permission("companies:write")), svc: ContactService = Depends(get_contact_service)) -> ContactRead:
-    return svc.create(payload, ctx.organization_id)
-
-@router.get("/contacts", response_model=ContactListResponse)
-def list_contacts(company_id: int = Query(), page: int = Query(default=1, ge=1), page_size: int = Query(default=20, ge=1, le=100), search: str | None = Query(default=None), ctx: AuthContext = Depends(require_permission("companies:read")), svc: ContactService = Depends(get_contact_service)) -> ContactListResponse:
-    return svc.list(ctx.organization_id, company_id, page, page_size, search)
-
-@router.get("/contacts/{contact_id}", response_model=ContactRead)
-def get_contact(contact_id: int, ctx: AuthContext = Depends(require_permission("companies:read")), svc: ContactService = Depends(get_contact_service)) -> ContactRead:
-    return svc.get(contact_id, ctx.organization_id)
-
-@router.patch("/contacts/{contact_id}", response_model=ContactRead)
-def update_contact(contact_id: int, payload: ContactUpdate, ctx: AuthContext = Depends(require_permission("companies:write")), svc: ContactService = Depends(get_contact_service)) -> ContactRead:
-    return svc.update(contact_id, payload, ctx.organization_id)
-
-@router.delete("/contacts/{contact_id}", response_model=ContactRead)
-def delete_contact(contact_id: int, ctx: AuthContext = Depends(require_permission("companies:write")), svc: ContactService = Depends(get_contact_service)) -> ContactRead:
-    return svc.delete(contact_id, ctx.organization_id)
 
 # ── Activities ──
 
