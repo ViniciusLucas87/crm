@@ -88,12 +88,28 @@ class KnowledgeService:
         )
 
         if existing:
+            new_value = str(value)
+            changed = any((
+                existing.value != new_value,
+                existing.confidence != confidence,
+                existing.source != source,
+                existing.source_detail != source_detail,
+                existing.value_type != value_type,
+                existing.status != "active",
+                existing.manual_override,
+            ))
+
+            # Worker tasks are intentionally idempotent. Emitting FACT_UPDATED for
+            # a no-op write creates recursive event fan-out between workers.
+            if not changed:
+                return existing
+
             # Record history before updating
-            if existing.value != str(value) or existing.confidence != confidence:
+            if existing.value != new_value or existing.confidence != confidence:
                 history = KnowledgeFactHistory(
                     fact_id=existing.id,
                     previous_value=existing.value,
-                    new_value=str(value),
+                    new_value=new_value,
                     previous_confidence=existing.confidence,
                     new_confidence=confidence,
                     previous_source=existing.source,
@@ -102,7 +118,7 @@ class KnowledgeService:
                 )
                 self._db.add(history)
 
-            existing.value = str(value)
+            existing.value = new_value
             existing.confidence = confidence
             existing.source = source
             existing.source_detail = source_detail
@@ -117,7 +133,7 @@ class KnowledgeService:
                 entity_type=entity_type, entity_id=entity_id,
                 event_type="fact_updated",
                 description=f"Fact '{key}' updated: {existing.value}",
-                payload_json=json.dumps({"key": key, "value": str(value), "confidence": confidence}),
+                payload_json=json.dumps({"key": key, "value": new_value, "confidence": confidence}),
             )
             return existing
 
