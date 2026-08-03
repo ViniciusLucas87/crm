@@ -55,6 +55,24 @@ def _normalize_role(role: str | None) -> str:
     return "member"
 
 
+def _resolve_role(
+    role: str | None,
+    *,
+    clerk_user_id: str,
+    allowed_user_ids: set[str],
+) -> str:
+    """Resolve a Clerk organization role for the private CRM.
+
+    Clerk omits ``org_role`` when an allowlisted operator signs in without an
+    active organization. In that closed-access case the allowlist is the
+    authorization boundary, so the operator must retain write access. Explicit
+    Clerk roles are still respected, including an explicit ``member`` role.
+    """
+    if role is None and clerk_user_id in allowed_user_ids:
+        return "admin"
+    return _normalize_role(role)
+
+
 def _extract_bearer_token(authorization: str | None) -> str | None:
     if authorization is None:
         return None
@@ -272,7 +290,12 @@ def get_auth_context(
         clerk_org_id = claims.get("org_id")
         org_slug = claims.get("org_slug")
         org_name = claims.get("org_name")
-        role = _normalize_role(str(claims.get("org_role")) if claims.get("org_role") else None)
+        role_claim = str(claims.get("org_role")) if claims.get("org_role") else None
+        role = _resolve_role(
+            role_claim,
+            clerk_user_id=clerk_user_id,
+            allowed_user_ids=allowed_user_ids,
+        )
         full_name = claims.get("name")
     else:
         raise HTTPException(
