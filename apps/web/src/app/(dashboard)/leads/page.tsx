@@ -50,7 +50,7 @@ export default function LeadIntelligenceHome() {
   useEffect(() => {
     Promise.all([
       fetch("/api/leads/stats/summary").then(r => r.json()),
-      fetch("/api/leads/?page_size=8&sort=score_desc").then(r => r.json()),
+      fetch("/api/leads/?status=active&page_size=8&sort=score_desc").then(r => r.json()),
     ]).then(([s, l]) => {
       setStats(s);
       setLeads((l.items || []) as Lead[]);
@@ -85,6 +85,18 @@ export default function LeadIntelligenceHome() {
         <div className="space-y-4">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
       ) : (
         <>
+          <Card className="border-cyan-400/20 bg-cyan-400/5">
+            <div className="flex items-start gap-3">
+              <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-cyan-400" />
+              <div>
+                <p className="text-sm font-medium text-white">Your sales pipeline at a glance</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                  Discover finds companies, Research checks their fit and decision makers, and Outreach prepares your first contact. Nothing is sent without your approval.
+                </p>
+              </div>
+            </div>
+          </Card>
+
           {/* KPI Cards */}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <Card><p className="text-xs text-slate-500">Total Leads</p><p className="mt-1 text-2xl font-bold text-white">{stats?.total || 0}</p></Card>
@@ -138,7 +150,10 @@ export default function LeadIntelligenceHome() {
           {/* Top Leads */}
           <Card>
             <div className="mb-3 flex items-center justify-between">
-              <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Top Opportunities</h4>
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Best active opportunities</h4>
+                <p className="mt-1 text-xs text-slate-500">Highest-scoring companies still moving through your pipeline.</p>
+              </div>
               <Link href="/leads/workspace" className="text-xs text-cyan-400">View all</Link>
             </div>
             {leads.length === 0 ? (

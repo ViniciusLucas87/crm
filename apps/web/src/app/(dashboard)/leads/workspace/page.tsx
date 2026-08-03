@@ -94,7 +94,14 @@ export default function LeadWorkspacePage() {
       });
       if (!response.ok) throw new Error(`${action} failed (${response.status})`);
       setSelected(new Set());
-      setBulkNotice(action === "archive" ? `${selectedCount} lead${selectedCount === 1 ? "" : "s"} archived.` : `${selectedCount} lead${selectedCount === 1 ? "" : "s"} updated.`);
+      const noun = `${selectedCount} ${selectedCount === 1 ? "company" : "companies"}`;
+      const messages: Record<string, string> = {
+        archive: `${noun} archived and removed from the active pipeline. You can still find ${selectedCount === 1 ? "it" : "them"} under Archived.`,
+        approve: `${noun} approved and ready for the next step.`,
+        reject: `${noun} removed from the active pipeline.`,
+        research: `Research started for ${noun}. We are checking company fit, buying signals, and decision makers in the background.`,
+      };
+      setBulkNotice(messages[action] || `${noun} updated.`);
       fetchLeads();
     } catch (error) {
       setBulkError(error instanceof Error ? error.message : `${action} failed. Please retry.`);
@@ -118,9 +125,10 @@ export default function LeadWorkspacePage() {
   return (
     <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Lead Intelligence", href: "/leads" }, { label: "Workspace" }]} />
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">Lead Workspace</h2>
+          <p className="mt-1 text-sm text-slate-400">Select companies to research, approve, reject, or archive. Every change is saved automatically.</p>
         </div>
         <div className="flex gap-2">
           {selected.size > 0 && (
@@ -135,8 +143,9 @@ export default function LeadWorkspacePage() {
           </Button>
         </div>
       </div>
-      {bulkError && <p className="rounded-lg border border-red-400/20 bg-red-400/5 px-3 py-2 text-sm text-red-300">{bulkError}</p>}
+      {bulkError && <div role="alert" className="rounded-lg border border-red-400/20 bg-red-400/5 px-3 py-2"><p className="text-sm font-medium text-red-300">That action was not completed</p><p className="mt-0.5 text-xs text-slate-400">No records were removed. Please try again.</p></div>}
       {bulkNotice && <p role="status" className="rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-sm text-emerald-300">{bulkNotice}</p>}
+      {selected.size > 0 && !bulkBusy && <p className="text-xs text-cyan-300">{selected.size} selected. Choose an action above; nothing happens until you click a button.</p>}
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">

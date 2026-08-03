@@ -58,7 +58,7 @@ export default function ResearchQueuePage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-white">Research Queue</h2>
-          <p className="text-sm text-slate-400">AI research pipeline progress for active leads.</p>
+          <p className="text-sm text-slate-400">See what the system is checking and when each company is ready for review.</p>
         </div>
         <Link href="/leads/workspace" className="text-xs text-slate-400 hover:text-cyan-300">← Workspace</Link>
       </div>
@@ -71,7 +71,7 @@ export default function ResearchQueuePage() {
             <FlaskConical className="mx-auto h-10 w-10 text-cyan-400" />
             <h3 className="mt-3 text-lg font-semibold text-white">No Active Research</h3>
             <p className="mt-1 text-sm text-slate-400 max-w-md mx-auto">
-              Start AI research on leads from your workspace. Each lead progresses through a 12-stage enrichment pipeline.
+              Select companies in the workspace and click Research. We will review public company information, look for decision makers and buying signals, then prepare a simple sales summary.
             </p>
             <Link href="/leads/workspace" className="mt-4 inline-flex items-center gap-1 text-sm text-cyan-400">
               Go to Lead Workspace <ChevronRight className="h-3.5 w-3.5" />
@@ -103,7 +103,7 @@ export default function ResearchQueuePage() {
                 {/* Progress bar */}
                 <div className="mt-3 mb-2">
                   <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-                    <span>{completed}/{stages.length} stages complete</span>
+                    <span>{completed}/{stages.length} checks complete</span>
                     <span>{pct}%</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-slate-800">

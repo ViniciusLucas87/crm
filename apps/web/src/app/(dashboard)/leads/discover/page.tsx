@@ -53,11 +53,14 @@ export default function DiscoverPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ industry: ind, city: cty, keyword: kw, count }),
       });
-      if (!r.ok) { setError(`Discovery failed: ${r.status}`); return; }
+      if (!r.ok) {
+        setError("We couldn't complete this search right now. Your existing leads are safe. Please try again in a moment.");
+        return;
+      }
       const d: DiscoveryResponse = await r.json();
       setResult(d);
-    } catch (e) {
-      setError(String(e));
+    } catch {
+      setError("We couldn't reach the research service. Your existing leads are safe. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -105,22 +108,22 @@ export default function DiscoverPage() {
         <Card className="border-cyan-400/10 bg-gradient-to-br from-cyan-400/5 to-purple-400/5">
           <div className="py-8 text-center">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-cyan-400" />
-            <h3 className="mt-3 text-lg font-semibold text-white">AI Researching Companies</h3>
+            <h3 className="mt-3 text-lg font-semibold text-white">Finding good-fit companies</h3>
             <p className="mt-1 text-sm text-slate-400">
               Searching for {industry || "companies"}{city ? ` in ${city}` : ""}...
             </p>
             <div className="mt-4 space-y-1 text-xs text-slate-500">
-              <p>🔍 Searching company databases...</p>
-              <p>📊 Analyzing business profiles...</p>
-              <p>🎯 Calculating opportunity scores...</p>
-              <p>📝 Generating executive summaries...</p>
+              <p>1. Finding real companies that match your search</p>
+              <p>2. Reading their public business information</p>
+              <p>3. Estimating fit and sales potential</p>
+              <p>4. Saving useful prospects to your workspace</p>
             </div>
           </div>
         </Card>
       )}
 
       {/* Error */}
-      {error && <Card className="border-red-400/10 bg-red-400/5"><p className="text-sm text-red-400">{error}</p></Card>}
+      {error && <Card className="border-red-400/10 bg-red-400/5"><p role="alert" className="text-sm font-medium text-red-300">Search not completed</p><p className="mt-1 text-xs text-slate-400">{error}</p></Card>}
 
       {/* Results */}
       {result && (
@@ -130,9 +133,9 @@ export default function DiscoverPage() {
             <div className="flex items-center gap-3">
               <CheckCircle className="h-5 w-5 text-emerald-400" />
               <div>
-                <p className="text-sm font-medium text-white">{result.message}</p>
+                <p className="text-sm font-medium text-white">Discovery complete</p>
                 <p className="text-xs text-slate-500">
-                  Completed in {(result.total_time_ms / 1000).toFixed(1)}s ·{" "}
+                  Added {result.leads_created} new {result.leads_created === 1 ? "company" : "companies"}{result.duplicates_skipped ? ` and skipped ${result.duplicates_skipped} already in your CRM` : ""}. Completed in {(result.total_time_ms / 1000).toFixed(1)}s. {" "}
                   <Link href="/leads/workspace" className="text-cyan-400 hover:underline">
                     View in Workspace
                   </Link>
