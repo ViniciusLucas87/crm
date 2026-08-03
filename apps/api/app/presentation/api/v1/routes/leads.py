@@ -146,7 +146,10 @@ def list_leads(
     session: Session = Depends(get_db_session),
 ):
     stmt = select(Lead).where(Lead.organization_id == ctx.organization_id)
-    if status: stmt = stmt.where(Lead.status == status)
+    if status == "active":
+        stmt = stmt.where(Lead.status.notin_(("rejected", "archived", "imported")))
+    elif status:
+        stmt = stmt.where(Lead.status == status)
     if search: stmt = stmt.where(or_(Lead.name.ilike(f"%{search}%"), Lead.industry.ilike(f"%{search}%")))
     if industry: stmt = stmt.where(Lead.industry.ilike(f"%{industry}%"))
     if tag: stmt = stmt.where(Lead.tags.ilike(f"%{tag}%"))

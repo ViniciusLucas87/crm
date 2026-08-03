@@ -21,20 +21,21 @@ type Lead = {
   enrichment_status?: string; pns_fit_score?: number | null;
 };
 
-const STATUSES = ["all", "new", "researching", "ready_for_review", "needs_more_research", "approved", "rejected", "archived", "imported"];
+const STATUSES = ["active", "all", "new", "researching", "ready_for_review", "needs_more_research", "approved", "rejected", "archived", "imported"];
 
 export default function LeadWorkspacePage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState("active");
   const [sort, setSort] = useState("score_desc");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [page, setPage] = useState(1);
   const [pollingActive, setPollingActive] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkError, setBulkError] = useState("");
+  const [bulkNotice, setBulkNotice] = useState("");
 
   const fetchLeads = useCallback(() => {
     const params = new URLSearchParams();
@@ -82,6 +83,8 @@ export default function LeadWorkspacePage() {
   const bulkAction = async (action: string) => {
     setBulkBusy(true);
     setBulkError("");
+    setBulkNotice("");
+    const selectedCount = selected.size;
     try {
       const endpoint = action === "research" ? "/api/leads/research/bulk" : "/api/leads/bulk";
       const response = await fetch(endpoint, {
@@ -91,6 +94,7 @@ export default function LeadWorkspacePage() {
       });
       if (!response.ok) throw new Error(`${action} failed (${response.status})`);
       setSelected(new Set());
+      setBulkNotice(action === "archive" ? `${selectedCount} lead${selectedCount === 1 ? "" : "s"} archived.` : `${selectedCount} lead${selectedCount === 1 ? "" : "s"} updated.`);
       fetchLeads();
     } catch (error) {
       setBulkError(error instanceof Error ? error.message : `${action} failed. Please retry.`);
@@ -132,6 +136,7 @@ export default function LeadWorkspacePage() {
         </div>
       </div>
       {bulkError && <p className="rounded-lg border border-red-400/20 bg-red-400/5 px-3 py-2 text-sm text-red-300">{bulkError}</p>}
+      {bulkNotice && <p role="status" className="rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-sm text-emerald-300">{bulkNotice}</p>}
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
@@ -145,7 +150,7 @@ export default function LeadWorkspacePage() {
         </div>
         <select value={status} onChange={e => { setStatus(e.target.value === "all" ? "" : e.target.value); setPage(1); }}
           className="rounded-lg border border-white/10 bg-slate-800/50 px-3 py-2 text-sm text-white focus:border-cyan-400/50 focus:outline-none">
-          {STATUSES.map(s => <option key={s} value={s === "all" ? "" : s}>{s === "all" ? "All Statuses" : statusLabel(s)}</option>)}
+          {STATUSES.map(s => <option key={s} value={s === "all" ? "" : s}>{s === "active" ? "Active Pipeline" : s === "all" ? "All Statuses" : statusLabel(s)}</option>)}
         </select>
         <select value={sort} onChange={e => setSort(e.target.value)}
           className="rounded-lg border border-white/10 bg-slate-800/50 px-3 py-2 text-sm text-white focus:border-cyan-400/50 focus:outline-none">
