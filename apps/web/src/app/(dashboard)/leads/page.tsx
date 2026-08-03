@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { Radar, TrendingUp, Search, Sparkles, ArrowRight, Building2, FlaskConical, Send, Download, Users } from "lucide-react";
+import { Radar, TrendingUp, Search, Sparkles, ArrowRight, Building2, FlaskConical, Send, Download, Users, Home } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -66,6 +66,7 @@ export default function LeadIntelligenceHome() {
           <h2 className="mt-1 text-lg font-semibold text-white">AI Sales Research Platform</h2>
         </div>
         <div className="flex gap-2">
+          <Link href="/"><Button variant="secondary" size="sm"><Home className="mr-1 h-3.5 w-3.5" />CRM Home</Button></Link>
           <Link href="/leads/discover"><Button variant="secondary" size="sm"><Search className="mr-1 h-3.5 w-3.5" />Discover</Button></Link>
           <Link href="/leads/workspace"><Button variant="primary" size="sm">+ Add Lead</Button></Link>
         </div>

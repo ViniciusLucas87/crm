@@ -113,4 +113,4 @@ def knowledge_base(
     ctx: AuthContext = Depends(require_permission("companies:read")),
 ) -> dict:
     kb = KnowledgeBaseArchitecture()
-    return {"overview": kb.get_overview().model_dump(), "mcp_schema": kb.get_mcp_context_schema()}
+    return {"overview": kb.get_overview().model_dump(), "playbook": kb.get_playbook(), "mcp_schema": kb.get_mcp_context_schema()}

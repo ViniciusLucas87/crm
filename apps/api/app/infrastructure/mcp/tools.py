@@ -437,6 +437,11 @@ def make_knowledge_search():
         for k, v in PRICING_TIERS.items():
             if q in k.lower() or q in v["ideal_for"].lower():
                 results.append({"type": "pricing", "tier": k, **v})
+        from app.application.sales.ai_knowledge import KnowledgeBaseArchitecture
+        for item in KnowledgeBaseArchitecture.PLAYBOOK:
+            searchable = f'{item["category"]} {item["title"]} {item["summary"]} {item["content"]}'.lower()
+            if not q or q in searchable:
+                results.append({"type": "playbook", **item})
         return {"query": query, "results": results, "total": len(results)}
     return handler
 
@@ -522,7 +527,7 @@ def register_all_tools(session_factory, org_id: int) -> None:
         ], make_company_analysis(session_factory, org_id)),
 
         # Knowledge
-        ToolDefinition("knowledge_search", "Search the service catalog and pricing reference.", "knowledge", [
+        ToolDefinition("knowledge_search", "Search the PNS service catalog, pricing guidance, sales scripts, discovery playbook, objection handling, and system guidance.", "knowledge", [
             ToolParameter("query", "string", "Search term"),
         ], make_knowledge_search()),
         ToolDefinition("service_catalog", "List all services offered by Pacific North Systems.", "knowledge", [
