@@ -130,10 +130,6 @@ def _worker_name_from_task(task_name: str) -> str:
     return task_name.replace("workers.", "") if task_name.startswith("workers.") else task_name
 
 
-class _OverlapSkipped(Exception):
-    """Raised when a scheduled task is skipped due to overlap prevention."""
-
-
 class _UniqueTask(CeleryTask):
     """Task base that prevents overlapping scheduled runs via Redis lock.
 
@@ -154,15 +150,14 @@ class _UniqueTask(CeleryTask):
                 lock_key = f"celery:overlap:{task_name}"
                 acquired = r.set(lock_key, str(task_id), nx=True, ex=lock_ttl)
                 if not acquired:
-                    logger.warning("Skipping overlapping run of %s (lock held)", task_name)
-                    raise _OverlapSkipped(task_name)
+                    logger.info("Skipping overlapping run of %s (lock held)", task_name)
+                    return {"skipped": "overlap", "task": task_name}
                 _overlap_locks_held[task_id] = lock_key
 
         return super().__call__(*args, **kwargs)
 
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
-        if not (einfo and isinstance(einfo.exception, _OverlapSkipped)):
-            _release_overlap_lock(task_id)
+        _release_overlap_lock(task_id)
         super().after_return(status, retval, task_id, args, kwargs, einfo)
 
 

@@ -46,8 +46,8 @@ class TestOverlapPrevention:
         wt._get_redis_sync = self._orig_redis
         wt._overlap_locks_held.clear()
 
-    def test_second_invocation_raises_and_body_never_runs(self):
-        """Second concurrent invocation raises _OverlapSkipped, body never executes."""
+    def test_second_invocation_skips_and_body_never_runs(self):
+        """Second concurrent invocation returns a clean skip; body never executes."""
         import worker_tasks as wt
         from unittest.mock import MagicMock
 
@@ -84,15 +84,12 @@ class TestOverlapPrevention:
         assert len(body_called) == 1
         assert "task-1" in wt._overlap_locks_held
 
-        # Second invocation: lock held, should raise
+        # Second invocation: lock held, should return a clean skip
         req2 = MagicMock()
         req2.id = task2_id
         task.request = req2
-        try:
-            task.__call__()
-            assert False, "Expected _OverlapSkipped"
-        except wt._OverlapSkipped:
-            pass
+        result = task.__call__()
+        assert result == {"skipped": "overlap", "task": "workers.test_overlap"}
 
         assert len(body_called) == 1
         assert task2_id not in wt._overlap_locks_held
@@ -132,10 +129,10 @@ class TestOverlapPrevention:
             assert ttl > 0, f"{name} has zero TTL"
 
     def test_no_retry_storm_on_overlap(self):
-        """Overlap raises _OverlapSkipped, not retry -- no storm."""
+        """Overlap is represented as a successful result, not an exception."""
         import worker_tasks as wt
 
-        assert issubclass(wt._OverlapSkipped, Exception)
+        assert "_OverlapSkipped" not in vars(wt)
 
     def test_task_without_workers_prefix_skips_overlap(self):
         """Tasks without 'workers.' prefix are not overlap-protected."""
