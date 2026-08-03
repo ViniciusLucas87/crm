@@ -28,7 +28,7 @@ from app.application.sales.outreach import OutreachGenerator
 from app.application.sales.research_pipeline import ResearchPipeline, RESEARCH_STAGES, STAGE_STATUSES
 from app.application.sales.scoring import ScoringEngine
 from app.infrastructure.auth.clerk import AuthContext, require_permission
-from app.infrastructure.db.models import Company, Lead, LeadTimelineEvent, Opportunity, SavedSearch
+from app.infrastructure.db.models import Company, Contact, Lead, LeadTimelineEvent, Opportunity, SavedSearch
 from app.infrastructure.db.session import get_db_session
 
 router = APIRouter(prefix="/leads", tags=["leads"])
@@ -114,12 +114,12 @@ class BulkAction(BaseModel):
 
 class SmartImport(BaseModel):
     create_company: bool = True
+    create_contacts: bool = True
     create_opportunity: bool = True
     launch_enrichment: bool = True
     generate_analysis: bool = False
     generate_proposal: bool = False
     generate_outreach: bool = False
-    assign_owner: str | None = None
     assign_owner: str = ""
 
 
@@ -361,6 +361,14 @@ def import_to_crm(
             opportunity_score=lead.opportunity_score,
             confidence_score=lead.confidence_score,
             buying_signals=lead.buying_signals,
+            source_history=json.dumps({
+                "lead_id": lead.id,
+                "source": lead.source,
+                "website_data": lead.website_data,
+                "research_data": lead.research_data,
+                "decision_makers_data": lead.decision_makers_data,
+                "pns_fit_data": lead.pns_fit_data,
+            }),
             research_status="enriching",
             status="lead",
             owner=options.assign_owner or None,
@@ -370,6 +378,49 @@ def import_to_crm(
         lead.imported_company_id = company.id
         result["company_id"] = company.id
         result["company_name"] = company.name
+
+        # Import only attributable decision makers. A name without a source or
+        # contact channel is not sufficient evidence to create a CRM contact.
+        if options.create_contacts and lead.decision_makers_data:
+            try:
+                decision_data = json.loads(lead.decision_makers_data)
+                candidates = decision_data.get("decision_makers", []) if isinstance(decision_data, dict) else decision_data
+            except (json.JSONDecodeError, TypeError):
+                candidates = []
+            created_contacts = []
+            for candidate in candidates if isinstance(candidates, list) else []:
+                if not isinstance(candidate, dict):
+                    continue
+                full_name = str(candidate.get("name") or "").strip()
+                source_url = str(candidate.get("source_url") or "").strip()
+                email = str(candidate.get("email") or "").strip() or None
+                phone = str(candidate.get("phone") or "").strip() or None
+                linkedin = str(candidate.get("linkedin") or candidate.get("linkedin_url") or "").strip() or None
+                if not full_name or full_name.lower() in {"unknown", "n/a", "none"}:
+                    continue
+                if not (source_url or email or phone or linkedin):
+                    continue
+                names = full_name.split(maxsplit=1)
+                contact = Contact(
+                    organization_id=ctx.organization_id,
+                    company_id=company.id,
+                    first_name=names[0],
+                    last_name=names[1] if len(names) > 1 else "",
+                    job_title=str(candidate.get("role") or candidate.get("title") or "").strip() or None,
+                    email=email,
+                    phone=phone,
+                    linkedin=linkedin,
+                    is_decision_maker=True,
+                    is_primary=not created_contacts,
+                    confidence=str(candidate.get("confidence") or "researched")[:20],
+                    discovery_source="lead_web_research",
+                    notes=f"Research source: {source_url}" if source_url else "Imported from lead research evidence",
+                )
+                session.add(contact)
+                session.flush()
+                created_contacts.append(contact.id)
+            if created_contacts:
+                result["contact_ids"] = created_contacts
 
         # Timeline event
         session.add(LeadTimelineEvent(
@@ -531,7 +582,7 @@ async def research_bulk(
     ctx: AuthContext = Depends(require_permission("companies:write")),
     session: Session = Depends(get_db_session),
 ):
-    """Start research pipeline for multiple leads."""
+    """Run the complete research pipeline for multiple selected leads."""
     leads = session.execute(
         select(Lead).where(Lead.id.in_(body.ids), Lead.organization_id == ctx.organization_id)
     ).scalars().all()
@@ -539,10 +590,10 @@ async def research_bulk(
     pipeline = ResearchPipeline(session, _get_enrichment())
     results = []
     for lead in leads:
-        r = pipeline.start_pipeline(lead, ctx.organization_id)
-        results.append({"id": lead.id, "status": r["status"]})
+        r = await pipeline.run_full_pipeline(lead, ctx.organization_id)
+        results.append({"id": lead.id, "status": lead.status, "percent": r["percent"]})
 
-    return {"started": len(results), "results": results}
+    return {"completed": len(results), "results": results}
 
 
 # ═══════════════════════════════════════════════════════════

@@ -97,8 +97,18 @@ class EnrichmentService:
             "pipeline": self._pipeline(ctx),
             "next_action": self._next_action(ctx),
             "executive_summary": self._executive_summary(ctx),
+            "outreach": self._outreach(ctx),
         }
-        return prompts.get(enrichment_type, "")
+        if enrichment_type in prompts:
+            return prompts[enrichment_type]
+        if enrichment_type in {
+            "website_analysis", "business_analysis", "industry_detection",
+            "technology_detection", "buying_signals", "decision_makers",
+            "operational_challenges", "opportunity_analysis",
+            "recommended_services", "opportunity_scoring", "confidence_scoring",
+        }:
+            return self._research_stage(enrichment_type, ctx)
+        return ""
 
     # ── Short Enrichment Prompts ──
 
@@ -155,6 +165,46 @@ Platform data:
 
 Cover: overall health, AI performance, cost efficiency, and key trends.
 Be concise, data-driven, executive-friendly prose. No bullet points.
+{ANTI_HALLUCINATION_FOOTER}"""
+
+    def _research_stage(self, stage: str, ctx: str) -> str:
+        instructions = {
+            "website_analysis": "Summarize verified website evidence, including services, contact channels, operational clues, and explicit source URLs.",
+            "business_analysis": "Summarize the business model, customers, likely workflows, and clearly separate facts from inferences.",
+            "industry_detection": "Identify the most specific supported industry and explain the evidence.",
+            "technology_detection": "Identify only technologies or digital-process clues supported by the supplied evidence.",
+            "buying_signals": "List concrete buying signals, their evidence, strength, and why they matter to PNS.",
+            "decision_makers": "Return JSON with a decision_makers array. Each item must contain name, role, email, phone, source_url, confidence, and evidence. Use null when unknown.",
+            "operational_challenges": "List likely operational challenges, marking each as verified or inferred and citing the supporting evidence.",
+            "opportunity_analysis": "Assess PNS fit, entry project, expected value, sales difficulty, risks, and next best action.",
+            "recommended_services": "Recommend at most three PNS services, each tied to a specific supported pain point.",
+            "opportunity_scoring": "Return JSON with opportunity_score from 0-100 and a concise evidence-based rationale.",
+            "confidence_scoring": "Return JSON with confidence_score from 0-100, missing evidence, and the next research action.",
+        }
+        return f"""Lead research stage: {stage}
+
+CRM and website evidence:
+{ctx}
+
+Task: {instructions[stage]}
+Do not claim that a website was read unless website_evidence is present. Preserve source URLs. Do not invent people, emails, phone numbers, technologies, or business facts.
+{ANTI_HALLUCINATION_FOOTER}"""
+
+    def _outreach(self, ctx: str) -> str:
+        return f"""Create a personalized, evidence-based first-touch outreach package for Pacific North Systems.
+
+Lead context:
+{ctx}
+
+Respond with valid JSON only using exactly these keys:
+{{"primary_contact":null,"recommended_strategy":"","cold_email":"","linkedin_message":"","cold_call_script":"","discovery_questions":[],"pain_points":[],"recommended_services":"","potential_objections":[],"suggested_responses":[],"recommended_next_action":""}}
+
+Requirements:
+- Reference only facts supported by the supplied research.
+- Cold email must be under 120 words, plain language, and use one low-friction question.
+- Cold call opening must be under 30 seconds, then ask a discovery question.
+- If no named contact is verified, use the best supported role without inventing a name.
+- Never fabricate customer results, savings percentages, or social proof.
 {ANTI_HALLUCINATION_FOOTER}"""
 
     # ── Full Enrichment Prompts (JSON output) ──

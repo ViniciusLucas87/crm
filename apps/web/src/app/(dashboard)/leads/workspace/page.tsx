@@ -78,7 +78,8 @@ export default function LeadWorkspacePage() {
   };
 
   const bulkAction = async (action: string) => {
-    await fetch("/api/leads/bulk", {
+    const endpoint = action === "research" ? "/api/leads/research/bulk" : "/api/leads/bulk";
+    await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids: Array.from(selected), action }),

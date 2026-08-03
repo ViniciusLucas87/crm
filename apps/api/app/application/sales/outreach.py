@@ -83,6 +83,11 @@ class OutreachGenerator:
             "opportunity_score": lead.opportunity_score,
             "buying_signals": lead.buying_signals or "",
             "executive_summary": lead.executive_summary or "",
+            "website_research": lead.website_data or "",
+            "research": lead.research_data or "",
+            "decision_makers": lead.decision_makers_data or "",
+            "pns_fit": lead.pns_fit_data or "",
+            "recommended_services": lead.recommended_services or "",
         }
 
     def _fallback_outreach(self, lead: Lead) -> dict[str, Any]:
@@ -100,8 +105,8 @@ class OutreachGenerator:
                 f"Companies in {ind} often face challenges with [operational inefficiency / manual processes / scaling technology].\n\n"
                 f"Pacific North Systems specializes in custom software solutions that help {ind} companies "
                 f"[automate workflows / modernize operations / improve efficiency]. "
-                f"We've helped similar organizations reduce operational overhead by 30-40%.\n\n"
-                f"Would you be open to a brief conversation about how we might support {name}'s growth?\n\n"
+                f"We build practical systems around the workflows a team already uses, starting with the highest-friction process.\n\n"
+                f"Would a short conversation about where manual work is slowing {name} down be useful?\n\n"
                 f"Best regards,\n[Your Name]"
             ),
             "linkedin_message": (

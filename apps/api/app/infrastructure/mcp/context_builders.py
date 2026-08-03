@@ -34,6 +34,7 @@ class CompanyContext(BaseModel):
     tech_stack: str | None
     description: str | None
     linkedin_url: str | None
+    research_context: str | None
     contacts: list["ContactSummary"]
     activities_recent: list["ActivitySummary"]
     opportunities_open: list["OpportunitySummary"]
@@ -48,6 +49,7 @@ class CompanyContext(BaseModel):
             opportunity_score=c.opportunity_score, confidence_score=c.confidence_score,
             buying_signals=c.buying_signals, research_status=c.research_status,
             tech_stack=c.tech_stack, description=c.description, linkedin_url=c.linkedin_url,
+            research_context=c.source_history,
             contacts=[ContactSummary.from_contact(ct) for ct in contacts],
             activities_recent=[ActivitySummary.from_activity(a) for a in activities],
             opportunities_open=[OpportunitySummary.from_opportunity(o) for o in opps],

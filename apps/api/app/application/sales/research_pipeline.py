@@ -108,6 +108,7 @@ class ResearchPipeline:
 
         try:
             result = await self._execute_stage(lead, stage_key)
+            self._apply_stage_result(lead, stage_key, result)
             stage["status"] = "complete"
             stage["result"] = result.get("summary", "")
             _add_timeline(self._session, org_id, lead.id, f"stage_{stage_key}", f"Stage complete: {stage['label']}")
@@ -131,13 +132,10 @@ class ResearchPipeline:
     async def run_full_pipeline(self, lead: Lead, org_id: int) -> dict[str, Any]:
         """Run all pending stages sequentially."""
         self.start_pipeline(lead, org_id)
+        for stage_key in [stage["key"] for stage in RESEARCH_STAGES]:
+            await self.run_stage(lead, org_id, stage_key)
+
         stages = self.get_stages(lead)
-
-        for stage in stages:
-            if stage["status"] in ("complete", "skipped"):
-                continue
-            await self.run_stage(lead, org_id, stage["key"])
-
         lead.status = "ready_for_review"
         lead.research_stages = json.dumps(stages)
         self._session.add(lead)
@@ -158,15 +156,81 @@ class ResearchPipeline:
             "description": lead.description or "",
         }
 
+        if stage_key == "website_analysis" and lead.website:
+            try:
+                from app.application.intelligence.web_fetch import collect_website_evidence
+
+                context["website_evidence"] = await collect_website_evidence(lead.website)
+            except Exception as exc:
+                context["website_evidence_error"] = str(exc)
+
         if self._enrichment and self._enrichment.available:
             result = await self._enrichment.enrich(stage_key, context)
             if result.enriched:
-                return {"summary": result.content, "confidence": result.confidence}
+                return {
+                    "summary": result.content,
+                    "confidence": result.confidence,
+                    "evidence": context.get("website_evidence"),
+                }
         else:
             # Simulate completion when LLM is unavailable
             time.sleep(0.05)
 
         return {"summary": self._fallback_summary(lead, stage_key), "confidence": "medium"}
+
+    @staticmethod
+    def _parse_json_content(content: str) -> dict[str, Any] | None:
+        candidate = content.strip()
+        if "```json" in candidate:
+            candidate = candidate.split("```json", 1)[1].split("```", 1)[0]
+        elif candidate.startswith("```"):
+            candidate = candidate.split("```", 1)[1].split("```", 1)[0]
+        try:
+            value = json.loads(candidate)
+            return value if isinstance(value, dict) else None
+        except (json.JSONDecodeError, TypeError):
+            return None
+
+    def _apply_stage_result(self, lead: Lead, stage_key: str, result: dict[str, Any]) -> None:
+        """Persist research outputs so outreach and the PNS agent can consume them."""
+        summary = str(result.get("summary", "")).strip()
+        research: dict[str, Any] = {}
+        if lead.research_data:
+            try:
+                loaded = json.loads(lead.research_data)
+                if isinstance(loaded, dict):
+                    research = loaded
+            except (json.JSONDecodeError, TypeError):
+                pass
+        research[stage_key] = {
+            "content": summary,
+            "confidence": result.get("confidence", "medium"),
+            "researched_at": datetime.now(UTC).isoformat(),
+        }
+        lead.research_data = json.dumps(research)
+
+        parsed = self._parse_json_content(summary)
+        if stage_key == "website_analysis":
+            lead.website_data = json.dumps({
+                "evidence": result.get("evidence"),
+                "analysis": summary,
+            })
+        elif stage_key == "buying_signals":
+            lead.buying_signals = summary
+        elif stage_key == "decision_makers":
+            lead.decision_makers_data = json.dumps(parsed) if parsed else summary
+        elif stage_key == "recommended_services":
+            lead.recommended_services = summary
+        elif stage_key == "executive_summary":
+            lead.executive_summary = summary
+        elif stage_key == "opportunity_scoring" and parsed:
+            score = parsed.get("opportunity_score")
+            if isinstance(score, (int, float)):
+                lead.opportunity_score = max(0, min(100, int(score)))
+        elif stage_key == "confidence_scoring" and parsed:
+            score = parsed.get("confidence_score")
+            if isinstance(score, (int, float)):
+                lead.confidence_score = max(0, min(100, int(score)))
 
     def _fallback_summary(self, lead: Lead, stage_key: str) -> str:
         """Generate fallback text when LLM is unavailable."""

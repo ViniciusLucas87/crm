@@ -22,6 +22,12 @@ type WebsiteData = {
     office_locations?: string[]; certifications?: string[];
     technology_references?: string[];
   };
+  evidence?: {
+    source_url?: string; title?: string; meta_description?: string;
+    emails?: string[]; phones?: string[]; important_links?: Record<string, string>;
+    evidence_chars?: number;
+  };
+  analysis?: string;
   processing_time_ms?: number;
 };
 
@@ -29,6 +35,7 @@ export function WebsiteIntelCard({ data }: { data: string | null | undefined }) 
   const parsed = parseJSON<WebsiteData>(data);
   if (!parsed || parsed.status === "failed") return null;
   const d = parsed.data || {};
+  const evidence = parsed.evidence;
 
   return (
     <Card className="border-green-400/10 bg-gradient-to-r from-green-400/5 to-teal-400/5">
@@ -37,16 +44,20 @@ export function WebsiteIntelCard({ data }: { data: string | null | undefined }) 
         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-green-300">Website Intelligence</p>
       </div>
       <div className="grid gap-2 sm:grid-cols-2 text-xs">
-        {d.website_title && <div><span className="text-slate-500">Title: </span><span className="text-slate-300">{d.website_title}</span></div>}
+        {(evidence?.title || d.website_title) && <div><span className="text-slate-500">Title: </span><span className="text-slate-300">{evidence?.title || d.website_title}</span></div>}
         {d.services && d.services.length > 0 && <div><span className="text-slate-500">Services: </span><span className="text-slate-300">{d.services.slice(0, 4).join(", ")}</span></div>}
         {d.industries_served && d.industries_served.length > 0 && <div><span className="text-slate-500">Industries: </span><span className="text-slate-300">{d.industries_served.join(", ")}</span></div>}
-        {d.phone_numbers && d.phone_numbers.length > 0 && <div><span className="text-slate-500">Phone: </span><span className="text-slate-300">{d.phone_numbers[0]}</span></div>}
-        {d.general_email && <div><span className="text-slate-500">Email: </span><span className="text-cyan-400">{d.general_email}</span></div>}
+        {(evidence?.phones?.[0] || d.phone_numbers?.[0]) && <div><span className="text-slate-500">Phone: </span><span className="text-slate-300">{evidence?.phones?.[0] || d.phone_numbers?.[0]}</span></div>}
+        {(evidence?.emails?.[0] || d.general_email) && <div><span className="text-slate-500">Email: </span><span className="text-cyan-400">{evidence?.emails?.[0] || d.general_email}</span></div>}
         {d.sales_email && <div><span className="text-slate-500">Sales: </span><span className="text-cyan-400">{d.sales_email}</span></div>}
         {d.office_locations && d.office_locations.length > 0 && <div><span className="text-slate-500">Offices: </span><span className="text-slate-400">{d.office_locations.join(", ")}</span></div>}
         {d.certifications && d.certifications.length > 0 && <div><span className="text-slate-500">Certs: </span><span className="text-slate-400">{d.certifications.join(", ")}</span></div>}
       </div>
-      <div className="mt-2 pt-2 border-t border-white/5 text-xs text-slate-600">Source: Website analysis{parsed.processing_time_ms ? ` · ${(parsed.processing_time_ms / 1000).toFixed(1)}s` : ""}</div>
+      {parsed.analysis && <p className="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-slate-400">{parsed.analysis}</p>}
+      <div className="mt-2 pt-2 border-t border-white/5 text-xs text-slate-600">
+        Source: {evidence?.source_url ? <a href={evidence.source_url} target="_blank" rel="noopener noreferrer" className="text-cyan-500 hover:underline">live website evidence</a> : "Website analysis"}
+        {evidence?.evidence_chars ? ` · ${evidence.evidence_chars.toLocaleString()} characters read` : ""}
+      </div>
     </Card>
   );
 }

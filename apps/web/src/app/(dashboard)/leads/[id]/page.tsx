@@ -104,7 +104,7 @@ export default function LeadDetailPage() {
   };
 
   const startResearch = async () => {
-    await fetch(`/api/leads/${id}/research/start`, { method: "POST" });
+    await fetch(`/api/leads/${id}/research/run-all`, { method: "POST" });
     fetchLead();
   };
 

@@ -11,6 +11,15 @@ def test_enrichment_service_initializes_when_configured() -> None:
     assert service.available is True
 
 
+def test_revenue_pipeline_prompts_are_wired() -> None:
+    service = EnrichmentService(api_key="test-key")
+    context = {"name": "Example Co", "website_evidence": {"source_url": "https://example.com"}}
+
+    assert "website evidence" in service._get_prompt("website_analysis", context).lower()
+    assert "valid JSON" in service._get_prompt("outreach", context)
+    assert "decision_makers" in service._get_prompt("decision_makers", context)
+
+
 @pytest.mark.asyncio
 async def test_enrichment_uses_gateway_output_cap(monkeypatch: pytest.MonkeyPatch) -> None:
     class FakeGateway:
