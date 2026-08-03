@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, CheckCircle, Database, FileText, Lightbulb, Search, Shield } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, CheckCircle, Database, FileText, Home, Lightbulb, Radar, Search, Shield, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 
 type Category = { id: string; name: string; description: string; itemCount: number; status: string };
 type PlaybookItem = { category: string; title: string; summary: string; content: string };
@@ -38,10 +41,18 @@ export default function KnowledgeBasePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">AI Knowledge Base</p>
-        <h2 className="mt-1 text-lg font-semibold text-white">PNS Sales & System Playbook</h2>
-        <p className="mt-1 text-sm text-slate-400">Learn how we sell, contact leads, qualify opportunities, and use the CRM safely.</p>
+      <Breadcrumbs items={[{ label: "CRM Home", href: "/" }, { label: "AI Knowledge Base" }]} />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">AI Knowledge Base</p>
+          <h2 className="mt-1 text-lg font-semibold text-white">PNS Sales & System Playbook</h2>
+          <p className="mt-1 text-sm text-slate-400">Learn how we sell, contact leads, qualify opportunities, and use the CRM safely.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/"><Button variant="secondary" size="sm"><Home className="mr-1 h-3.5 w-3.5" />CRM Home</Button></Link>
+          <Link href="/leads"><Button variant="secondary" size="sm"><Radar className="mr-1 h-3.5 w-3.5" />Lead Intelligence</Button></Link>
+          <Link href="/ai/explorer"><Button variant="secondary" size="sm"><Sparkles className="mr-1 h-3.5 w-3.5" />AI Explorer</Button></Link>
+        </div>
       </div>
 
       {data && <Card className="border-cyan-400/10 bg-cyan-400/5"><div className="flex items-start gap-3"><Lightbulb className="mt-1 h-5 w-5 text-cyan-400" /><div><p className="text-sm font-medium text-white">Ready for the team and AI assistants</p><p className="mt-1 text-xs text-slate-400">{data.message}</p></div></div></Card>}
