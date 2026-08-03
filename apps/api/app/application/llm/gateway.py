@@ -128,6 +128,12 @@ def _get_redis():
     except Exception: _redis = False; return False
 
 
+def _reset_redis() -> None:
+    """Drop a stale async Redis client so the next command reconnects cleanly."""
+    global _redis
+    _redis = None
+
+
 # ═══════════════════════════════════════════════════════════
 # ATOMIC REDIS LUA — reservation + release
 # ═══════════════════════════════════════════════════════════
@@ -298,8 +304,17 @@ class LLMGateway:
         lk = f"llm:lock:{cache_key}"; lt = str(uuid.uuid4())
         try:
             acq = await r.set(lk, lt, nx=True, ex=LLM_LOCK_TIMEOUT_SEC)
-        except Exception:
-            return GatewayResponse(content=_fallback(f), model="redis_unavailable")
+        except Exception as exc:
+            logger.warning("LLM Redis lock failed; reconnecting once: %s", str(exc)[:200])
+            _reset_redis()
+            r = _get_redis()
+            if r is False:
+                return GatewayResponse(content=_fallback(f), model="redis_unavailable")
+            try:
+                acq = await r.set(lk, lt, nx=True, ex=LLM_LOCK_TIMEOUT_SEC)
+            except Exception as retry_exc:
+                logger.error("LLM Redis lock unavailable after reconnect: %s", str(retry_exc)[:200])
+                return GatewayResponse(content=_fallback(f), model="redis_unavailable")
 
         if not acq:
             for _ in range(int(LLM_LOCK_WAIT_SEC * 10)):
@@ -336,7 +351,8 @@ class LLMGateway:
                     str(LLM_ORG_DAILY_LIMIT), str(LLM_ORG_MONTHLY_LIMIT),
                     str(LLM_ORG_DAILY_REQUESTS), str(LLM_ORG_DAILY_IN_TOKENS), str(LLM_ORG_DAILY_OUT_TOKENS),
                     str(res_cost), str(res_in), str(res_out), "2592000")
-            except Exception:
+            except Exception as exc:
+                logger.error("LLM Redis budget reservation failed: %s", str(exc)[:200])
                 return GatewayResponse(content=_fallback(f), model="redis_unavailable")
 
             if not res or res[0] != b'ok':
