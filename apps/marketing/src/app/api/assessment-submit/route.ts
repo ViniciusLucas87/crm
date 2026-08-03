@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { buildToolPayload } from "@/lib/tool-submission";
 
 export const runtime = "nodejs";
 
@@ -22,6 +23,12 @@ async function checkCrmHealth(crmUrl: string): Promise<boolean> {
 }
 
 function buildPayload(body: Record<string, unknown>) {
+  // Tool-style submission (from free-tools pages)
+  if (body.source_tool || body.calculated_summary) {
+    return buildToolPayload(body);
+  }
+
+  // Standard assessment submission
   const contactName = String(body.contactName || "");
   const nameParts = contactName.split(" ");
   return {
@@ -114,12 +121,16 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    if (!body.contactEmail || !body.contactName) {
+    // Accept both assessment-style (contactName/contactEmail) and tool-style (name/email)
+    const effectiveName = String(body.contactName || body.name || "");
+    const effectiveEmail = String(body.contactEmail || body.email || "");
+
+    if (!effectiveEmail || !effectiveName) {
       return NextResponse.json({ error: "Name and email are required." }, { status: 400 });
     }
 
     // Server-side email validation
-    if (!EMAIL_RE.test(String(body.contactEmail))) {
+    if (!EMAIL_RE.test(effectiveEmail)) {
       return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
     }
 
