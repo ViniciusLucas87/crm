@@ -5,7 +5,7 @@ import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
-import { Building2, CircleUserRound, LayoutDashboard, LogOut, Menu, Sparkles, X, Users, Target, ClipboardList, FolderKanban, FileText, FileCheck, BarChart3, Settings, Sun, Search, CalendarCheck2, Mail, Lightbulb, BookOpen, Phone, Radar, FlaskConical, Signal, Bookmark, Send, Download, TrendingUp, Brain, Shield, Activity } from "lucide-react";
+import { Building2, CircleUserRound, LayoutDashboard, LogOut, Menu, Sparkles, X, Users, Target, ClipboardList, FolderKanban, FileText, FileCheck, BarChart3, Settings, Sun, Search, CalendarCheck2, Mail, Lightbulb, BookOpen, Phone, PhoneCall, Radar, FlaskConical, Signal, Bookmark, Send, Download, TrendingUp, Brain, Shield, Activity } from "lucide-react";
 import { DashboardErrorBoundary } from "@/components/dashboard/error-boundary";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ const navigation: NavGroup[] = [
     items: [
       { label: "Dashboard", icon: LayoutDashboard, href: "/" as Route, active: true },
       { label: "Today", icon: CalendarCheck2, href: "/today" as Route, active: true },
+      { label: "Call Center Phone", icon: PhoneCall, href: "/call-center" as Route, active: true },
     ],
   },
   {

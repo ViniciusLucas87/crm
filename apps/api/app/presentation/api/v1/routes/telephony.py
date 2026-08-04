@@ -13,8 +13,10 @@ import uuid
 from datetime import UTC, datetime
 from functools import lru_cache
 
+import httpx
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -27,7 +29,7 @@ from app.application.telephony import (
     is_recording_enabled,
 )
 from app.infrastructure.auth.clerk import AuthContext, require_permission
-from app.infrastructure.db.models import Call, Task, Activity, Contact
+from app.infrastructure.db.models import Call, Task, Activity, Company, Contact
 from app.infrastructure.db.session import get_db_session
 
 logger = logging.getLogger(__name__)
@@ -160,7 +162,7 @@ async def register_browser(
 
 @router.post("/telephony/call")
 async def start_outbound_call(
-    company_id: int = Query(),
+    company_id: int | None = Query(None),
     phone_number: str = Query(),
     contact_id: int | None = Query(None),
     ctx: AuthContext = Depends(require_permission("companies:write")),
@@ -189,6 +191,235 @@ async def start_outbound_call(
         "phone_number": phone_number,
         "caller_id": caller_id,
         "provider": svc.provider_name,
+    }
+
+
+class BrowserCallCreate(BaseModel):
+    phone_number: str
+    company_id: int | None = None
+    contact_id: int | None = None
+
+
+class BrowserCallUpdate(BaseModel):
+    status: str = Field(pattern="^(dialing|ringing|connected|ended|failed)$")
+    duration_seconds: int = Field(default=0, ge=0, le=86400)
+
+
+class SmsSendRequest(BaseModel):
+    phone_number: str
+    message: str = Field(min_length=1, max_length=1000)
+    company_id: int | None = None
+    contact_id: int | None = None
+
+
+def _validate_crm_links(
+    session: Session,
+    organization_id: int,
+    company_id: int | None,
+    contact_id: int | None,
+) -> str | None:
+    """Ensure optional CRM links belong to the authenticated organization."""
+    if company_id is not None:
+        company = session.execute(
+            select(Company).where(Company.id == company_id, Company.organization_id == organization_id)
+        ).scalar_one_or_none()
+        if not company:
+            return "Company not found"
+    if contact_id is not None:
+        contact = session.execute(
+            select(Contact).where(Contact.id == contact_id, Contact.organization_id == organization_id)
+        ).scalar_one_or_none()
+        if not contact or (company_id is not None and contact.company_id != company_id):
+            return "Contact not found"
+    return None
+
+
+@router.post("/telephony/calls/browser")
+def create_browser_call(
+    payload: BrowserCallCreate,
+    ctx: AuthContext = Depends(require_permission("telephony:write")),
+    session: Session = Depends(get_db_session),
+):
+    """Create the CRM ledger entry for a browser WebRTC call."""
+    phone_number = _normalize_phone(payload.phone_number)
+    if not _validate_phone(phone_number):
+        return JSONResponse(content={"error": "Enter a valid phone number"}, status_code=422)
+    link_error = _validate_crm_links(session, ctx.organization_id, payload.company_id, payload.contact_id)
+    if link_error:
+        return JSONResponse(content={"error": link_error}, status_code=404)
+
+    call = Call(
+        public_uuid=str(uuid.uuid4()),
+        organization_id=ctx.organization_id,
+        company_id=payload.company_id,
+        contact_id=payload.contact_id,
+        provider="telnyx_webrtc",
+        direction="outbound",
+        status="dialing",
+        phone_number=phone_number,
+        caller_id=PROVIDER_CONFIGS.get(TELEPHONY_PROVIDER, {}).get("phone_number"),
+        normalized_destination_number=phone_number,
+        started_at=datetime.now(UTC),
+        created_by=str(ctx.user_id),
+    )
+    session.add(call)
+    session.commit()
+    session.refresh(call)
+    return {"id": call.id, "call_uuid": call.public_uuid, "status": call.status}
+
+
+@router.patch("/telephony/calls/browser/{call_id}")
+def update_browser_call(
+    call_id: int,
+    payload: BrowserCallUpdate,
+    ctx: AuthContext = Depends(require_permission("telephony:write")),
+    session: Session = Depends(get_db_session),
+):
+    """Update a browser call without exposing provider credentials."""
+    call = session.execute(
+        select(Call).where(Call.id == call_id, Call.organization_id == ctx.organization_id)
+    ).scalar_one_or_none()
+    if not call:
+        return JSONResponse(content={"error": "Call not found"}, status_code=404)
+
+    call.status = payload.status
+    call.duration_seconds = payload.duration_seconds
+    if payload.status == "connected" and not call.connected_at:
+        call.connected_at = datetime.now(UTC)
+    if payload.status in {"ended", "failed"}:
+        call.ended_at = datetime.now(UTC)
+    session.commit()
+    return {"id": call.id, "status": call.status}
+
+
+@router.post("/telephony/sms")
+async def send_sms(
+    payload: SmsSendRequest,
+    ctx: AuthContext = Depends(require_permission("telephony:write")),
+    session: Session = Depends(get_db_session),
+):
+    """Send a one-to-one operational text and store it in CRM history."""
+    from app.application.intake.sms import can_send_sms
+
+    phone_number = _normalize_phone(payload.phone_number)
+    if not _validate_phone(phone_number):
+        return JSONResponse(content={"error": "Enter a valid phone number"}, status_code=422)
+    link_error = _validate_crm_links(session, ctx.organization_id, payload.company_id, payload.contact_id)
+    if link_error:
+        return JSONResponse(content={"error": link_error}, status_code=404)
+
+    allowed, reason = can_send_sms(session, ctx.organization_id, phone_number)
+    if not allowed:
+        message = "This number opted out of text messages" if reason == "phone_suppressed" else "Text message cannot be sent"
+        return JSONResponse(content={"error": message}, status_code=409)
+
+    api_key = os.environ.get("TELNYX_API_KEY", "")
+    from_phone = os.environ.get("TELNYX_PHONE_NUMBER", "")
+    messaging_profile_id = os.environ.get("TELNYX_MESSAGING_PROFILE_ID", "")
+    if not api_key or not from_phone:
+        return JSONResponse(content={"error": "Text messaging is not configured"}, status_code=503)
+
+    body = {
+        "from": from_phone,
+        "to": phone_number,
+        "text": payload.message.strip(),
+        "webhook_url": os.environ.get("API_PUBLIC_URL", "").rstrip("/") + "/api/v1/telephony/sms/webhook",
+    }
+    if messaging_profile_id:
+        body["messaging_profile_id"] = messaging_profile_id
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        response = await client.post(
+            "https://api.telnyx.com/v2/messages",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json=body,
+        )
+    if response.status_code not in (200, 201, 202):
+        logger.error("Telnyx SMS send failed with status %s", response.status_code)
+        return JSONResponse(content={"error": "The text message could not be sent"}, status_code=502)
+
+    provider_message_id = response.json().get("data", {}).get("id", "")
+    activity = Activity(
+        organization_id=ctx.organization_id,
+        company_id=payload.company_id,
+        contact_id=payload.contact_id,
+        activity_type="sms_sent",
+        subject=f"SMS to {phone_number}",
+        body=payload.message.strip(),
+    )
+    session.add(activity)
+    session.commit()
+    return {"status": "sent", "message_id": provider_message_id, "activity_id": activity.id}
+
+
+@router.get("/telephony/history")
+def communication_history(
+    limit: int = Query(default=100, ge=1, le=200),
+    ctx: AuthContext = Depends(require_permission("telephony:read")),
+    session: Session = Depends(get_db_session),
+):
+    """Return calls and text messages for the PNS phone workspace."""
+    calls = session.execute(
+        select(Call)
+        .where(Call.organization_id == ctx.organization_id)
+        .order_by(Call.created_at.desc())
+        .limit(limit)
+    ).scalars().all()
+    activities = session.execute(
+        select(Activity)
+        .where(
+            Activity.organization_id == ctx.organization_id,
+            Activity.activity_type.in_(("sms_sent", "sms_received")),
+        )
+        .order_by(Activity.created_at.desc())
+        .limit(limit)
+    ).scalars().all()
+
+    items: list[dict] = []
+    for call in calls:
+        missed = call.direction == "inbound" and call.status in {"missed", "no_answer", "ended"} and not call.connected_at
+        items.append({
+            "id": f"call-{call.id}",
+            "kind": "call",
+            "direction": call.direction,
+            "status": "missed" if missed else call.status,
+            "phone_number": call.phone_number,
+            "timestamp": (call.started_at or call.created_at).isoformat(),
+            "duration_seconds": call.duration_seconds or 0,
+            "preview": "Missed call" if missed else ("Incoming call" if call.direction == "inbound" else "Outgoing call"),
+        })
+        if call.sms_sent_at:
+            items.append({
+                "id": f"recovery-sms-{call.id}",
+                "kind": "sms",
+                "direction": "outbound",
+                "status": call.sms_status or "sent",
+                "phone_number": call.phone_number,
+                "timestamp": call.sms_sent_at.isoformat(),
+                "duration_seconds": 0,
+                "preview": "Automatic missed call reply",
+            })
+
+    for activity in activities:
+        prefix = "SMS to " if activity.activity_type == "sms_sent" else "SMS from "
+        subject = activity.subject or ""
+        phone_number = subject[len(prefix):].strip() if subject.startswith(prefix) else "Unknown number"
+        items.append({
+            "id": f"activity-{activity.id}",
+            "kind": "sms",
+            "direction": "outbound" if activity.activity_type == "sms_sent" else "inbound",
+            "status": "received" if activity.activity_type == "sms_received" else "sent",
+            "phone_number": phone_number,
+            "timestamp": activity.created_at.isoformat(),
+            "duration_seconds": 0,
+            "preview": activity.body or ("Text received" if activity.activity_type == "sms_received" else "Text sent"),
+        })
+
+    items.sort(key=lambda item: item["timestamp"], reverse=True)
+    return {
+        "phone_number": PROVIDER_CONFIGS.get(TELEPHONY_PROVIDER, {}).get("phone_number", ""),
+        "items": items[:limit],
+        "total": min(len(items), limit),
     }
 
 
@@ -563,13 +794,13 @@ async def sms_webhook(request: Request, session: Session = Depends(get_db_sessio
             (Contact.phone == normalized_from) | (Contact.mobile == normalized_from),
         ).first()
 
-    if contact and text:
+    if text:
         activity = Activity(
             organization_id=org_id,
-            company_id=contact.company_id,
-            contact_id=contact.id,
+            company_id=contact.company_id if contact else None,
+            contact_id=contact.id if contact else None,
             activity_type="sms_received",
-            subject=f"SMS from {_redact_number(from_number)}",
+            subject=f"SMS from {normalized_from or from_number}",
             body=text,
         )
         session.add(activity)
@@ -831,11 +1062,11 @@ def list_calls(
             "direction": c.direction, "status": c.status,
             "phone_number": c.phone_number, "caller_id": c.caller_id,
             "started_at": str(c.started_at) if c.started_at else None,
-            "answered_at": str(c.answered_at) if c.answered_at else None,
+            "answered_at": str(c.connected_at) if c.connected_at else None,
             "ended_at": str(c.ended_at) if c.ended_at else None,
             "duration_seconds": c.duration_seconds,
             "recording_url": c.recording_url, "recording_status": c.recording_status,
-            "transcript_status": c.transcript_status, "ai_status": c.ai_status,
+            "transcript_status": c.transcript_status, "ai_status": c.post_call_status,
             "created_at": str(c.created_at),
         } for c in calls],
         "total": len(calls),
@@ -883,7 +1114,7 @@ async def telnyx_webhook(request: Request, session: Session = Depends(get_db_ses
         if call:
             if event_type == "call.answered":
                 call.status = "connected"
-                call.answered_at = datetime.now(UTC)
+                call.connected_at = datetime.now(UTC)
             elif event_type == "call.hangup":
                 call.status = "ended"
                 call.ended_at = datetime.now(UTC)
@@ -895,7 +1126,7 @@ async def telnyx_webhook(request: Request, session: Session = Depends(get_db_ses
                 call.recording_status = "completed"
             elif event_type == "call.failed":
                 call.status = "failed"
-                call.metadata_json = json.dumps({"error": payload})
+                call.metadata_json = {"error": payload}
             elif event_type == "call.missed":
                 call.status = "missed"
             elif event_type == "call.initiated":
