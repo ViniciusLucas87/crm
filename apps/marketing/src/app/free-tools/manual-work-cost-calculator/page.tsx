@@ -42,7 +42,7 @@ function calculateManualWork(input: ManualWorkInput): ManualWorkResult {
 
   const assumptionText = [
     `Based on ${input.employeesAffected} employee${input.employeesAffected > 1 ? "s" : ""} each spending ${input.hoursPerWeek} hours/week on this task, at $${input.loadedHourlyCost.toFixed(0)}/hr loaded cost (salary + benefits + overhead), across ${input.weeksPerYear} working weeks.`,
-    `Recoverable assumes ${input.recoverablePercent}% of manual effort can be automated or eliminated. The 30-70% range is a planning range, not an industry guarantee; task complexity determines the real result.`,
+    `Recoverable value uses the ${input.recoverablePercent}% scenario you selected. Validate it with a pilot; it is not an industry benchmark or guarantee.`,
     `Actual savings depend on implementation quality, process standardization, and employee adoption. These are directional estimates, not guarantees.`,
   ].join("\n\n");
 
@@ -175,7 +175,7 @@ function CostStep({ onNext, defaultValues }: { onNext: (d: Record<string, unknow
         What is the average loaded hourly cost per employee?
       </h3>
       <p className="text-pns-text-muted text-[15px] leading-relaxed mb-6">
-        Loaded cost = salary + benefits + payroll taxes + overhead (~25-35% above base salary). Canadian average for admin staff: $28-42/hr.
+        Use your organization&apos;s actual loaded cost, including only the payroll contributions, benefits, equipment, and relevant overhead your records support.
       </p>
       <div className="grid grid-cols-2 gap-3 mb-4">
         {presetCosts.map((p) => (

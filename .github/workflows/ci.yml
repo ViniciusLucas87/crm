@@ -23,6 +23,23 @@ jobs:
       - run: pnpm --filter @pns/web test
       - run: pnpm --filter @pns/web build
 
+  marketing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @pns/marketing lint
+      - run: pnpm --dir apps/marketing exec tsc --noEmit
+      - run: pnpm --filter @pns/marketing test
+      - run: pnpm --filter @pns/marketing build
+
   api:
     runs-on: ubuntu-latest
     services:
@@ -58,7 +75,8 @@ jobs:
       - name: Validate models at runtime
         run: python -c "from app.infrastructure.db.base import Base; from app.infrastructure.db import models; Base.registry.configure(); print(f'{len(Base.registry.mappers)} mappers OK')"
       - name: Compute model fingerprint
-        run: python -c "from app.core.build_id import compute_model_fingerprint; print(f'Fingerprint: {compute_model_fingerprint()}')"
+        run: |
+          python -c "from app.core.build_id import compute_model_fingerprint; print(f'Fingerprint: {compute_model_fingerprint()}')"
 
   docker:
     runs-on: ubuntu-latest

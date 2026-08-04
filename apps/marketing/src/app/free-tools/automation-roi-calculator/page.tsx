@@ -81,7 +81,7 @@ function ImplementationCostStep({
         Estimated one-time implementation cost
       </h3>
       <p className="text-pns-text-muted text-[15px] leading-relaxed mb-4">
-        What do you expect to invest upfront? Includes discovery, development, setup, training, and migration. Typical SMB automation projects range from $10K to $75K.
+        Enter a complete written estimate covering discovery, development, setup, security, migration, training, and contingency.
       </p>
       <div className="flex flex-wrap gap-3 mb-4">
         {[5000, 15000, 25000, 50000, 75000].map((v) => (
@@ -131,7 +131,7 @@ function RecurringCostStep({
         Estimated monthly recurring cost
       </h3>
       <p className="text-pns-text-muted text-[15px] leading-relaxed mb-4">
-        Ongoing costs: hosting, support, licensing, maintenance. Typical range: $200-$2,000/month for SMB automation.
+        Include hosting, support, usage, licensing, monitoring, maintenance, and vendor price changes.
       </p>
       <div className="flex flex-wrap gap-3 mb-4">
         {[200, 500, 1000, 1500, 2000].map((v) => (
