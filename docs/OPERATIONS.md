@@ -21,6 +21,17 @@
 - Weekly: run `scripts/restore-drill.sh` against staging
 - Monthly: full restore drill + row count comparison against production
 
+### Verified recovery baseline
+
+- The production R2 token is bucket scoped and must remain stored only in Railway service variables.
+- The encryption identity must remain stored only in Railway. Materialize it into a temporary file for a restore drill, then delete the file immediately after the drill.
+- The recovery baseline created at 2026-08-04 20:48 UTC passed encrypted checksum verification, required table validation, migration validation, and a disposable PostgreSQL restore.
+- Backups encrypted before this recovery baseline must not be treated as verified recovery sources because their retired encryption identity is unavailable.
+
+## Browser call answering
+
+Browser based incoming call answering is intentionally postponed. Missed call capture, recovery SMS, and callback task creation are the supported production workflow. Do not deploy the unfinished browser WebRTC client until inbound Telnyx routing, credential handling, ringing state, answer and hangup behaviour, reconnect behaviour, and an end to end production call are all proven.
+
 ## Monitoring
 
 | Check | Endpoint | Expected |
