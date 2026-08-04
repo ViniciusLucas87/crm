@@ -155,8 +155,12 @@ def operational_status(
     try:
         with open("/app/version.json") as f:
             v = _json.load(f)
-        build_id = v.get("image_version", build_id)
-        git_commit = v.get("git_commit", git_commit)
+        image_version = v.get("image_version")
+        image_commit = v.get("git_commit")
+        if image_version and image_version != "unknown":
+            build_id = image_version
+        if image_commit and image_commit != "unknown":
+            git_commit = image_commit
     except Exception:
         pass
 
