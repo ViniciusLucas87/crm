@@ -182,3 +182,95 @@ export type OpportunityCreateInput = {
 export type OpportunityUpdateInput = Partial<OpportunityCreateInput>;
 
 export type OpportunityList = { items: Opportunity[]; total: number; page: number; pageSize: number };
+
+// ── Today Workspace ──
+
+export type TodayLeadItem = {
+  id: number;
+  leadId: number;
+  name: string;
+  companyName: string;
+  industry: string | null;
+  opportunityScore: number;
+  status: string;
+  createdAt: string;
+  ownerUserId: string | null;
+  reason: string;
+};
+
+export type TodayMissedCallItem = {
+  id: number;
+  callUuid: string;
+  callerNumber: string;
+  callerDisplay: string;
+  calledAt: string;
+  spamScore: number | null;
+  companyId: number | null;
+  companyName: string | null;
+  contactId: number | null;
+  contactName: string | null;
+  reason: string;
+};
+
+export type TodayReplyItem = {
+  id: number;
+  emailUuid: string;
+  fromAddress: string;
+  subject: string | null;
+  receivedAt: string;
+  companyId: number | null;
+  companyName: string | null;
+  contactId: number | null;
+  contactName: string | null;
+  reason: string;
+};
+
+export type TodayTaskItem = {
+  id: number;
+  leadId: number | null;
+  title: string;
+  description: string | null;
+  priority: string;
+  status: string;
+  dueDate: string;
+  isCompleted: boolean;
+  source: string | null;
+  companyId: number | null;
+  companyName: string | null;
+  contactId: number | null;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  ownerUserId: string | null;
+  reason: string;
+};
+
+export type TodayWorkspace = {
+  assessmentLeads: TodayLeadItem[];
+  missedCalls: TodayMissedCallItem[];
+  inboundReplies: TodayReplyItem[];
+  overdueFollowUps: TodayTaskItem[];
+  dueToday: TodayTaskItem[];
+  upcoming: TodayTaskItem[];
+  leadsNoNextAction: TodayTaskItem[];
+  generatedAt: string;
+};
+
+export type FollowUpRequest = {
+  action: "complete" | "reschedule" | "assign_next_step";
+  idempotencyKey?: string;
+  newDueDate?: string;
+  nextStepTitle?: string;
+  nextStepPriority?: string;
+  nextStepDueDate?: string;
+  terminalOutcome?: string;
+  notes?: string;
+};
+
+export type FollowUpResponse = {
+  taskId: number;
+  action: string;
+  activityId: number | null;
+  nextTaskId: number | null;
+  message: string;
+};
