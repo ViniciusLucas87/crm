@@ -65,10 +65,10 @@ def verify_webhook_signature(
         logger.error("failed to decode webhook signature or public key: %s", e)
         return False
 
-    # Verify: Ed25519(timestamp + "." + raw_body)
+    # Telnyx API v2 signs the timestamp, a pipe separator, and the raw body.
     try:
         public_key = Ed25519PublicKey.from_public_bytes(public_key_bytes)
-        signed_payload = f"{timestamp_header}.{raw_body.decode('utf-8')}".encode("utf-8")
+        signed_payload = f"{timestamp_header}|{raw_body.decode('utf-8')}".encode("utf-8")
         public_key.verify(signature_bytes, signed_payload)
         return True
     except InvalidSignature:

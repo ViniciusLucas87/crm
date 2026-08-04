@@ -835,6 +835,16 @@ celery_app.conf.beat_schedule = {
         "schedule": 30.0,
         "options": {"queue": "normal"},
     },
+    "missed-call-reconciliation-every-15s": {
+        "task": "workers.call_missed_call_recovery",
+        "schedule": 15.0,
+        "options": {"queue": "high"},
+    },
+    "missed-call-sms-recovery-every-15s": {
+        "task": "workers.sms_missed_call_recovery",
+        "schedule": 15.0,
+        "options": {"queue": "high"},
+    },
     # Sprint 48.2 — Email projectors
     "email-timeline-projection-every-15s": {
         "task": "workers.email_timeline_projection",
@@ -865,6 +875,8 @@ celery_app.conf.task_routes = {
     "workers.*": {"queue": "normal"},
     "workers.outbox_process_email": {"queue": "high"},
     "workers.outbox_process_assessment_lifecycle": {"queue": "high"},
+    "workers.call_missed_call_recovery": {"queue": "high"},
+    "workers.sms_missed_call_recovery": {"queue": "high"},
 }
 celery_app.conf.task_queues = {
     "critical": {"exchange": "critical", "routing_key": "critical"},
@@ -2078,6 +2090,16 @@ def call_missed_call_recovery(self, event_id: int | None = None, **context):
         processed = 0
 
         for event in events:
+            # Do not claim the event until Telnyx's late answer/bridge window
+            # has elapsed. Leaving it pending lets the next scheduled pass
+            # reconcile it safely without creating a false missed call.
+            created_at = event.created_at
+            if event_id is None and created_at is not None:
+                if created_at.tzinfo is None:
+                    created_at = created_at.replace(tzinfo=UTC)
+                if datetime.now(UTC) - created_at < timedelta(seconds=GRACE_PERIOD_SECONDS):
+                    continue
+
             db_session_clean = _get_db()
             try:
                 if not _claim_event(db_session_clean, event, task_id):

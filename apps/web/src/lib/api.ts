@@ -404,10 +404,22 @@ export async function fetchTodayWorkspace(): Promise<TodayWorkspace> {
 }
 
 export async function executeFollowUp(taskId: number, request: FollowUpRequest): Promise<FollowUpResponse> {
-  const r = await fetch(`${API_BASE_URL}/dashboard/tasks/${taskId}/follow-up`, {
+  const endpoint = request.action === "assign_next_step"
+    ? `${API_BASE_URL}/dashboard/leads/${taskId}/assign-next-step`
+    : `${API_BASE_URL}/dashboard/tasks/${taskId}/follow-up`;
+  const r = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
+    body: JSON.stringify({
+      action: request.action,
+      new_due_date: request.newDueDate,
+      next_step_title: request.nextStepTitle,
+      next_step_priority: request.nextStepPriority,
+      next_step_due_date: request.nextStepDueDate,
+      terminal_outcome: request.terminalOutcome,
+      idempotency_key: request.idempotencyKey,
+      notes: request.notes,
+    }),
   });
   if (!r.ok) {
     const err = await r.json().catch(() => ({ detail: `Failed: ${r.status}` }));

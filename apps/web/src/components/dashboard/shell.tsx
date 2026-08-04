@@ -1,7 +1,7 @@
 "use client";
 
 import { useClerk, useUser } from "@clerk/nextjs";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
@@ -105,6 +105,17 @@ export function Shell({ children }: ShellProps) {
   const { memory } = useNavigationMemory();
   const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses?.[0]?.emailAddress ?? "Authenticated user";
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("pns-theme");
+    if (saved === "light" || saved === "dark") setTheme(saved);
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("pns-theme", theme);
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   // Map string tool names to AI routes
   const AI_TOOL_ROUTES: Record<string, string> = {
@@ -188,7 +199,7 @@ export function Shell({ children }: ShellProps) {
   );
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#12343b,_#06131a_45%,_#02070a)] text-slate-100">
+    <div className={cn("pns-shell min-h-screen", theme === "dark" ? "bg-[radial-gradient(circle_at_top,_#12343b,_#06131a_45%,_#02070a)] text-slate-100" : "bg-slate-100 text-slate-900")}>
       <div className="mx-auto flex w-full max-w-7xl flex-col lg:flex-row">
         {/* Desktop sidebar */}
         <aside className="hidden border-r border-white/10 p-4 lg:flex lg:min-h-screen lg:w-64 lg:flex-col">
@@ -225,6 +236,19 @@ export function Shell({ children }: ShellProps) {
               <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">Daily Intelligence Dashboard</h2>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <label className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm">
+                <Sun className="h-4 w-4" aria-hidden="true" />
+                <span className="sr-only">Colour theme</span>
+                <select
+                  aria-label="Colour theme"
+                  value={theme}
+                  onChange={(event) => setTheme(event.target.value as "dark" | "light")}
+                  className="bg-transparent text-sm font-medium outline-none"
+                >
+                  <option value="dark">Dark</option>
+                  <option value="light">Light</option>
+                </select>
+              </label>
               <GlobalSearch />
               <div className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 transition hover:border-white/15">
                 <CircleUserRound className="h-4 w-4 text-slate-400" />

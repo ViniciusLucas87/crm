@@ -496,6 +496,8 @@ def test_delivery_receipt_updates_sms_status(client, _patch_webhook_verify):
                 "event_type": "message.finalized",
                 "payload": {
                     "id": "msg_dlr_001",
+                    "from": {"phone_number": "+16045559876"},
+                    "to": [{"phone_number": "+16045551234"}],
                     "detail": {"status": "delivered"},
                 },
             }
@@ -513,6 +515,31 @@ def test_delivery_receipt_updates_sms_status(client, _patch_webhook_verify):
         assert call.sms_status == "delivered"
     finally:
         db.close()
+
+
+def test_delivery_receipt_resolves_tenant_from_sender_in_production(
+    client, _patch_webhook_verify, monkeypatch
+):
+    """Outbound receipts must map our sender, never the customer's destination."""
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    ts = str(int(datetime.now(UTC).timestamp()))
+    payload = _make_sms_payload(
+        event_id="evt_dlr_sender_tenant",
+        event_type="message.finalized",
+        from_number="+16045559876",
+        to_number="+16045550000",
+    )
+    payload["data"]["payload"]["id"] = "msg_without_matching_call"
+    payload["data"]["payload"]["detail"] = {"status": "delivered"}
+
+    resp = client.post(
+        SMS_WEBHOOK_URL,
+        json=payload,
+        headers={"telnyx-timestamp": ts},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "ok"
 
 
 # ── 14. Recovery outbox idempotency ──────────────────────────

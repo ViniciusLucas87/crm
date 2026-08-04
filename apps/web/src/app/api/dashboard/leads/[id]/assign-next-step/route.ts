@@ -6,5 +6,5 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  return proxyAuthenticatedApi(request, `/dashboard/tasks/${id}/follow-up`);
+  return proxyAuthenticatedApi(request, `/dashboard/leads/${id}/assign-next-step`);
 }

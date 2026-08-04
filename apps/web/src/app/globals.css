@@ -37,6 +37,33 @@
   --transition-slow: 300ms;
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-bg-base: #f8fafc;
+  --color-bg-elevated: #ffffff;
+  --color-bg-overlay: rgba(255, 255, 255, 0.96);
+  --color-border-default: #dbe4ea;
+  --color-border-subtle: #e8eef2;
+  --color-border-strong: #c8d5dd;
+  --color-border-hover: #9fb1bd;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #334155;
+  --color-text-tertiary: #475569;
+  --color-text-muted: #64748b;
+}
+
+:root[data-theme="light"] .pns-shell .text-white { color: #0f172a !important; }
+:root[data-theme="light"] .pns-shell .text-slate-100,
+:root[data-theme="light"] .pns-shell .text-slate-200 { color: #1e293b !important; }
+:root[data-theme="light"] .pns-shell .text-slate-300,
+:root[data-theme="light"] .pns-shell .text-slate-400 { color: #475569 !important; }
+:root[data-theme="light"] .pns-shell .text-slate-600,
+:root[data-theme="light"] .pns-shell .text-slate-700 { color: #64748b !important; }
+:root[data-theme="light"] .pns-shell .bg-white\/5 { background-color: rgba(255, 255, 255, 0.72) !important; }
+:root[data-theme="light"] .pns-shell .bg-white\/10 { background-color: #dceff1 !important; }
+:root[data-theme="light"] .pns-shell .border-white\/10 { border-color: #d5e0e6 !important; }
+:root[data-theme="light"] .pns-shell .border-white\/15 { border-color: #c4d1d9 !important; }
+
 body {
   font-family: var(--font-space-grotesk), sans-serif;
   background-color: var(--color-bg-base);

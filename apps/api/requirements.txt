@@ -13,3 +13,4 @@ openai==1.55.0
 python-multipart==0.0.12
 boto3==1.36.0
 botocore==1.36.0
+cryptography==45.0.6

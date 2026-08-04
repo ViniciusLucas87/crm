@@ -75,8 +75,8 @@ export default function TodayScreen() {
     <div style={{ padding: "24px 32px", maxWidth: 1100, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: "#0B1526" }}>Today</h1>
-          <p style={{ margin: "4px 0 0", color: "#526372", fontSize: 14 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: "var(--color-text-primary)" }}>Today</h1>
+          <p style={{ margin: "4px 0 0", color: "var(--color-text-tertiary)", fontSize: 14 }}>
             {totalItems} {totalItems === 1 ? "item" : "items"} need your attention
           </p>
         </div>
@@ -89,7 +89,7 @@ export default function TodayScreen() {
         </div>
       )}
 
-      <Section title="New Assessment Leads" count={workspace.assessmentLeads.length} color="#0B1526">
+      <Section title="New Assessment Leads" count={workspace.assessmentLeads.length} color="#5EEAD4">
         {workspace.assessmentLeads.map((lead) => (
           <LeadCard key={`lead-${lead.id}`} lead={lead} />
         ))}
@@ -101,7 +101,7 @@ export default function TodayScreen() {
         ))}
       </Section>
 
-      <Section title="Inbound Replies" count={workspace.inboundReplies.length} color="#2563EB">
+      <Section title="Inbound Replies" count={workspace.inboundReplies.length} color="#7DD3FC">
         {workspace.inboundReplies.map((reply) => (
           <ReplyCard key={`reply-${reply.id}`} reply={reply} onAcknowledge={handleAcknowledge} />
         ))}
@@ -119,7 +119,7 @@ export default function TodayScreen() {
         ))}
       </Section>
 
-      <Section title="Upcoming" count={workspace.upcoming.length} color="#526372">
+      <Section title="Upcoming" count={workspace.upcoming.length} color="#94A3B8">
         {workspace.upcoming.map((task) => (
           <TaskCard key={`upcoming-${task.id}`} task={task} onAction={handleAction} />
         ))}
@@ -155,8 +155,8 @@ function LeadCard({ lead }: { lead: TodayWorkspace["assessmentLeads"][0] }) {
   return (
     <div style={cardStyle}>
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, color: "#E2E8F0", fontSize: 14 }}>{lead.name || lead.companyName}</div>
-        <div style={{ color: "#8B9DC3", fontSize: 13, marginTop: 2 }}>
+        <div style={cardTitleStyle}>{lead.name || lead.companyName}</div>
+        <div style={cardDetailStyle}>
           {lead.industry && `${lead.industry}, `}Score: {lead.opportunityScore}/100. {lead.reason}
         </div>
       </div>
@@ -173,11 +173,11 @@ function MissedCallCard({ call }: { call: TodayWorkspace["missedCalls"][0] }) {
   return (
     <div style={cardStyle}>
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, color: "#0B1526", fontSize: 14 }}>
+        <div style={cardTitleStyle}>
           {call.callerDisplay}
-          {call.companyName && <span style={{ color: "#8B9DC3", fontWeight: 400 }}>, {call.companyName}</span>}
+          {call.companyName && <span style={{ color: "#94A3B8", fontWeight: 400 }}>, {call.companyName}</span>}
         </div>
-        <div style={{ color: "#526372", fontSize: 13, marginTop: 2 }}>{call.reason}</div>
+        <div style={cardDetailStyle}>{call.reason}</div>
       </div>
       <div style={{ display: "flex", gap: 6 }}>
         {call.companyId && (
@@ -198,11 +198,11 @@ function ReplyCard({ reply, onAcknowledge }: {
   return (
     <div style={cardStyle}>
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, color: "#E2E8F0", fontSize: 14 }}>
+        <div style={cardTitleStyle}>
           {reply.fromAddress}
-          {reply.companyName && <span style={{ color: "#8B9DC3", fontWeight: 400 }}>, {reply.companyName}</span>}
+          {reply.companyName && <span style={{ color: "#94A3B8", fontWeight: 400 }}>, {reply.companyName}</span>}
         </div>
-        <div style={{ color: "#8B9DC3", fontSize: 13, marginTop: 2 }}>
+        <div style={cardDetailStyle}>
           {reply.subject && `${reply.subject}. `}{reply.reason}
         </div>
       </div>
@@ -282,9 +282,9 @@ function TaskCard({
       <div style={{ flex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ background: priorityColor, width: 8, height: 8, borderRadius: "50%", flexShrink: 0 }} />
-          <span style={{ fontWeight: 600, color: "#0B1526", fontSize: 14 }}>{task.title}</span>
+          <span style={cardTitleStyle}>{task.title}</span>
         </div>
-        <div style={{ color: "#526372", fontSize: 13, marginTop: 2 }}>
+        <div style={cardDetailStyle}>
           {task.companyName && `${task.companyName}, `}
           {task.reason}. Due {task.dueDate || "no date"}
           {task.contactName && `, ${task.contactName}`}
@@ -322,12 +322,12 @@ function TaskCard({
             placeholder="Next step title (optional)"
             value={nextTitle}
             onChange={(e) => { setNextTitle(e.target.value); setCompleteGuidance(""); }}
-            style={{ fontSize: 13, padding: "4px 8px", border: "1px solid #E8ECF0", borderRadius: 6, width: "100%", maxWidth: 280 }}
+            style={textInputStyle}
           />
           <select
             value={terminalOutcome}
             onChange={(e) => { setTerminalOutcome(e.target.value); setCompleteGuidance(""); }}
-            style={{ fontSize: 13, padding: "4px 8px", border: "1px solid #E8ECF0", borderRadius: 6, marginLeft: 8, background: "#fff", color: terminalOutcome ? "#0B1526" : "#8B9DC3" }}
+            style={{ ...textInputStyle, width: "auto", marginLeft: 8, color: terminalOutcome ? "#E2E8F0" : "#94A3B8" }}
           >
             <option value="">Terminal outcome (optional)</option>
             <option value="won">Won</option>
@@ -388,8 +388,8 @@ function TodayEmpty({ onRefresh }: { onRefresh: () => void }) {
 // ── Styles ──
 
 const cardStyle: React.CSSProperties = {
-  background: "#fff",
-  border: "1px solid #E8ECF0",
+  background: "var(--color-bg-elevated)",
+  border: "1px solid var(--color-border-default)",
   borderRadius: 10,
   padding: "14px 18px",
   display: "flex",
@@ -401,10 +401,11 @@ const cardStyle: React.CSSProperties = {
 const actionLinkStyle: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 500,
-  color: "#0B1526",
+  color: "var(--color-text-primary)",
+  background: "var(--color-bg-overlay)",
   textDecoration: "none",
   padding: "5px 12px",
-  border: "1px solid #E8ECF0",
+  border: "1px solid var(--color-border-strong)",
   borderRadius: 6,
   whiteSpace: "nowrap",
 };
@@ -412,9 +413,9 @@ const actionLinkStyle: React.CSSProperties = {
 const actionBtnStyle: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 500,
-  background: "transparent",
-  color: "#0B1526",
-  border: "1px solid #E8ECF0",
+  background: "var(--color-bg-overlay)",
+  color: "var(--color-text-primary)",
+  border: "1px solid var(--color-border-strong)",
   borderRadius: 6,
   padding: "5px 12px",
   cursor: "pointer",
@@ -427,4 +428,27 @@ const refreshBtnStyle: React.CSSProperties = {
   color: "#fff",
   border: "none",
   padding: "8px 18px",
+};
+
+const cardTitleStyle: React.CSSProperties = {
+  fontWeight: 600,
+  color: "var(--color-text-primary)",
+  fontSize: 14,
+};
+
+const cardDetailStyle: React.CSSProperties = {
+  color: "var(--color-text-secondary)",
+  fontSize: 13,
+  marginTop: 2,
+};
+
+const textInputStyle: React.CSSProperties = {
+  fontSize: 13,
+  padding: "6px 9px",
+  border: "1px solid var(--color-border-strong)",
+  borderRadius: 6,
+  width: "100%",
+  maxWidth: 280,
+  background: "var(--color-bg-overlay)",
+  color: "var(--color-text-primary)",
 };

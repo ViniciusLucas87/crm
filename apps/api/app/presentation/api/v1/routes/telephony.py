@@ -427,6 +427,34 @@ def _resolve_tenant(session: Session, destination_number: str | None) -> int:
     return 1
 
 
+def _resolve_sms_tenant(
+    session: Session,
+    event_type: str,
+    from_number: str | None,
+    to_number: str | None,
+) -> int:
+    """Resolve the tenant from the business-owned side of an SMS event.
+
+    Inbound messages are addressed to our number. Delivery receipts describe an
+    outbound message, so our number is the sender. Trying only the destination
+    makes production delivery receipts resolve against the customer's number.
+    """
+    primary = from_number if event_type == "message.finalized" else to_number
+    secondary = to_number if event_type == "message.finalized" else from_number
+
+    tenant_map_str = os.environ.get("TELNYX_NUMBER_TENANT_MAP", "")
+    try:
+        tenant_map = json.loads(tenant_map_str) if tenant_map_str else {}
+    except (TypeError, ValueError):
+        tenant_map = {}
+
+    for candidate in (primary, secondary):
+        if candidate and candidate in tenant_map:
+            return int(tenant_map[candidate])
+
+    return _resolve_tenant(session, primary)
+
+
 # ── Inbound SMS webhook ────────────────────────────────────
 
 @router.post("/telephony/sms/webhook")
@@ -490,8 +518,16 @@ async def sms_webhook(request: Request, session: Session = Depends(get_db_sessio
     text = payload.get("text", "").strip()
     normalized_from = normalize_phone(from_number) if from_number else None
 
-    # Resolve tenant from destination number
-    org_id = _resolve_tenant(session, normalize_phone(to_number) if to_number else None)
+    normalized_to = normalize_phone(to_number) if to_number else None
+
+    # Resolve against the business-owned number. For outbound delivery receipts,
+    # that is the sender; for inbound messages, it is the destination.
+    org_id = _resolve_sms_tenant(
+        session,
+        event_type,
+        normalized_from,
+        normalized_to,
+    )
 
     # STOP/START handling
     text_upper = text.upper()
