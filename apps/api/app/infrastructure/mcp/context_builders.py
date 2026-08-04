@@ -79,7 +79,7 @@ class ActivitySummary(BaseModel):
 
     @classmethod
     def from_activity(cls, a: Any) -> "ActivitySummary":
-        return cls(id=a.id, type=a.type, subject=a.subject, body=a.body, created_at=a.created_at)
+        return cls(id=a.id, type=a.activity_type, subject=a.subject, body=a.body, created_at=a.created_at)
 
 
 class OpportunitySummary(BaseModel):

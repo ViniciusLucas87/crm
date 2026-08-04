@@ -34,6 +34,9 @@ class ToolDefinition:
     category: str
     parameters: list[ToolParameter] = field(default_factory=list)
     handler: Callable[..., Any] | None = None
+    read_only: bool = True
+    destructive: bool = False
+    external_side_effect: bool = False
 
     def to_mcp_schema(self) -> dict[str, Any]:
         """Convert to MCP-compatible JSON Schema for tool listing."""
@@ -58,6 +61,11 @@ class ToolDefinition:
             "name": self.name,
             "description": self.description,
             "inputSchema": input_schema,
+            "annotations": {
+                "readOnlyHint": self.read_only,
+                "destructiveHint": self.destructive,
+                "openWorldHint": self.external_side_effect,
+            },
         }
 
     def to_openai_function(self) -> dict[str, Any]:
@@ -90,8 +98,9 @@ class ToolDefinition:
 class ToolRegistry:
     """Central registry for all MCP tools."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, organization_id: int | None = None) -> None:
         self._tools: dict[str, ToolDefinition] = {}
+        self.organization_id = organization_id
 
     def register(self, tool: ToolDefinition) -> None:
         if tool.name in self._tools:
@@ -113,12 +122,12 @@ class ToolRegistry:
     def list_openai_functions(self) -> list[dict[str, Any]]:
         return [t.to_openai_function() for t in self._tools.values()]
 
-    async def execute(self, name: str, **kwargs: Any) -> dict[str, Any]:
-        tool = self._tools.get(name)
+    async def execute(self, tool_name: str, **kwargs: Any) -> dict[str, Any]:
+        tool = self._tools.get(tool_name)
         if tool is None:
-            return {"error": f"Unknown tool: {name}"}
+            return {"error": f"Unknown tool: {tool_name}"}
         if tool.handler is None:
-            return {"error": f"Tool '{name}' has no handler."}
+            return {"error": f"Tool '{tool_name}' has no handler."}
 
         try:
             result = tool.handler(**kwargs)
@@ -126,9 +135,9 @@ class ToolRegistry:
             import inspect
             if inspect.iscoroutine(result):
                 result = await result
-            return {"result": result, "tool": name}
+            return {"result": result, "tool": tool_name}
         except Exception as e:
-            return {"error": str(e), "tool": name}
+            return {"error": str(e), "tool": tool_name}
 
 
 # ── Global registry instance ──

@@ -10,36 +10,82 @@ The LLM communicates ONLY through these endpoints.
 """
 
 import json
+import hmac
+import os
 import uuid
+from collections.abc import Callable
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.application.llm import LLMMessage, get_memory_store, get_prompt
 from app.application.llm.prompt_components import CHAT_SYSTEM_PROMPT
 from app.core.config import get_settings
-from app.infrastructure.auth.clerk import AuthContext, require_permission
+from app.infrastructure.auth.clerk import AuthContext, ROLE_PERMISSIONS, get_auth_context
+from app.infrastructure.db.models import Organization
 from app.infrastructure.db.session import get_db_session
-from app.infrastructure.mcp import MCPServer, get_registry, register_all_tools
+from app.infrastructure.mcp import MCPServer, register_all_tools
+from app.infrastructure.mcp.tool_registry import ToolRegistry
+from app.infrastructure.telemetry import get_telemetry
 
 router = APIRouter(prefix="/mcp", tags=["mcp"])
 
 
 def _get_server(session: Session, org_id: int) -> MCPServer:
-    registry = get_registry()
-    # Re-register tools for this org (session factory pattern)
-    register_all_tools(lambda: session, org_id)
-    return MCPServer(registry)
+    registry = ToolRegistry(organization_id=org_id)
+    register_all_tools(lambda: Session(bind=session.get_bind()), org_id, registry)
+    telemetry = get_telemetry()
+    return MCPServer(
+        registry,
+        audit_logger=lambda **values: telemetry.log_tool(org_id=org_id, **values),
+    )
+
+
+def get_mcp_auth_context(
+    session: Session = Depends(get_db_session),
+    authorization: str | None = Header(default=None),
+) -> AuthContext:
+    """Accept either normal CRM authentication or the private MCP service token."""
+    configured_token = os.environ.get("PNS_CRM_MCP_TOKEN", "")
+    supplied_token = ""
+    if authorization and authorization.startswith("Bearer "):
+        supplied_token = authorization.split(" ", 1)[1]
+
+    if configured_token and supplied_token and hmac.compare_digest(configured_token, supplied_token):
+        org_slug = os.environ.get("PNS_CRM_MCP_ORG_SLUG", "pacific-north-systems")
+        org = session.execute(select(Organization).where(Organization.slug == org_slug)).scalar_one_or_none()
+        if not org:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="MCP organization is not configured")
+        return AuthContext(
+            user_id=0,
+            email="mcp-service@pacificnorthsystems.com",
+            role="admin",
+            organization_id=org.id,
+            organization_slug=org.slug,
+            permissions=sorted(ROLE_PERMISSIONS["admin"]),
+        )
+
+    return get_auth_context(session=session, authorization=authorization)
+
+
+def require_mcp_permission(permission: str) -> Callable[[AuthContext], AuthContext]:
+    def _require(ctx: AuthContext = Depends(get_mcp_auth_context)) -> AuthContext:
+        if permission not in set(ctx.permissions):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+        return ctx
+    return _require
 
 
 # ── JSON-RPC Endpoint ──
 
+@router.post("")
 @router.post("/message")
 async def mcp_message(
     request: Request,
-    ctx: AuthContext = Depends(require_permission("companies:read")),
+    ctx: AuthContext = Depends(require_mcp_permission("companies:read")),
     session: Session = Depends(get_db_session),
 ):
     """Handle a JSON-RPC 2.0 message. Returns tool list, executes tools."""
@@ -55,7 +101,7 @@ async def mcp_message(
 async def mcp_sse(
     request: Request,
     message: str = Query(..., description="JSON-encoded JSON-RPC message"),
-    ctx: AuthContext = Depends(require_permission("companies:read")),
+    ctx: AuthContext = Depends(require_mcp_permission("companies:read")),
     session: Session = Depends(get_db_session),
 ):
     """Stream MCP responses via Server-Sent Events."""
@@ -82,12 +128,12 @@ async def mcp_sse(
 
 @router.get("/tools")
 def list_tools(
-    ctx: AuthContext = Depends(require_permission("companies:read")),
+    ctx: AuthContext = Depends(require_mcp_permission("companies:read")),
     session: Session = Depends(get_db_session),
 ):
     """List all available MCP tools with their schemas."""
     server = _get_server(session, ctx.organization_id)
-    registry = get_registry()
+    registry = server.registry
     return {
         "server": MCPServer.SERVER_INFO,
         "tools": registry.list_mcp_schemas(),
@@ -101,7 +147,7 @@ from app.application.llm.prompt_components import CHAT_SYSTEM_PROMPT
 # ── AI Chat Endpoint (Multi-Tool Reasoning) ──
 async def mcp_chat(
     request: Request,
-    ctx: AuthContext = Depends(require_permission("companies:read")),
+    ctx: AuthContext = Depends(require_mcp_permission("companies:read")),
     session: Session = Depends(get_db_session),
 ):
     """
@@ -123,7 +169,7 @@ async def mcp_chat(
 
     # Setup
     server = _get_server(session, ctx.organization_id)
-    registry = get_registry()
+    registry = server.registry
     memory = get_memory_store().get_or_create(session_id)
     tools = registry.list_openai_functions()
 
@@ -252,7 +298,7 @@ def _build_chat_context(session: Session, org_id: int, user_message: str) -> dic
 
 @router.get("/prompts")
 def list_prompts_endpoint(
-    ctx: AuthContext = Depends(require_permission("companies:read")),
+    ctx: AuthContext = Depends(require_mcp_permission("companies:read")),
 ):
     """List all available prompt templates."""
     from app.application.llm.prompts import list_prompts
@@ -271,7 +317,7 @@ def list_prompts_endpoint(
 @router.get("/memory/{session_id}")
 def get_memory(
     session_id: str,
-    ctx: AuthContext = Depends(require_permission("companies:read")),
+    ctx: AuthContext = Depends(require_mcp_permission("companies:read")),
 ):
     """Get conversation memory for a session."""
     memory = get_memory_store().get(session_id)
@@ -283,7 +329,7 @@ def get_memory(
 @router.delete("/memory/{session_id}")
 def delete_memory(
     session_id: str,
-    ctx: AuthContext = Depends(require_permission("companies:write")),
+    ctx: AuthContext = Depends(require_mcp_permission("companies:write")),
 ):
     """Clear conversation memory for a session."""
     get_memory_store().delete(session_id)

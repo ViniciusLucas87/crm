@@ -29,15 +29,16 @@ from app.application.agents import (
 from app.application.llm.provider import LLMConfig
 from app.infrastructure.auth.clerk import AuthContext, require_permission
 from app.infrastructure.db.session import get_db_session
-from app.infrastructure.mcp import get_registry, register_all_tools
+from app.infrastructure.mcp import register_all_tools
+from app.infrastructure.mcp.tool_registry import ToolRegistry
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
 
 def _setup(session: Session, org_id: int) -> AgentOrchestrator:
     """Setup tool registry and agent registry for a request."""
-    tool_registry = get_registry()
-    register_all_tools(lambda: session, org_id)
+    tool_registry = ToolRegistry(organization_id=org_id)
+    register_all_tools(lambda: Session(bind=session.get_bind()), org_id, tool_registry)
     register_all_agents()
     return AgentOrchestrator(tool_registry, get_agent_registry())
 
