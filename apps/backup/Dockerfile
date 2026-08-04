@@ -26,10 +26,9 @@
 # configure the CRON_SCHEDULE variable (e.g., "0 2 * * *" for 2 AM daily).
 # =============================================================================
 
-FROM python:3.12-slim
+FROM postgres:18-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    postgresql-client \
     curl \
     unzip \
     ca-certificates \
@@ -38,7 +37,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # --- age encryption tool + AWS CLI v2 ---
 ARG AGE_VERSION=v1.2.1
 COPY apps/backup/install-tools.sh /tmp/install-tools.sh
-RUN chmod +x /tmp/install-tools.sh && AGE_VERSION=${AGE_VERSION} /tmp/install-tools.sh && rm /tmp/install-tools.sh
+RUN sed -i 's/\r$//' /tmp/install-tools.sh \
+    && chmod +x /tmp/install-tools.sh \
+    && AGE_VERSION=${AGE_VERSION} /tmp/install-tools.sh \
+    && rm /tmp/install-tools.sh
 
 WORKDIR /app
 
@@ -50,7 +52,7 @@ RUN echo "{\"git_commit\":\"${GIT_COMMIT}\",\"build_time\":\"${BUILD_TIME}\",\"i
 
 # --- Scripts ---
 COPY scripts/backup.sh /app/backup.sh
-RUN chmod +x /app/backup.sh
+RUN sed -i 's/\r$//' /app/backup.sh && chmod +x /app/backup.sh
 
 # Verify required tools are available
 RUN pg_dump --version && age --version && aws --version && bash -n /app/backup.sh
