@@ -150,8 +150,6 @@ async def register_browser(
     logger.info("Browser registered: user=%s provider=%s", user_id, svc.provider_name)
     return {
         "token": result.get("token", ""),
-        "login": result.get("sip_username", ""),
-        "password": result.get("sip_password", ""),
         "client_state_id": result.get("client_state_id", ""),
         "expires_at": result.get("expires_at", ""),
         "provider": svc.provider_name,

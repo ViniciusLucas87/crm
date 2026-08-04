@@ -147,7 +147,6 @@ class TelnyxProvider(CallProvider):
                 }
 
             data = r.json()
-            logger.info("Telnyx: telephony_credentials response body: %s", json.dumps(data)[:1000])
             # Telnyx returns { "data": { "sip_username", "sip_password", "id", ... } }
             # The @telnyx/webrtc SDK expects login_token = base64("sip_username:sip_password")
             inner = data.get("data", {})
@@ -159,6 +158,13 @@ class TelnyxProvider(CallProvider):
                 login_token = base64.b64encode(raw.encode()).decode()
             else:
                 login_token = inner.get("token") or data.get("token", "")
+
+            logger.info(
+                "Telnyx: telephony credential created | correlation=%s | credential_id=%s | has_credentials=%s",
+                correlation_id,
+                inner.get("id", ""),
+                bool(sip_username and sip_password),
+            )
 
             return {
                 "token": login_token,
