@@ -212,7 +212,7 @@ export default function OperationsPage() {
                 <li><strong className="text-slate-400">Database:</strong> Checks if PostgreSQL is reachable and responding to queries.</li>
                 <li><strong className="text-slate-400">Redis:</strong> Checks if the Redis cache and message broker is connected.</li>
                 <li><strong className="text-slate-400">Worker:</strong> Pings the Celery background worker. Unknown means the worker process may not be running or reachable.</li>
-                <li><strong className="text-slate-400">Backups:</strong> Displays as Unknown because backup verification is handled by the backup script, not the API server. Check the backup dashboard for status.</li>
+                <li><strong className="text-slate-400">Backups:</strong> Verifies the encrypted backup marker in Cloudflare R2. Healthy means the latest backup is recent and reachable.</li>
                 <li><strong className="text-slate-400">Outbox:</strong> Counts pending and failed outbox events. High pending means workers are falling behind. Failed events may need manual replay.</li>
               </ul>
             </div>

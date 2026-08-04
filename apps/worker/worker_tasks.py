@@ -2395,11 +2395,12 @@ def _send_telnyx_sms(
         "to": to_phone,
         "text": message,
         "messaging_profile_id": messaging_profile_id,
-        "webhook_url": os.getenv(
-            "API_PUBLIC_URL", os.getenv("CRM_APP_URL", "")
-        ).rstrip("/") + "/api/v1/telephony/sms/webhook",
-        "webhook_failover_url": None,
     }
+    api_public_url = os.getenv(
+        "API_PUBLIC_URL", os.getenv("CRM_APP_URL", "")
+    ).rstrip("/")
+    if api_public_url:
+        body["webhook_url"] = f"{api_public_url}/api/v1/telephony/sms/webhook"
 
     if idempotency_key:
         body["idempotency_key"] = idempotency_key

@@ -497,8 +497,10 @@ class TestSMSWorker:
         db.refresh(sms_event)
         assert sms_event.status == "completed"
 
-    def test_provider_timeout_before_send_retries(self, db):
+    def test_provider_timeout_before_send_retries(self, db, monkeypatch):
         """A timeout before Telnyx accepts should be retried."""
+        monkeypatch.setenv("TELNYX_API_KEY", "test-key")
+        monkeypatch.setenv("PNS_PHONE_NUMBER", "+16045550100")
         call = _create_call(db, status="MISSED")
         sms_event = _create_outbox_event(db, SMS_RECOVERY_EVENT, call)
 
@@ -515,8 +517,10 @@ class TestSMSWorker:
         assert sms_event.attempt_count >= 1
         assert sms_event.status in ("pending", "failed")
 
-    def test_spam_score_allow_sends_sms(self, db):
+    def test_spam_score_allow_sends_sms(self, db, monkeypatch):
         """Spam score < 30 (allow tier) should send SMS."""
+        monkeypatch.setenv("TELNYX_API_KEY", "test-key")
+        monkeypatch.setenv("PNS_PHONE_NUMBER", "+16045550100")
         call = _create_call(db, status="MISSED", spam_score=10)
         sms_event = _create_outbox_event(db, SMS_RECOVERY_EVENT, call)
 

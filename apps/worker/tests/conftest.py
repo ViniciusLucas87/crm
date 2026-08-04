@@ -18,6 +18,8 @@ Architecture:
 import logging
 import os as _os
 import uuid
+from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 import pytest
 from sqlalchemy import create_engine, text
@@ -39,7 +41,17 @@ _test_db_name: str | None = None
 _test_db_url: str | None = None
 _prior_db_url: str | None = None
 
-PG_ADMIN_URL = "postgresql+psycopg://postgres:postgres@postgres:5432/postgres"
+PG_ADMIN_URL = _os.environ.get(
+    "WORKER_TEST_PG_ADMIN_URL",
+    "postgresql+psycopg://postgres:postgres@postgres:5432/postgres",
+)
+
+
+def _database_url(database_name: str) -> str:
+    parsed = urlsplit(PG_ADMIN_URL)
+    return urlunsplit(
+        (parsed.scheme, parsed.netloc, f"/{database_name}", parsed.query, parsed.fragment)
+    )
 
 # Tables to keep between tests
 _KEEP_TABLES = {"alembic_version"}
@@ -99,8 +111,11 @@ def _run_migrations(db_url: str) -> None:
         pass
 
     try:
-        alembic_cfg = Config("/app/api/alembic.ini")
-        alembic_cfg.set_main_option("script_location", "/app/api/alembic")
+        api_root = Path(__file__).resolve().parents[2] / "api"
+        if not api_root.exists():
+            api_root = Path("/app/api")
+        alembic_cfg = Config(str(api_root / "alembic.ini"))
+        alembic_cfg.set_main_option("script_location", str(api_root / "alembic"))
         alembic_cfg.set_main_option("sqlalchemy.url", db_url)
         command.upgrade(alembic_cfg, "head")
     finally:
@@ -121,7 +136,7 @@ def _pg_test_database():
     global _test_db_name, _test_db_url
 
     _test_db_name = f"pns_worker_test_{uuid.uuid4().hex[:8]}"
-    _test_db_url = f"postgresql+psycopg://postgres:postgres@postgres:5432/{_test_db_name}"
+    _test_db_url = _database_url(_test_db_name)
 
     admin = create_engine(PG_ADMIN_URL, isolation_level="AUTOCOMMIT")
     try:

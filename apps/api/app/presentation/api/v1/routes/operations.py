@@ -149,8 +149,8 @@ def operational_status(
     worker_status, worker_heartbeat_ms = _ping_worker()
     backups_ok, backup_last_ts = _check_backup_freshness()
 
-    build_id = os.getenv("BUILD_ID", "unknown")
-    git_commit = os.getenv("GIT_COMMIT", "unknown")
+    build_id = os.getenv("BUILD_ID") or os.getenv("RAILWAY_DEPLOYMENT_ID", "unknown")
+    git_commit = os.getenv("GIT_COMMIT") or os.getenv("RAILWAY_GIT_COMMIT_SHA", "unknown")
     environment = os.getenv("PNS_ENV", "development")
     try:
         with open("/app/version.json") as f:
