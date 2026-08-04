@@ -58,8 +58,8 @@ class TelnyxProvider(CallProvider):
         if not self._api_key:
             logger.error("Telnyx: missing TELNYX_API_KEY")
             return False
-        if not self._application_id:
-            logger.error("Telnyx: missing TELNYX_APPLICATION_ID")
+        if not self._connection_id:
+            logger.error("Telnyx: missing TELNYX_CONNECTION_ID")
             return False
 
         self._http = httpx.AsyncClient(
@@ -72,14 +72,18 @@ class TelnyxProvider(CallProvider):
             timeout=30.0,
         )
 
-        # Verify connectivity
+        # Verify the credential connection used by browser calling.
         try:
-            r = await self._http.get(f"/texml_applications/{self._application_id}")
+            r = await self._http.get(f"/connections/{self._connection_id}")
             if r.status_code == 200:
-                app_name = r.json().get("data", {}).get("friendly_name", "unknown")
-                logger.info("Telnyx initialized — app: %s (%s)", app_name, self._application_id)
+                connection = r.json().get("data", {})
+                logger.info(
+                    "Telnyx initialized: connection=%s type=%s",
+                    connection.get("connection_name", "unknown"),
+                    connection.get("record_type", "unknown"),
+                )
             else:
-                logger.warning("Telnyx: app check HTTP %s, continuing", r.status_code)
+                logger.warning("Telnyx: connection check HTTP %s, continuing", r.status_code)
         except Exception as e:
             logger.warning("Telnyx: connectivity check failed (%s), continuing", e)
 

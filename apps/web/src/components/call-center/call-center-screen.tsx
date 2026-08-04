@@ -143,7 +143,7 @@ export default function CallCenterScreen() {
         body: JSON.stringify({ phone_number: normalizePhone(phone) }),
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || "The call could not be prepared");
+      if (!response.ok) throw new Error(result.error || result.detail || "The call could not be prepared");
       browserCallId.current = result.id;
       lastRecordedState.current = "dialing";
       await startCall(0, normalizePhone(phone), "", "");
@@ -164,7 +164,7 @@ export default function CallCenterScreen() {
         body: JSON.stringify({ phone_number: normalizePhone(phone), message: message.trim() }),
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || "The text message could not be sent");
+      if (!response.ok) throw new Error(result.error || result.detail || "The text message could not be sent");
       setMessage("");
       setActionMessage("Text sent successfully");
       await loadHistory();

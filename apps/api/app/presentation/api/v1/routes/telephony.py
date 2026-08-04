@@ -323,8 +323,10 @@ async def send_sms(
         "from": from_phone,
         "to": phone_number,
         "text": payload.message.strip(),
-        "webhook_url": os.environ.get("API_PUBLIC_URL", "").rstrip("/") + "/api/v1/telephony/sms/webhook",
     }
+    api_public_url = os.environ.get("API_PUBLIC_URL", "").rstrip("/")
+    if api_public_url:
+        body["webhook_url"] = f"{api_public_url}/api/v1/telephony/sms/webhook"
     if messaging_profile_id:
         body["messaging_profile_id"] = messaging_profile_id
 
