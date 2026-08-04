@@ -26,6 +26,22 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_ORG_ID = 1
 
+
+def _utcnow() -> datetime:
+    """Return timezone-aware UTC now."""
+    return datetime.now(UTC)
+
+
+def _ensure_utc(dt: datetime | None) -> datetime | None:
+    """Normalize a datetime to UTC-aware. SQLite strips timezone info."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        from datetime import timezone
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 # ═══════════════════════════════════════════════════════════
 # CANONICAL STATE MAPPING (Telnyx → Canonical)
 # ═══════════════════════════════════════════════════════════
@@ -77,6 +93,8 @@ class CallLifecycleService:
         direction: str,
         phone_number: str,
         caller_id: str | None = None,
+        normalized_caller_number: str | None = None,
+        normalized_destination_number: str | None = None,
         company_id: int | None = None,
         contact_id: int | None = None,
         lead_id: int | None = None,
@@ -100,8 +118,8 @@ class CallLifecycleService:
             status="CREATED",
             phone_number=phone_number,
             caller_id=caller_id,
-            normalized_destination_number=_normalize_phone(phone_number) if direction == "outbound" else None,
-            normalized_caller_number=_normalize_phone(caller_id) if direction == "inbound" else _normalize_phone(phone_number),
+            normalized_caller_number=normalized_caller_number or _normalize_phone(caller_id if direction == "inbound" else phone_number),
+            normalized_destination_number=normalized_destination_number or (_normalize_phone(phone_number) if direction == "outbound" else None),
             provider=provider,
             session_id=session_id,
             correlation_id=correlation_id,
@@ -144,9 +162,16 @@ class CallLifecycleService:
         canonical = CANONICAL_STATES.get(to_state, to_state)
         now = datetime.now(UTC)
 
-        # State validation — reject backward transitions unless explicit
-        if previous == "COMPLETED" or previous == "FAILED":
-            logger.warning("Call %s already terminal (%s), rejecting transition to %s", call.public_uuid, previous, canonical)
+        # State validation -- reject backward transitions on terminal states
+        # MISSED is terminal: no further transitions allowed
+        if previous in ("COMPLETED", "FAILED", "MISSED"):
+            if canonical == previous:
+                logger.info("Call %s already terminal (%s), no-op", call.public_uuid, previous)
+                return call
+            logger.warning(
+                "Call %s already terminal (%s), rejecting transition to %s",
+                call.public_uuid, previous, canonical,
+            )
             return call
 
         call.status = canonical
@@ -166,8 +191,9 @@ class CallLifecycleService:
         elif canonical in ("COMPLETED", "FAILED", "MISSED"):
             call.ended_at = now
             call.outcome = canonical.lower()
-            if call.connected_at:
-                call.duration_seconds = int((now - call.connected_at).total_seconds())
+            connected = _ensure_utc(call.connected_at)
+            if connected:
+                call.duration_seconds = int((now - connected).total_seconds())
             if canonical == "FAILED":
                 call.failure_message = reason
 
@@ -244,8 +270,9 @@ class CallLifecycleService:
         phone_number: str,
         company_id: int | None = None,
         contact_id: int | None = None,
+        organization_id: int = DEFAULT_ORG_ID,
     ) -> dict[str, int | None]:
-        """Resolve CRM entities from a phone number."""
+        """Resolve CRM entities from a phone number within an organization."""
         normalized = _normalize_phone(phone_number)
 
         # Explicit IDs take priority
@@ -254,10 +281,10 @@ class CallLifecycleService:
             if contact:
                 return {"contact_id": contact.id, "company_id": contact.company_id, "lead_id": None}
 
-        # Phone number match on Contact
+        # Phone number match on Contact within the org
         if normalized:
             contact = self._db.query(Contact).filter(
-                Contact.organization_id == DEFAULT_ORG_ID,
+                Contact.organization_id == organization_id,
                 Contact.status == "active",
             ).filter(
                 (Contact.phone == normalized) | (Contact.mobile == normalized)
@@ -268,7 +295,7 @@ class CallLifecycleService:
         # Company match on phone
         if normalized:
             company = self._db.query(Company).filter(
-                Company.organization_id == DEFAULT_ORG_ID,
+                Company.organization_id == organization_id,
                 Company.phone == normalized,
                 Company.is_archived == False,
             ).first()

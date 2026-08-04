@@ -24,6 +24,7 @@ Workers:
 """
 
 import logging
+import hashlib
 import os
 import smtplib
 import imaplib
@@ -40,6 +41,24 @@ from celery.signals import task_failure, task_postrun, task_prerun, task_retry, 
 from celery.schedules import crontab
 
 logger = logging.getLogger(__name__)
+
+
+# ── Bounded deterministic ID helpers ──
+# correlation_id is VARCHAR(64), idempotency_key is VARCHAR(128).
+# Use short prefix + SHA-256 hex digest to stay within limits without truncation.
+
+
+def bounded_correlation_id(prefix: str, unique_part: str) -> str:
+    """Bounded correlation ID: prefix[:4] + SHA256 hex (fits in 64)."""
+    digest = hashlib.sha256(f"{prefix}:{unique_part}".encode()).hexdigest()
+    return f"{prefix[:4]}:{digest[:59]}"  # 4 + 1 + 59 = 64
+
+
+def bounded_idempotency_key(prefix: str, unique_part: str) -> str:
+    """Bounded idempotency key: prefix[:8] + SHA256 hex (fits in 128)."""
+    digest = hashlib.sha256(f"{prefix}:{unique_part}".encode()).hexdigest()
+    return f"{prefix[:8]}_{digest[:119]}"  # 8 + 1 + 119 = 128
+
 
 # ── Shared Celery app ──
 _redis_password = os.getenv("REDIS_PASSWORD", "redis_dev")
@@ -123,6 +142,9 @@ OVERLAP_LOCKS: dict[str, int] = {
     "workers.email_timeline_projection": 30,
     "workers.email_metrics_recalculation": 60,
     "workers.imap_ingestion": 120,
+    "workers.call_missed_call_recovery": 30,
+    "workers.sms_missed_call_recovery": 30,
+    "workers.sms_inbound_webhook": 30,
 }
 
 
@@ -143,7 +165,7 @@ class _UniqueTask(CeleryTask):
         task_id = self.request.id
         task_name = self.name
 
-        if task_name.startswith("workers."):
+        if task_id is not None and task_name.startswith("workers."):
             r = _get_redis_sync()
             if r:
                 lock_ttl = OVERLAP_LOCKS.get(task_name, 60)
@@ -1791,22 +1813,578 @@ def call_knowledge_ingestion(self, event_id: int | None = None, **context):
     finally: db.close()
 
 
-def _fetch_outbox_events(db, event_type: str, event_id: int | None = None):
+def _fetch_outbox_events(db, event_type: str, event_id: int | None = None, lock: bool = False):
+    """Fetch pending outbox events. Optionally uses SELECT FOR UPDATE SKIP LOCKED
+    for concurrency-safe claiming across multiple workers."""
     from app.infrastructure.db.models import OutboxEvent
+
     if event_id:
-        evt = db.query(OutboxEvent).filter(OutboxEvent.id == event_id).first()
+        query = db.query(OutboxEvent).filter(OutboxEvent.id == event_id)
+        if lock:
+            query = query.with_for_update(skip_locked=True)
+        evt = query.first()
         return [evt] if evt else []
-    return db.query(OutboxEvent).filter(OutboxEvent.event_type == event_type, OutboxEvent.status == "pending").order_by(OutboxEvent.created_at.asc()).limit(10).all()
+
+    query = db.query(OutboxEvent).filter(
+        OutboxEvent.event_type == event_type,
+        OutboxEvent.status == "pending",
+    ).order_by(OutboxEvent.created_at.asc()).limit(10)
+
+    if lock:
+        query = query.with_for_update(skip_locked=True)
+
+    return query.all()
 
 
-def _mark_event_failed(db, event, exc):
-    event.status = "failed" if event.attempt_count >= event.max_attempts else "pending"
-    event.last_error = str(exc)[:500]
+# Canonical event names used across route, dispatcher, worker, and tests
+RECONCILIATION_EVENT = "call.reconciliation.requested"
+SMS_RECOVERY_EVENT = "sms.missed_call_recovery.requested"
+
+# Canonical bounded-ID prefixes — MUST be used consistently everywhere
+MISSED_CALL_CORR_PREFIX = "missed_call"
+SMS_MISSED_CALL_IDEM_PREFIX = "sms_missed_call"
+SMS_PROVIDER_IDEM_PREFIX = "pns_missed"
+
+# Worker dispatch mapping — used by routing tests and Celery task routing
+WORKER_DISPATCH: dict[str, str] = {
+    RECONCILIATION_EVENT: "workers.call_missed_call_recovery",
+    SMS_RECOVERY_EVENT: "workers.sms_missed_call_recovery",
+}
+
+
+def _claim_event(db, event, lease_holder: str) -> bool:
+    """Claim an outbox event with a row-level lock and COMMIT immediately.
+
+    Uses SELECT FOR UPDATE SKIP LOCKED and a status guard: only pending
+    events (or retryable events that _recover_stale_leases reset) can be
+    claimed.  Once committed, no other worker may claim until the lease
+    is explicitly recovered.
+
+    Returns True if the event was claimed; False if locked, lost, or
+    already in a non-claimable state.
+    """
+    from app.infrastructure.db.models import OutboxEvent
+
+    locked = db.query(OutboxEvent).filter(
+        OutboxEvent.id == event.id,
+    ).with_for_update(skip_locked=True).first()
+
+    if locked is None:
+        return False
+
+    # Only claim events that are ready to be processed
+    if locked.status != "pending":
+        return False
+
+    locked.status = "processing"
+    locked.attempt_count += 1
+    locked.last_attempt_at = datetime.now(UTC)
+    locked.leased_at = datetime.now(UTC)
+    locked.lease_holder = lease_holder
+    db.commit()
+    return True
+
+
+def _mark_event_completed(db, event):
+    """Mark an outbox event completed.  Re-fetches to avoid detached-instance
+    mutations when the caller passes an event from a different session."""
+    from app.infrastructure.db.models import OutboxEvent
+    fresh = db.query(OutboxEvent).filter(OutboxEvent.id == event.id).first()
+    if fresh is None:
+        return
+    fresh.status = "completed"
+    fresh.leased_at = None
+    fresh.lease_holder = None
     db.commit()
 
 
-# ── Retry/Backoff config ──
-celery_app.conf.task_acks_late = True
-celery_app.conf.task_reject_on_worker_lost = True
-celery_app.conf.task_track_started = True
-celery_app.conf.result_expires = 3600
+def _mark_event_failed(db, event, exc):
+    """Mark an outbox event failed (retryable if under max_attempts).
+    Re-fetches to avoid detached-instance mutations."""
+    from app.infrastructure.db.models import OutboxEvent
+    fresh = db.query(OutboxEvent).filter(OutboxEvent.id == event.id).first()
+    if fresh is None:
+        return
+    fresh.status = "failed" if fresh.attempt_count >= fresh.max_attempts else "pending"
+    fresh.last_error = str(exc)[:500]
+    fresh.leased_at = None
+    fresh.lease_holder = None
+    db.commit()
+
+
+def _mark_event_failed_permanent(db, event, error_message: str):
+    """Terminal permanent failure for invalid/malformed events.
+    Sets status='failed' regardless of attempt_count."""
+    from app.infrastructure.db.models import OutboxEvent
+    fresh = db.query(OutboxEvent).filter(OutboxEvent.id == event.id).first()
+    if fresh is None:
+        return
+    fresh.status = "failed"
+    fresh.last_error = error_message[:500]
+    fresh.leased_at = None
+    fresh.lease_holder = None
+    db.commit()
+
+
+def _mark_event_pending(db, event):
+    """Revert a claimed event back to pending (e.g. missing provider config)."""
+    from app.infrastructure.db.models import OutboxEvent
+    fresh = db.query(OutboxEvent).filter(OutboxEvent.id == event.id).first()
+    if fresh is None:
+        return
+    fresh.status = "pending"
+    fresh.leased_at = None
+    fresh.lease_holder = None
+    db.commit()
+
+
+def _recover_stale_leases(db, lease_timeout_seconds: int = 300) -> int:
+    """Reset any outbox event that has been stuck in 'processing' longer
+    than lease_timeout_seconds back to 'pending'.
+
+    Guards against workers that die after claiming but before completing.
+    Returns the number of events recovered."""
+    from app.infrastructure.db.models import OutboxEvent
+
+    cutoff = datetime.now(UTC) - timedelta(seconds=lease_timeout_seconds)
+    stale = (
+        db.query(OutboxEvent)
+        .filter(
+            OutboxEvent.status == "processing",
+            OutboxEvent.leased_at.isnot(None),
+            OutboxEvent.leased_at < cutoff,
+        )
+        .all()
+    )
+    for event in stale:
+        event.status = "pending"
+        event.leased_at = None
+        event.lease_holder = None
+    if stale:
+        db.commit()
+    return len(stale)
+
+
+# Grace period before reconciliation worker processes a hangup event.
+# This allows late call.answered or call.bridged events to arrive.
+GRACE_PERIOD_SECONDS = int(os.getenv("RECONCILIATION_GRACE_PERIOD_SECONDS", "30"))
+
+
+def _reconcile_from_ledger(db, provider_call_id: str, grace_seconds: int = GRACE_PERIOD_SECONDS) -> bool:
+    """Check the ProviderWebhookEvent ledger for a late answer or bridge event.
+
+    A call is truly missed only if no call.answered or call.bridged event
+    arrived within the grace period after the hangup.
+
+    Returns True if the call was truly missed (no answer/bridge in ledger).
+    """
+    from app.infrastructure.db.models import ProviderWebhookEvent
+
+    cutoff = datetime.now(UTC) - timedelta(seconds=grace_seconds)
+
+    answered = db.query(ProviderWebhookEvent).filter(
+        ProviderWebhookEvent.call_control_id == provider_call_id,
+        ProviderWebhookEvent.event_type.in_(["call.answered", "call.bridged"]),
+        ProviderWebhookEvent.created_at >= cutoff,
+    ).first()
+
+    return answered is None
+
+
+def _format_phone_friendly(normalized: str) -> str:
+    """Format a normalized E.164 number for human-readable display.
+
+    '+16045551234' becomes '(604) 555-1234'.
+    Falls back to the raw input if parsing fails.
+    """
+    import re as _re
+    if not normalized:
+        return "unknown"
+    digits = _re.sub(r"\D", "", normalized)
+    if len(digits) == 11 and digits.startswith("1"):
+        return f"({digits[1:4]}) {digits[4:7]}-{digits[7:11]}"
+    if len(digits) == 10:
+        return f"({digits[:3]}) {digits[3:6]}-{digits[6:10]}"
+    return normalized
+
+
+@celery_app.task(
+    name="workers.call_missed_call_recovery",
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
+    queue="high",
+)
+def call_missed_call_recovery(self, event_id: int | None = None, **context):
+    """Reconcile a completed call and create recovery tasks if truly missed.
+
+    Consumes call.reconciliation.requested outbox events.
+    Checks the ProviderWebhookEvent ledger for late answer/bridge events
+    after a configurable grace period. Only creates callback tasks,
+    missed activities, and SMS outbox events when the call was truly missed.
+
+    Converts the Call status from COMPLETED to MISSED only after ledger
+    reconciliation confirms no answer event arrived.
+    """
+    db = _get_db()
+    try:
+        from app.infrastructure.db.models import OutboxEvent, Call, Task, Activity, ProviderWebhookEvent
+        from app.application.intake.sms import can_send_sms
+
+        events = _fetch_outbox_events(db, RECONCILIATION_EVENT, event_id, lock=False)
+        if not events:
+            return {"processed": 0}
+
+        task_id = self.request.id
+        processed = 0
+
+        for event in events:
+            db_session_clean = _get_db()
+            try:
+                if not _claim_event(db_session_clean, event, task_id):
+                    continue
+
+                payload = event.payload_json or {}
+                call_id = payload.get("call_id")
+                call_uuid = payload.get("call_public_uuid", "")
+                normalized_caller = payload.get("normalized_caller_number", "")
+                org_id = payload.get("organization_id")
+                contact_id = payload.get("contact_id")
+                company_id = payload.get("company_id")
+
+                if not org_id:
+                    _mark_event_failed(db_session_clean, event, ValueError("No organization_id in payload"))
+                    continue
+
+                call = db_session_clean.query(Call).filter(Call.id == call_id).first()
+                if not call:
+                    _mark_event_failed(db_session_clean, event, ValueError(f"Call {call_id} not found"))
+                    continue
+
+                if call.status == "MISSED":
+                    _mark_event_completed(db_session_clean, event)
+                    continue
+
+                provider_call_id = call.provider_call_id
+                if not provider_call_id:
+                    _mark_event_failed(db_session_clean, event, ValueError("No provider_call_id on call"))
+                    continue
+
+                if not _reconcile_from_ledger(db_session_clean, provider_call_id):
+                    logger.info(
+                        "Reconciliation cancelled: call=%s had late answer/bridge in ledger",
+                        call_uuid,
+                    )
+                    _mark_event_completed(db_session_clean, event)
+                    continue
+
+                call.status = "MISSED"
+                call.outcome = "missed"
+                call.updated_at = datetime.now(UTC)
+
+                caller_display = _format_phone_friendly(normalized_caller)
+                spam_score = call.spam_score or 0
+
+                recovery_key = f"missed_call_{call.public_uuid}"
+
+                existing = db_session_clean.query(Task).filter(
+                    Task.recovery_key == recovery_key,
+                ).first()
+                if existing:
+                    logger.info(
+                        "Recovery task already exists for call=%s task=%s",
+                        call_uuid, existing.id,
+                    )
+                    _mark_event_completed(db_session_clean, event)
+                    continue
+
+                task = Task(
+                    organization_id=org_id,
+                    contact_id=contact_id,
+                    company_id=company_id,
+                    title=f"Return missed call from {caller_display}",
+                    description=(
+                        f"Missed inbound call from {caller_display}. "
+                        f"Spam score: {spam_score}/100."
+                    ),
+                    priority="high",
+                    status="open",
+                    source="missed_call",
+                    sla_deadline=datetime.now(UTC) + timedelta(hours=4),
+                    due_date=(datetime.now(UTC) + timedelta(hours=2)).date(),
+                    recovery_key=recovery_key,
+                )
+                db_session_clean.add(task)
+                db_session_clean.flush()
+
+                activity = Activity(
+                    organization_id=org_id,
+                    contact_id=contact_id,
+                    company_id=company_id,
+                    activity_type="call_missed",
+                    subject=f"Missed call from {caller_display}",
+                    body="Missed inbound call. Callback task created.",
+                )
+                db_session_clean.add(activity)
+                db_session_clean.flush()
+
+                sms_outbox = OutboxEvent(
+                    event_type=SMS_RECOVERY_EVENT,
+                    payload_json={
+                        "call_id": call_id,
+                        "call_public_uuid": call_uuid,
+                        "normalized_caller_number": normalized_caller,
+                        "organization_id": org_id,
+                        "contact_id": contact_id,
+                    },
+                    correlation_id=bounded_correlation_id(MISSED_CALL_CORR_PREFIX, call_uuid),
+                    idempotency_key=bounded_idempotency_key(SMS_MISSED_CALL_IDEM_PREFIX, call.public_uuid),
+                )
+                db_session_clean.add(sms_outbox)
+
+                _mark_event_completed(db_session_clean, event)
+                processed += 1
+                logger.info(
+                    "Recovery complete: call=%s task=%s activity=%s",
+                    call_uuid, task.id, activity.id,
+                )
+
+            except Exception as exc:
+                db_session_clean.rollback()
+                _mark_event_failed(db_session_clean, event, exc)
+                if event.attempt_count < event.max_attempts:
+                    raise self.retry(
+                        exc=exc,
+                        countdown=min(60 * (2 ** (event.attempt_count - 1)), 1800),
+                    )
+            finally:
+                db_session_clean.close()
+
+        return {"processed": processed}
+    except Exception as exc:
+        logger.error("Reconciliation worker failed: %s", exc)
+        raise self.retry(exc=exc)
+    finally:
+        db.close()
+
+
+@celery_app.task(
+    name="workers.sms_missed_call_recovery",
+    bind=True,
+    max_retries=3,
+    default_retry_delay=120,
+    queue="high",
+)
+def sms_missed_call_recovery(self, event_id: int | None = None, **context):
+    """Send one recovery SMS for a missed call. Uses provider idempotency
+    and durable send-attempt tracking to prevent duplicate delivery.
+
+    Events are claimed and validated before provider configuration is
+    checked — a malformed event (no tenant, suppressed, spam) is resolved
+    immediately.  A valid event with a missing provider configuration is
+    left pending/retryable so an operator can configure the key.
+    """
+    db = _get_db()
+    try:
+        from app.infrastructure.db.models import OutboxEvent, Call, PhoneSuppression
+        from app.application.intake.sms import can_send_sms, MISSED_CALL_SMS_MESSAGE
+
+        events = _fetch_outbox_events(db, SMS_RECOVERY_EVENT, event_id, lock=False)
+        if not events:
+            return {"processed": 0}
+
+        task_id = self.request.id
+        processed = 0
+
+        for event in events:
+            db_session_clean = _get_db()
+            try:
+                if not _claim_event(db_session_clean, event, task_id):
+                    continue
+
+                payload = event.payload_json or {}
+                call_id = payload.get("call_id")
+                normalized = payload.get("normalized_caller_number", "")
+                org_id = payload.get("organization_id")
+
+                # ── Validation (resolve immediately) ──
+                if not org_id:
+                    logger.error(
+                        "SMS worker: no organization_id for event=%s, failing permanently",
+                        event.id,
+                    )
+                    _mark_event_failed_permanent(
+                        db_session_clean, event, "No organization_id in payload"
+                    )
+                    continue
+
+                if not normalized:
+                    logger.info("SMS skipped: event=%s no phone number", event.id)
+                    _mark_event_completed(db_session_clean, event)
+                    continue
+
+                can_send, reason = can_send_sms(db_session_clean, org_id, normalized)
+                if not can_send:
+                    logger.info(
+                        "SMS skipped: reason=%s org=%s",
+                        reason, org_id,
+                    )
+                    _mark_event_completed(db_session_clean, event)
+                    continue
+
+                call = db_session_clean.query(Call).filter(Call.id == call_id).first()
+
+                # ── Spam quarantine ──
+                if call and (call.spam_score or 0) >= 30:
+                    logger.info(
+                        "SMS skipped: spam_score=%s >= 30 for call=%s",
+                        call.spam_score, call.public_uuid,
+                    )
+                    _mark_event_completed(db_session_clean, event)
+                    continue
+
+                if call and call.sms_status == "sent":
+                    _mark_event_completed(db_session_clean, event)
+                    continue
+
+                # ── Provider configuration ──
+                telnyx_api_key = os.getenv("TELNYX_API_KEY", "")
+                telnyx_messaging_profile_id = os.getenv("TELNYX_MESSAGING_PROFILE_ID", "")
+                pns_phone = os.getenv("PNS_PHONE_NUMBER", "")
+
+                if not telnyx_api_key:
+                    logger.error(
+                        "SMS worker: TELNYX_API_KEY not configured — "
+                        "event=%s reverted to pending for retry",
+                        event.id,
+                    )
+                    _mark_event_pending(db_session_clean, event)
+                    continue
+
+                provider_idem_key = (
+                    bounded_idempotency_key(SMS_PROVIDER_IDEM_PREFIX, call.public_uuid)
+                    if call
+                    else f"pns_missed_{event.idempotency_key or event.id}"
+                )
+
+                msg_id = _send_telnyx_sms(
+                    api_key=telnyx_api_key,
+                    messaging_profile_id=telnyx_messaging_profile_id,
+                    from_phone=pns_phone,
+                    to_phone=normalized,
+                    message=MISSED_CALL_SMS_MESSAGE,
+                    idempotency_key=provider_idem_key,
+                )
+
+                if call:
+                    call.sms_status = "sent"
+                    call.sms_sent_at = datetime.now(UTC)
+                    call.sms_message_id = msg_id
+
+                _mark_event_completed(db_session_clean, event)
+                processed += 1
+                logger.info(
+                    "Recovery SMS sent: call=%s msg_id=%s",
+                    call.public_uuid if call else "unknown",
+                    msg_id[:12] if msg_id else "none",
+                )
+
+            except Exception as exc:
+                db_session_clean.rollback()
+                _mark_event_failed(db_session_clean, event, exc)
+                logger.error(
+                    "SMS send failed: event=%s attempt=%s error=%s",
+                    event.id, event.attempt_count, str(exc)[:200],
+                )
+                if event.attempt_count < event.max_attempts:
+                    raise self.retry(
+                        exc=exc,
+                        countdown=min(120 * (2 ** (event.attempt_count - 1)), 3600),
+                    )
+            finally:
+                db_session_clean.close()
+
+        return {"processed": processed}
+    except Exception as exc:
+        logger.error("SMS worker failed: %s", exc)
+        raise self.retry(exc=exc)
+    finally:
+        db.close()
+
+
+def _send_telnyx_sms(
+    api_key: str,
+    messaging_profile_id: str,
+    from_phone: str,
+    to_phone: str,
+    message: str,
+    idempotency_key: str | None = None,
+) -> str:
+    """Send SMS via Telnyx Messaging API.
+
+    Supports provider-level idempotency to prevent duplicate delivery
+    when a timeout occurs after Telnyx accepts the message.
+    Returns the Telnyx message ID on success.
+    """
+    if not api_key:
+        raise RuntimeError("TELNYX_API_KEY not configured")
+
+    body: dict = {
+        "from": from_phone,
+        "to": to_phone,
+        "text": message,
+        "messaging_profile_id": messaging_profile_id,
+        "webhook_url": os.getenv("CRM_APP_URL", "") + "/api/v1/telephony/sms/webhook",
+        "webhook_failover_url": None,
+    }
+
+    if idempotency_key:
+        body["idempotency_key"] = idempotency_key
+
+    resp = httpx.post(
+        "https://api.telnyx.com/v2/messages",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json=body,
+        timeout=15,
+    )
+    if resp.status_code not in (200, 201, 202):
+        raise RuntimeError(
+            f"Telnyx SMS API returned {resp.status_code}: {resp.text[:200]}"
+        )
+
+    data = resp.json().get("data", {})
+    return data.get("id", "")
+
+
+@celery_app.task(
+    name="workers.sms_inbound_webhook",
+    bind=True,
+    max_retries=2,
+    default_retry_delay=30,
+    queue="high",
+)
+def sms_inbound_webhook(self, event_id: int | None = None, **context):
+    """Process inbound SMS webhook events from the outbox.
+    Handles STOP/START suppression and normal replies.
+    Currently inbound SMS is handled synchronously in the webhook route;
+    this worker exists for retry/async processing of failed deliveries."""
+    db = _get_db()
+    try:
+        events = _fetch_outbox_events(db, "sms.inbound_webhook.requested", event_id, lock=False)
+        processed = 0
+        for event in events:
+            try:
+                _mark_event_completed(db, event)
+                processed += 1
+            except Exception as exc:
+                db.rollback()
+                _mark_event_failed(db, event, exc)
+        return {"processed": processed}
+    except Exception as exc:
+        logger.error("SMS inbound worker failed: %s", exc)
+        raise self.retry(exc=exc)
+    finally:
+        db.close()

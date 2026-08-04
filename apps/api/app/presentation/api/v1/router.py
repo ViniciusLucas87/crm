@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.presentation.api.v1.routes import actions, agents, ai, assessments, auth, companies, contacts, conversations, copilot, dashboard, decision_maker, demand, documents, enrich, health, health_llm, intelligence, knowledge, leads, mcp, reports, sales, sales_coach, scoring, search, telemetry, telephony, timeline, transcription, workers, assessment_public
+from app.presentation.api.v1.routes import actions, agents, ai, assessments, audit, auth, companies, contacts, conversations, copilot, dashboard, decision_maker, demand, documents, enrich, health, health_llm, intelligence, knowledge, leads, mcp, operations, reports, sales, sales_coach, scoring, search, telemetry, telephony, timeline, transcription, workers, assessment_public
 
 api_router = APIRouter()
 api_router.include_router(health.router, tags=["health"])
@@ -22,12 +22,14 @@ api_router.include_router(enrich.router, tags=["enrich"])
 api_router.include_router(reports.router, tags=["reports"])
 api_router.include_router(telephony.router, tags=["telephony"])
 api_router.include_router(telemetry.router, tags=["telemetry"])
+api_router.include_router(operations.router, prefix="/operations", tags=["operations"])
 api_router.include_router(decision_maker.router, tags=["decision-maker"])
 api_router.include_router(documents.router, tags=["documents"])
 api_router.include_router(leads.router, tags=["leads"])
 api_router.include_router(conversations.router, tags=["conversations"])
 api_router.include_router(copilot.router, tags=["copilot"])
 api_router.include_router(transcription.router, prefix="/transcription", tags=["transcription"])
+api_router.include_router(audit.router, tags=["audit"])
 api_router.include_router(sales_coach.router, prefix="/sales-coach", tags=["sales-coach"])
 api_router.include_router(knowledge.router, prefix="/knowledge", tags=["knowledge"])
 api_router.include_router(demand.router, prefix="/demand", tags=["demand"])

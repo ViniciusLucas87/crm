@@ -3,6 +3,10 @@
 **/.venv
 **/__pycache__
 **/_copilot_skip
+**/.pytest_cache
 apps/web/src/app/copilot/**
+apps/worker/tests/
+apps/worker/requirements-dev.txt
+apps/worker/pytest.ini
 .git
 .gitignore

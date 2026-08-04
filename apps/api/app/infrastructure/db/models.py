@@ -1,7 +1,7 @@
 from datetime import UTC, date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, JSON, Numeric, String, Text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, JSON, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -130,7 +130,7 @@ class Activity(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
-    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)
+    company_id: Mapped[int | None] = mapped_column(ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
     contact_id: Mapped[int | None] = mapped_column(ForeignKey("contacts.id", ondelete="SET NULL"), nullable=True)
     conversation_id: Mapped[int | None] = mapped_column(ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True, index=True)
     activity_type: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -139,7 +139,7 @@ class Activity(Base):
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
-    company: Mapped["Company"] = relationship("Company")
+    company: Mapped["Company | None"] = relationship("Company")
 
 
 class Task(Base):
@@ -156,6 +156,11 @@ class Task(Base):
     status: Mapped[str] = mapped_column(String(20), default="open", nullable=False)
     due_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    source: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    sla_deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    recovery_key: Mapped[str | None] = mapped_column(String(128), nullable=True, unique=True, index=True)
+    lead_id: Mapped[int | None] = mapped_column(ForeignKey("leads.id", ondelete="SET NULL"), nullable=True, index=True)
+    owner_user_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
     company: Mapped["Company"] = relationship("Company")
 
@@ -424,8 +429,26 @@ class Lead(Base):
     website_data: Mapped[str | None] = mapped_column(Text, nullable=True)
     reviews_data: Mapped[str | None] = mapped_column(Text, nullable=True)
     linkedin_data: Mapped[str | None] = mapped_column(Text, nullable=True)
+    owner_user_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
+
+
+class FollowUpAction(Base):
+    """Immutable audit ledger for every follow-up state transition."""
+    __tablename__ = "follow_up_actions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    actor_user_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False, unique=True, index=True)
+    entity_type: Mapped[str] = mapped_column(String(20), nullable=False)  # "task", "lead"
+    entity_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    action: Mapped[str] = mapped_column(String(30), nullable=False)  # "completed", "rescheduled", "assigned"
+    old_state: Mapped[str | None] = mapped_column(Text, nullable=True)
+    new_state: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
 
 
 class LeadTimelineEvent(Base):
@@ -641,6 +664,14 @@ class Call(Base):
     transcript_status: Mapped[str] = mapped_column(String(20), default="none")
     post_call_status: Mapped[str] = mapped_column(String(20), default="none")
 
+    # ── Phase 1 Intake ──
+    spam_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    spam_reasons: Mapped[str | None] = mapped_column(Text, nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(128), nullable=True, unique=True)
+    sms_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    sms_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    sms_message_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
     # ── Metadata ──
     provider_metadata: Mapped[str | None] = mapped_column(Text, nullable=True)
     metadata_json: Mapped[dict | None] = mapped_column(JSON_DOCUMENT, nullable=True)
@@ -791,13 +822,53 @@ class OutboxEvent(Base):
     event_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     payload_json: Mapped[dict] = mapped_column(JSON_DOCUMENT, nullable=False)
     correlation_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(128), nullable=True, unique=True, index=True)
 
     status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False, index=True)
     attempt_count: Mapped[int] = mapped_column(Integer, default=0)
     max_attempts: Mapped[int] = mapped_column(Integer, default=5)
     last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    leased_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    lease_holder: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
 
+
+class ProviderWebhookEvent(Base):
+    """Immutable provider webhook event ledger. Unique on provider event id.
+    Each Telnyx webhook is persisted once and never mutated.
+    """
+    __tablename__ = "provider_webhook_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    provider_event_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    provider: Mapped[str] = mapped_column(String(50), nullable=False, default="telnyx")
+    event_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    call_control_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    call_leg_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    payload_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    processing_status: Mapped[str] = mapped_column(String(20), nullable=False, default="received", index=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+
+
+class PhoneSuppression(Base):
+    """Durable opt-out registry. STOP/START workflow for SMS compliance."""
+    __tablename__ = "phone_suppressions"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "normalized_phone", name="uq_phone_suppressions_org_phone"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    organization_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    phone_number: Mapped[str] = mapped_column(String(50), nullable=False)
+    normalized_phone: Mapped[str] = mapped_column(String(50), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="suppressed")
+    reason: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    source_event_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))

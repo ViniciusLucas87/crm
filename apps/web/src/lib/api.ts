@@ -198,6 +198,82 @@ function toSnakeCase(str: string): string {
   return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 
+// ── Audit ──
+
+export interface AuditEntry {
+  id: number;
+  actor_user_id: string | null;
+  idempotency_key: string;
+  entity_type: string;
+  entity_id: number;
+  action: string;
+  old_state: string | null;
+  new_state: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface AuditListResponse {
+  entries: AuditEntry[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface AuditListParams {
+  page?: number;
+  page_size?: number;
+  entity_type?: string;
+  entity_id?: number;
+  action?: string;
+}
+
+export async function fetchAuditEntries(params: AuditListParams = {}): Promise<AuditListResponse> {
+  const query = new URLSearchParams();
+  query.set("page", String(params.page ?? 1));
+  query.set("page_size", String(params.page_size ?? 50));
+  if (params.entity_type) query.set("entity_type", params.entity_type);
+  if (params.entity_id != null) query.set("entity_id", String(params.entity_id));
+  if (params.action) query.set("action", params.action);
+
+  const response = await fetch(`${API_BASE_URL}/audit?${query.toString()}`, {
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new ApiError(`Failed to fetch audit entries: ${response.status}`, response.status);
+  }
+  return response.json() as Promise<AuditListResponse>;
+}
+
+// ── Operations ──
+
+export interface OperationsStatus {
+  status: string;
+  build_id: string;
+  git_commit: string;
+  environment: string;
+  db_status: string;
+  db_latency_ms: number;
+  redis_status: string;
+  outbox_pending: number;
+  outbox_failed: number;
+  backups_ok: boolean | null;
+  backup_last_ts: string | null;
+  worker_status: string;
+  worker_heartbeat_ms: number | null;
+  generated_at: string;
+}
+
+export async function fetchOperationsStatus(): Promise<OperationsStatus> {
+  const response = await fetch(`${API_BASE_URL}/operations/status`, {
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new ApiError(`Failed to fetch operations status: ${response.status}`, response.status);
+  }
+  return response.json() as Promise<OperationsStatus>;
+}
+
 function toSnakeKeys(obj: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
@@ -309,4 +385,125 @@ export async function updateOpportunity(id: number, input: OpportunityUpdateInpu
   return { id: o.id, companyId: o.company_id, contactId: o.contact_id, title: o.title, estimatedValue: Number(o.estimated_value ?? 0), probability: o.probability, expectedCloseDate: o.expected_close_date, owner: o.owner, stage: o.stage, status: o.status, notes: o.notes, createdAt: o.created_at, updatedAt: o.updated_at };
 }
 
-import type { Activity, ActivityCreateInput, ActivityList, Contact, ContactCreateInput, ContactList, ContactUpdateInput, Opportunity, OpportunityCreateInput, OpportunityList, OpportunityUpdateInput, Task, TaskCreateInput, TaskList, TaskUpdateInput } from "@/lib/types";
+// ── Today Workspace ──
+
+export async function fetchTodayWorkspace(): Promise<TodayWorkspace> {
+  const r = await fetch(`${API_BASE_URL}/dashboard/today`, { cache: "no-store" });
+  if (!r.ok) throw new ApiError(`Failed to load today workspace: ${r.status}`, r.status);
+  const p = await r.json();
+  return {
+    assessmentLeads: (p.assessment_leads || []).map(mapTodayLead),
+    missedCalls: (p.missed_calls || []).map(mapTodayMissedCall),
+    inboundReplies: (p.inbound_replies || []).map(mapTodayReply),
+    overdueFollowUps: (p.overdue_follow_ups || []).map(mapTodayTask),
+    dueToday: (p.due_today || []).map(mapTodayTask),
+    upcoming: (p.upcoming || []).map(mapTodayTask),
+    leadsNoNextAction: (p.leads_no_next_action || []).map(mapTodayTask),
+    generatedAt: p.generated_at,
+  };
+}
+
+export async function executeFollowUp(taskId: number, request: FollowUpRequest): Promise<FollowUpResponse> {
+  const r = await fetch(`${API_BASE_URL}/dashboard/tasks/${taskId}/follow-up`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({ detail: `Failed: ${r.status}` }));
+    throw new ApiError(err.detail || `Failed: ${r.status}`, r.status);
+  }
+  const p = await r.json();
+  return {
+    taskId: p.task_id,
+    action: p.action,
+    activityId: p.activity_id,
+    nextTaskId: p.next_task_id,
+    message: p.message,
+  };
+}
+
+export async function acknowledgeReply(emailId: number): Promise<{ id: number; status: string }> {
+  const r = await fetch(`${API_BASE_URL}/dashboard/replies/${emailId}/acknowledge`, {
+    method: "POST",
+  });
+  if (!r.ok) throw new ApiError(`Failed: ${r.status}`, r.status);
+  return r.json();
+}
+
+function mapTodayLead(p: Record<string, unknown>): TodayLeadItem {
+  return {
+    id: p.id as number,
+    leadId: p.lead_id as number,
+    name: p.name as string,
+    companyName: (p.company_name as string) || "",
+    industry: p.industry as string | null,
+    opportunityScore: p.opportunity_score as number,
+    status: p.status as string,
+    createdAt: p.created_at as string,
+    ownerUserId: p.owner_user_id as string | null,
+    reason: p.reason as string,
+  };
+}
+
+function mapTodayMissedCall(p: Record<string, unknown>): TodayMissedCallItem {
+  return {
+    id: p.id as number,
+    callUuid: p.call_uuid as string,
+    callerNumber: p.caller_number as string,
+    callerDisplay: p.caller_display as string,
+    calledAt: p.called_at as string,
+    spamScore: p.spam_score as number | null,
+    companyId: p.company_id as number | null,
+    companyName: p.company_name as string | null,
+    contactId: p.contact_id as number | null,
+    contactName: p.contact_name as string | null,
+    reason: p.reason as string,
+  };
+}
+
+function mapTodayReply(p: Record<string, unknown>): TodayReplyItem {
+  return {
+    id: p.id as number,
+    emailUuid: p.email_uuid as string,
+    fromAddress: p.from_address as string,
+    subject: p.subject as string | null,
+    receivedAt: p.received_at as string,
+    companyId: p.company_id as number | null,
+    companyName: p.company_name as string | null,
+    contactId: p.contact_id as number | null,
+    contactName: p.contact_name as string | null,
+    reason: p.reason as string,
+  };
+}
+
+function mapTodayTask(p: Record<string, unknown>): TodayTaskItem {
+  return {
+    id: p.id as number,
+    leadId: p.lead_id as number | null,
+    title: p.title as string,
+    description: p.description as string | null,
+    priority: p.priority as string,
+    status: p.status as string,
+    dueDate: p.due_date as string,
+    isCompleted: p.is_completed as boolean,
+    source: p.source as string | null,
+    companyId: p.company_id as number | null,
+    companyName: p.company_name as string | null,
+    contactId: p.contact_id as number | null,
+    contactName: p.contact_name as string | null,
+    contactEmail: p.contact_email as string | null,
+    contactPhone: p.contact_phone as string | null,
+    ownerUserId: p.owner_user_id as string | null,
+    reason: p.reason as string,
+  };
+}
+
+import type {
+  Activity, ActivityCreateInput, ActivityList,
+  Contact, ContactCreateInput, ContactList, ContactUpdateInput,
+  FollowUpRequest, FollowUpResponse,
+  Opportunity, OpportunityCreateInput, OpportunityList, OpportunityUpdateInput,
+  Task, TaskCreateInput, TaskList, TaskUpdateInput,
+  TodayLeadItem, TodayMissedCallItem, TodayReplyItem, TodayTaskItem, TodayWorkspace,
+} from "@/lib/types";

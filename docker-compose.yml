@@ -100,5 +100,27 @@ services:
       retries: 3
       start_period: 30s
 
+  backup:
+    build:
+      context: .
+      dockerfile: apps/backup/Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-}
+      - BACKUP_ENCRYPT_KEY=${BACKUP_ENCRYPT_KEY:-}
+      - BACKUP_S3_BUCKET=${BACKUP_S3_BUCKET:-}
+      - BACKUP_S3_ENDPOINT=${BACKUP_S3_ENDPOINT:-}
+      - BACKUP_S3_REGION=${BACKUP_S3_REGION:-auto}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+    # No volumes - no plaintext persistence. All data streams through pipes.
+    # No ports exposed. Runs once and exits; schedule via Railway Cron or external orchestrator.
+    profiles:
+      - backup
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
