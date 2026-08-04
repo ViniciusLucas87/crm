@@ -846,6 +846,12 @@ celery_app.conf.beat_schedule = {
         "schedule": 30.0,
         "options": {"queue": "normal"},
     },
+    # Assessment lifecycle — polls every 30s for pending lifecycle events
+    "assessment-lifecycle-every-30s": {
+        "task": "workers.outbox_process_assessment_lifecycle",
+        "schedule": 30.0,
+        "options": {"queue": "high"},
+    },
     # IMAP ingestion — polls every 60s for new inbound emails
     "imap-ingestion-every-60s": {
         "task": "workers.imap_ingestion",
@@ -858,6 +864,7 @@ celery_app.conf.beat_schedule = {
 celery_app.conf.task_routes = {
     "workers.*": {"queue": "normal"},
     "workers.outbox_process_email": {"queue": "high"},
+    "workers.outbox_process_assessment_lifecycle": {"queue": "high"},
 }
 celery_app.conf.task_queues = {
     "critical": {"exchange": "critical", "routing_key": "critical"},
@@ -888,6 +895,26 @@ def outbox_process_email(self, event_id: int | None = None, **context):
     db = _get_db()
     try:
         from app.infrastructure.db.models import OutboxEvent
+
+        # Stale processing recovery: reset events stuck in "processing" longer
+        # than STALE_PROCESSING_MINUTES back to "pending".  Leaves "failed"
+        # events untouched, so old test failures are never automatically resent.
+        stale_cutoff = datetime.now(UTC) - timedelta(minutes=STALE_PROCESSING_MINUTES)
+        stale_events = db.query(OutboxEvent).filter(
+            OutboxEvent.event_type.in_([
+                "assessment.internal_notification.requested",
+                "assessment.visitor_email.requested",
+            ]),
+            OutboxEvent.status == "processing",
+            OutboxEvent.last_attempt_at < stale_cutoff,
+        ).all()
+        for se in stale_events:
+            se.status = "pending"
+            se.lease_holder = None
+            se.leased_at = None
+            logger.info("Stale email event reset to pending: event_id=%s type=%s", se.id, se.event_type)
+        if stale_events:
+            db.commit()
 
         # ── Fetch pending email events ──
         if event_id:
@@ -1845,6 +1872,18 @@ MISSED_CALL_CORR_PREFIX = "missed_call"
 SMS_MISSED_CALL_IDEM_PREFIX = "sms_missed_call"
 SMS_PROVIDER_IDEM_PREFIX = "pns_missed"
 
+# Assessment lifecycle event types — consumed by outbox_process_assessment_lifecycle
+ASSESSMENT_COMPLETED_EVENT = "assessment.completed"
+ASSESSMENT_REPORT_REQUESTED_EVENT = "assessment.report.requested"
+LEAD_FOLLOWUP_REQUESTED_EVENT = "lead.followup.requested"
+ASSESSMENT_LIFECYCLE_EVENTS = [
+    ASSESSMENT_COMPLETED_EVENT,
+    ASSESSMENT_REPORT_REQUESTED_EVENT,
+    LEAD_FOLLOWUP_REQUESTED_EVENT,
+]
+# Stale processing threshold: events stuck in "processing" longer than this are reset to "pending"
+STALE_PROCESSING_MINUTES = 15
+
 # Worker dispatch mapping — used by routing tests and Celery task routing
 WORKER_DISPATCH: dict[str, str] = {
     RECONCILIATION_EVENT: "workers.call_missed_call_recovery",
@@ -2390,3 +2429,175 @@ def sms_inbound_webhook(self, event_id: int | None = None, **context):
         raise self.retry(exc=exc)
     finally:
         db.close()
+
+
+@celery_app.task(
+    name="workers.outbox_process_assessment_lifecycle",
+    bind=True,
+    max_retries=2,
+    default_retry_delay=30,
+    queue="high",
+)
+def outbox_process_assessment_lifecycle(self, event_id: int | None = None, **context):
+    """Process assessment lifecycle outbox events.
+
+    Consumes three event types:
+      - assessment.completed: verify Assessment, Company, Lead exist from payload
+      - assessment.report.requested: verify Assessment has intelligence to build a report
+      - lead.followup.requested: verify the referenced Lead and Task exist
+
+    Each handler validates invariants before marking the event completed.
+    Missing invariants cause a permanent failure (no retry).
+    Does NOT create duplicate business records and does NOT mutate business state.
+
+    In event_id mode (single event):
+      - Completed events are a clean no-op (already processed)
+      - Events with event_type NOT in ASSESSMENT_LIFECYCLE_EVENTS are skipped
+      - Only pending events of valid types are processed
+    """
+    db = _get_db()
+    try:
+        from app.infrastructure.db.models import OutboxEvent
+
+        if event_id:
+            event = db.query(OutboxEvent).filter(OutboxEvent.id == event_id).first()
+            if event is None:
+                return {"processed": 0}
+            if event.status == "completed":
+                return {"processed": 0, "note": "event already completed"}
+            if event.event_type not in ASSESSMENT_LIFECYCLE_EVENTS:
+                return {"processed": 0, "note": f"event_type {event.event_type} not a lifecycle event"}
+            if event.status != "pending":
+                return {"processed": 0, "note": f"event status is {event.status}, not pending"}
+            events = [event]
+        else:
+            events = db.query(OutboxEvent).filter(
+                OutboxEvent.event_type.in_(ASSESSMENT_LIFECYCLE_EVENTS),
+                OutboxEvent.status == "pending",
+            ).order_by(OutboxEvent.created_at.asc()).limit(10).all()
+
+        if not events:
+            return {"processed": 0}
+
+        processed = 0
+        for event in events:
+            try:
+                event.status = "processing"
+                event.attempt_count += 1
+                event.last_attempt_at = datetime.now(UTC)
+                db.commit()
+
+                payload = event.payload_json or {}
+                etype = event.event_type
+
+                if etype == ASSESSMENT_COMPLETED_EVENT:
+                    _handle_assessment_completed(db, payload, event)
+                elif etype == ASSESSMENT_REPORT_REQUESTED_EVENT:
+                    _handle_assessment_report_requested(db, payload, event)
+                elif etype == LEAD_FOLLOWUP_REQUESTED_EVENT:
+                    _handle_lead_followup_requested(db, payload, event)
+
+                _mark_event_completed(db, event)
+                processed += 1
+                logger.info("Assessment lifecycle processed: event_id=%s type=%s", event.id, etype)
+
+            except _InvariantFailure as exc:
+                db.rollback()
+                _mark_event_failed_permanent(db, event, str(exc))
+                logger.warning("Assessment lifecycle invariant failed: event_id=%s type=%s error=%s", event.id, event.event_type, exc)
+            except Exception as exc:
+                db.rollback()
+                _mark_event_failed(db, event, exc)
+                logger.error("Assessment lifecycle failed: event_id=%s type=%s error=%s", event.id, event.event_type, str(exc)[:200])
+
+        return {"processed": processed}
+
+    except Exception as exc:
+        logger.error("Assessment lifecycle worker failed: %s", exc)
+        raise self.retry(exc=exc)
+    finally:
+        db.close()
+
+
+class _InvariantFailure(Exception):
+    """Raised when a lifecycle event's required invariants are not satisfied."""
+
+
+def _handle_assessment_completed(db, payload: dict, event):
+    """Verify the Assessment, Company, and Lead referenced in payload exist.
+    All three references are required since the producer always emits them."""
+    from app.infrastructure.db.models import AutomationAssessment, Company, Lead
+
+    assessment_id = payload.get("assessment_id")
+    company_id = payload.get("company_id")
+    lead_id = payload.get("lead_id")
+
+    if not assessment_id:
+        raise _InvariantFailure("Missing assessment_id in payload")
+    if not company_id:
+        raise _InvariantFailure("Missing company_id in payload")
+    if not lead_id:
+        raise _InvariantFailure("Missing lead_id in payload")
+
+    assessment = db.query(AutomationAssessment).filter(
+        AutomationAssessment.public_id == assessment_id
+    ).first()
+    if not assessment:
+        raise _InvariantFailure(f"Assessment public_id={assessment_id} not found")
+
+    company = db.query(Company).filter(Company.id == company_id).first()
+    if not company:
+        raise _InvariantFailure(f"Company id={company_id} not found for assessment {assessment_id}")
+
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    if not lead:
+        raise _InvariantFailure(f"Lead id={lead_id} not found for assessment {assessment_id}")
+
+
+def _handle_assessment_report_requested(db, payload: dict, event):
+    """Verify the Assessment exists and has intelligence results.
+    Does NOT generate a report or mutate business state."""
+    from app.infrastructure.db.models import AutomationAssessment
+
+    assessment_id = payload.get("assessment_id")
+    if not assessment_id:
+        raise _InvariantFailure("Missing assessment_id in payload")
+
+    assessment = db.query(AutomationAssessment).filter(
+        AutomationAssessment.public_id == assessment_id
+    ).first()
+    if not assessment:
+        raise _InvariantFailure(f"Assessment public_id={assessment_id} not found")
+
+    has_intelligence = (
+        assessment.intelligence_json is not None
+        or assessment.intelligence_generated_at is not None
+    )
+    if not has_intelligence:
+        raise _InvariantFailure(
+            f"Assessment public_id={assessment_id} has no intelligence to build a report from"
+        )
+
+
+def _handle_lead_followup_requested(db, payload: dict, event):
+    """Verify the referenced Lead and Task exist for follow-up.
+    Both references are required since the producer always emits them."""
+    from app.infrastructure.db.models import Lead, Task
+
+    lead_id = payload.get("lead_id")
+    task_id = payload.get("task_id")
+
+    if not lead_id:
+        raise _InvariantFailure("Missing lead_id in payload")
+    if not task_id:
+        raise _InvariantFailure("Missing task_id in payload")
+
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    if not lead:
+        raise _InvariantFailure(f"Lead id={lead_id} not found")
+
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise _InvariantFailure(f"Task id={task_id} not found for lead {lead_id}")
+
+    # Lead follow-up is now validated; no duplicate records created
