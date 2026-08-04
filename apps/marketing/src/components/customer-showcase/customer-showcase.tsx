@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   testimonials,
@@ -136,7 +137,7 @@ export function CustomerShowcase() {
         {/* Header */}
         <div className="mb-8">
           <p className="text-xs font-semibold uppercase tracking-widest text-pns-text-muted mb-2">
-            Trusted by businesses across British Columbia
+            A verified client experience from British Columbia
           </p>
           <h2
             id="showcase-heading"
@@ -305,6 +306,17 @@ export function CustomerShowcase() {
             </button>
           </div>
         )}
+
+        <div className="mt-8 text-center text-[13px] text-pns-text-muted">
+          Used a Pacific North Systems tool or worked with us?{" "}
+          <Link
+            href="mailto:hello@pacificnorthsystems.com?subject=Share%20my%20PNS%20experience"
+            className="font-medium text-pns-text-primary underline"
+          >
+            Share your honest experience
+          </Link>
+          . We request explicit publication permission and never pay for positive wording.
+        </div>
       </div>
     </section>
   );

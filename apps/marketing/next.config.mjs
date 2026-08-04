@@ -47,11 +47,6 @@ const nextConfig = {
         destination: "/solutions#reporting-systems",
         permanent: true,
       },
-      {
-        source: "/sitemap.xml",
-        destination: "/api/sitemap",
-        permanent: false,
-      },
     ];
   },
   async headers() {

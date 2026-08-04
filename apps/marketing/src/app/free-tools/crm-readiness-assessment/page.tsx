@@ -185,7 +185,7 @@ function calculateScore(answers: Record<string, number>): ScoreResult {
       "Your current processes are likely costing you leads and revenue through inconsistency.",
       "Priority: choose a CRM or lead-management system and migrate all contacts into it.",
       "Define one pipeline with 3-5 stages, assign ownership for every lead, and set follow-up reminders.",
-      "Even basic structure will produce measurable improvement within 30 days.",
+      "Start with a simple shared process, assign every lead, and measure overdue follow-ups against today’s baseline.",
     ];
   }
 

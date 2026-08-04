@@ -32,6 +32,8 @@ export const siteConfig = {
       { label: "Solutions", href: "/solutions" },
       { label: "Free Tools", href: "/free-tools" },
       { label: "Business Guides", href: "/business-guides" },
+      { label: "Research", href: "/research" },
+      { label: "Methodology", href: "/methodology" },
       { label: "Demo Systems", href: "/#demo-systems" },
       { label: "Process", href: "/#process" },
       { label: "About", href: "/#about" },

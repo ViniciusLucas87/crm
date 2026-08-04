@@ -30,6 +30,24 @@ export interface ToolPageConfig {
   results: React.ComponentType<ResultProps>;
 }
 
+const toolMethodology: Record<string, { formula: string; example: string; limitations: string }> = {
+  "manual-work-cost-calculator": {
+    formula: "Annual task cost = people × weekly hours per person × loaded hourly cost × working weeks. Recoverable planning value = annual task cost × your chosen recovery percentage.",
+    example: "Hypothetical example: 4 people × 3 hours × $40 × 48 weeks = $23,040 annual task cost. A later pilot that verifies 25% removal would support a $5,760 planning value.",
+    limitations: "Use your payroll and accounting figures. The recovery percentage is your scenario, not an industry benchmark or savings promise.",
+  },
+  "automation-roi-calculator": {
+    formula: "First-year net benefit = annual benefit − upfront investment − annual recurring cost. ROI = first-year net benefit ÷ first-year cost. Payback uses the monthly net benefit when it is positive.",
+    example: "Build a conservative case with your measured task baseline, complete vendor quote, recurring support and usage costs, and a recovery rate observed in a pilot.",
+    limitations: "Results exclude unentered costs and cannot predict implementation delays, adoption, failures, demand, revenue, tax, or financing effects.",
+  },
+  "crm-readiness-assessment": {
+    formula: "This is a Pacific North Systems planning framework. Answers receive fixed points for lead volume, ownership, follow-up visibility, response time, and reporting; the total maps to a readiness band.",
+    example: "Use the result to identify the weakest operating control, then measure that control—such as overdue next actions—before and after a small process change.",
+    limitations: "The score is not a validated diagnostic, financial forecast, security assessment, or guarantee that a CRM will improve revenue.",
+  },
+};
+
 /* ------------------------------------------------------------------ */
 /*  Reusable wrapper                                                   */
 /* ------------------------------------------------------------------ */
@@ -86,6 +104,7 @@ export function ToolPage({ config }: { config: ToolPageConfig }) {
 
   const ActiveStep = config.steps[step];
   const ResultsComponent = config.results;
+  const methodology = toolMethodology[config.slug];
 
   return (
     <div className="min-h-screen bg-pns-bg">
@@ -125,6 +144,24 @@ export function ToolPage({ config }: { config: ToolPageConfig }) {
           <ActiveStep onNext={handleNext} defaultValues={values} />
         ) : (
           <ResultsComponent values={values} onRestart={handleRestart} />
+        )}
+
+        {methodology && (
+          <aside className="mt-12 border-t border-pns-assessment-input-border pt-8" aria-labelledby="tool-methodology">
+            <p className="text-[12px] uppercase tracking-wide text-pns-text-muted">Last reviewed August 3, 2026 · Pacific North Systems</p>
+            <h2 id="tool-methodology" className="font-heading font-semibold text-[20px] text-pns-text-primary mt-2 mb-4">How this tool works</h2>
+            <div className="space-y-3 text-[14px] leading-relaxed text-pns-text-muted">
+              <p><strong className="text-pns-text-primary">Method:</strong> {methodology.formula}</p>
+              <p><strong className="text-pns-text-primary">Worked example:</strong> {methodology.example}</p>
+              <p><strong className="text-pns-text-primary">Limits:</strong> {methodology.limitations}</p>
+              <p><strong className="text-pns-text-primary">Privacy:</strong> Inputs stay in this browser session. We receive information only if you deliberately submit the optional follow-up form.</p>
+            </div>
+            <div className="flex flex-wrap gap-4 mt-5 text-[14px] font-medium">
+              <Link href="/methodology" className="underline hover:text-pns-text-primary">Editorial and calculator standards</Link>
+              <Link href="/research/manual-work-cost-benchmark-2026" className="underline hover:text-pns-text-primary">2026 Canadian planning baseline</Link>
+              <Link href="/privacy" className="underline hover:text-pns-text-primary">Privacy policy</Link>
+            </div>
+          </aside>
         )}
       </Container>
     </div>

@@ -1,0 +1,45 @@
+# Pacific North Systems
+> Custom software and automation for operations-heavy teams in Metro Vancouver.
+
+## About
+Pacific North Systems builds custom business software, workflow automation, dashboards, field tools, and AI-enabled systems for Canadian small and mid-size businesses. We focus on replacing manual data entry, connecting disconnected tools, and building software that fits how teams actually work.
+
+## Key Pages
+- Home: https://pacificnorthsystems.com
+- Solutions: https://pacificnorthsystems.com/solutions
+- Free Business Tools: https://pacificnorthsystems.com/free-tools
+- Business Assessment: https://pacificnorthsystems.com/assessment
+- Business Guides: https://pacificnorthsystems.com/business-guides
+- Blog: https://pacificnorthsystems.com/blog
+- Contact: https://pacificnorthsystems.com/contact
+
+## Free Tools
+- Manual Work Cost Calculator: https://pacificnorthsystems.com/free-tools/manual-work-cost-calculator | Estimate annual cost of repetitive manual tasks
+- Automation ROI Calculator: https://pacificnorthsystems.com/free-tools/automation-roi-calculator | Year-one return on automation investment
+- CRM Readiness Assessment: https://pacificnorthsystems.com/free-tools/crm-readiness-assessment | 10-question readiness score for SMBs
+
+## Business Guides
+- What Should I Automate First: https://pacificnorthsystems.com/business-guides/what-should-i-automate-first
+- Manual Paperwork Cost: https://pacificnorthsystems.com/business-guides/manual-paperwork-cost
+- AI Without Replacing Employees: https://pacificnorthsystems.com/business-guides/ai-without-replacing-employees
+- Stop Leads Falling Through Cracks: https://pacificnorthsystems.com/business-guides/stop-leads-falling-through-cracks
+- Do I Need a CRM: https://pacificnorthsystems.com/business-guides/do-i-need-a-crm
+- Connect Accounting Email Quoting Scheduling: https://pacificnorthsystems.com/business-guides/connect-accounting-email-quoting-scheduling
+- Build vs Buy Software: https://pacificnorthsystems.com/business-guides/build-vs-buy-software
+- AI Secure Customer Information: https://pacificnorthsystems.com/business-guides/ai-secure-customer-information
+- Automation Hours Saved: https://pacificnorthsystems.com/business-guides/automation-hours-saved
+- Employees Entering Same Information: https://pacificnorthsystems.com/business-guides/employees-entering-same-information
+
+## Research
+- Research Hub: https://pacificnorthsystems.com/research
+- Canadian SMB Manual Work Cost Baseline: https://pacificnorthsystems.com/research/manual-work-cost-benchmark-2026
+
+## Methodology & Policies
+- How We Research and Write: https://pacificnorthsystems.com/methodology
+- Privacy Policy: https://pacificnorthsystems.com/privacy
+- Terms of Service: https://pacificnorthsystems.com/terms
+
+## Contact
+- Email: hello@pacificnorthsystems.com
+- Phone: +1-604-225-1745
+- Location: Kitsilano, Vancouver, BC, Canada
