@@ -16,6 +16,7 @@ import {
   FileSearch,
   Bot,
   Monitor,
+  PhoneIncoming,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -25,6 +26,38 @@ export const metadata: Metadata = {
 };
 
 const solutionsData: SolutionSectionData[] = [
+  {
+    id: "missed-call-lead-recovery",
+    icon: PhoneIncoming,
+    title: "Missed Call Lead Recovery",
+    problem:
+      "A missed call often means a customer is ready to talk now. This system responds with care, preserves the contact and gives your team a clear next action before the opportunity goes cold.",
+    whenUseful:
+      "When owners, dispatchers and service teams cannot answer every call while driving, serving customers, working on site or handling another conversation.",
+    whoNeedsIt:
+      "Service businesses, trades, clinics, property teams and any company where an unanswered phone call can become lost revenue.",
+    useCases: [
+      "Detect an unanswered call and capture the caller number",
+      "Filter obvious spam before creating sales work",
+      "Send a friendly text that confirms your team will call back",
+      "Create or update the contact inside your CRM",
+      "Add a callback task to the daily sales workspace",
+      "Record delivery status and prevent duplicate messages",
+    ],
+    exampleWorkflow:
+      "A customer calls while your team is busy. The call is not answered, so the system records the event, sends a respectful text within moments and creates a callback task. The customer knows they were heard and your team sees exactly who needs attention.",
+    typicalFirstVersion:
+      "One business number connected to a missed call workflow, automatic text response, CRM lead capture and callback tracking. The wording, working hours and follow up rules are tailored to your business.",
+    expectedOutcome:
+      "Fewer callers left wondering, faster follow up, a complete record of every opportunity and less dependence on memory at the end of a busy day.",
+    relevantIndustries: [
+      "Trades",
+      "Construction",
+      "Property Services",
+      "Clinics",
+      "Professional Services",
+    ],
+  },
   {
     id: "workflow-automation",
     icon: Workflow,

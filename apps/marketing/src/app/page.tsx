@@ -4,6 +4,7 @@ import {
   WhatWeBuild,
   Industries,
   DemoSystems,
+  LeadRecovery,
   Founder,
   Process,
   FinalCTA,
@@ -20,6 +21,7 @@ export default function HomePage() {
       <WhatWeBuild />
       <Industries />
       <DemoSystems />
+      <LeadRecovery />
       <AssessmentInlineCTA />
       <Founder />
       <Process />

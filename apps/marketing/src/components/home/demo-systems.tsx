@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 
 const demos = [
   {
+    image: "/images/missed-call-lead-recovery.png",
+    title: "Missed Call Lead Recovery",
+    description:
+      "Respond with care, record the opportunity and create the callback work when your team cannot answer.",
+    link: "/solutions#missed-call-lead-recovery",
+  },
+  {
     image: "/images/demo-inspection.png",
     title: "Inspection & Reporting System",
     description:
