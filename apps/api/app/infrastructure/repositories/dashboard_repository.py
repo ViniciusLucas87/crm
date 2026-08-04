@@ -22,7 +22,7 @@ class SqlDashboardRepository:
         tasks_today = self._session.execute(
             select(func.count(Task.id)).where(
                 Task.organization_id == organization_id,
-                Task.due_date == today,
+                Task.due_date <= today,
                 Task.is_completed.is_(False),
             )
         ).scalar_one()
