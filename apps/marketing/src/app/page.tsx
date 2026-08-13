@@ -49,12 +49,12 @@ export default function HomePage() {
       <section className="relative isolate overflow-hidden border-b border-black/8 bg-white md:bg-[#051226]">
         <div className="absolute inset-0 hidden md:block" aria-hidden="true">
           <BackgroundVideo />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,18,38,0.72)_0%,rgba(5,18,38,0.58)_42%,rgba(5,18,38,0.76)_68%,rgba(5,18,38,0.92)_100%)]" />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#051226]/15 via-transparent to-[#051226]/35" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,18,38,0.68)_0%,rgba(5,18,38,0.54)_42%,rgba(5,18,38,0.28)_72%,rgba(5,18,38,0.10)_100%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#051226]/8 via-transparent to-[#051226]/20" />
         </div>
         <Container className="relative z-10">
-          <div className="py-20 lg:flex lg:justify-end lg:py-28">
-            <div className="max-w-[820px] lg:w-[68%]">
+          <div className="py-20 lg:py-28">
+            <div className="max-w-[820px]">
               <p className="mb-7 text-sm font-semibold uppercase tracking-[0.18em] text-pns-text-muted md:text-white/70">
                 Based in Vancouver · Working worldwide
               </p>
