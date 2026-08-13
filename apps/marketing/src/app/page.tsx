@@ -9,7 +9,7 @@ import { siteConfig } from "@/lib/site-config";
 export const metadata: Metadata = {
   title: "Custom Software for Operations-Heavy Businesses",
   description:
-    "Pacific North Systems designs and builds practical custom software, workflow automation, and connected operational systems for businesses across British Columbia.",
+    "Pacific North Systems designs and builds practical custom software, workflow automation, and connected operational systems for businesses worldwide.",
 };
 
 const services = [
@@ -50,7 +50,7 @@ export default function HomePage() {
           <div className="grid gap-14 py-20 lg:grid-cols-[1.35fr_0.65fr] lg:items-end lg:py-28">
             <div className="max-w-[820px]">
               <p className="mb-7 text-sm font-semibold uppercase tracking-[0.18em] text-pns-text-muted">
-                Custom software · Vancouver, British Columbia
+                Based in Vancouver · Working worldwide
               </p>
               <h1 className="text-[clamp(3rem,7vw,6.25rem)] font-semibold leading-[0.98] tracking-[-0.045em] text-pns-text-primary">
                 Software built around how your business actually runs.
@@ -75,11 +75,50 @@ export default function HomePage() {
                 We work with
               </p>
               <p className="mt-3 leading-7 text-pns-text-muted">
-                Construction, property management, trades, logistics,
-                manufacturing, professional services, and other teams with
-                complex day-to-day operations.
+                Businesses of all kinds—from growing service companies to
+                established organizations with complex operations. We work
+                remotely with clients anywhere in the world.
               </p>
             </aside>
+          </div>
+        </Container>
+      </section>
+
+      <section className="border-b border-black/8 bg-white py-14 lg:py-20">
+        <Container>
+          <div className="grid gap-8 md:grid-cols-[180px_1fr] md:items-center lg:grid-cols-[220px_1fr] lg:gap-14">
+            <div className="w-36 overflow-hidden bg-pns-soft-blue md:w-full">
+              <Image
+                src="/images/founder.jpg"
+                alt="Vini Dias, founder of Pacific North Systems"
+                width={440}
+                height={440}
+                className="aspect-square h-auto w-full object-cover object-top"
+                priority
+              />
+            </div>
+            <div className="max-w-4xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-pns-text-muted">
+                Founder-led delivery
+              </p>
+              <h2 className="mt-3 text-2xl font-semibold leading-tight tracking-[-0.025em] text-pns-text-primary sm:text-3xl">
+                Your project is led by an experienced technical partner—not
+                passed through layers of account management.
+              </h2>
+              <p className="mt-5 max-w-3xl leading-7 text-pns-text-muted">
+                Pacific North Systems is led by Vini Dias, a former Electronic
+                Arts Tech Lead with experience building internal tools,
+                automation systems, production pipelines, and operational
+                software. Clients work directly with the person responsible for
+                understanding the problem and delivering the system.
+              </p>
+              <Link
+                href="/about"
+                className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-pns-text-primary"
+              >
+                About Pacific North Systems <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
         </Container>
       </section>
@@ -154,13 +193,13 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <div className="flex min-h-[360px] items-center justify-center border border-white/12 bg-white p-10 sm:p-14">
+            <div className="relative min-h-[360px] overflow-hidden border border-white/15 bg-[#e9e6de] sm:min-h-[430px]">
               <Image
                 src="/images/yellow-cap-tours.png"
                 alt="Yellow Cap Tours"
-                width={520}
-                height={260}
-                className="h-auto max-h-44 w-auto max-w-full object-contain"
+                fill
+                className="scale-[1.55] object-contain"
+                sizes="(max-width: 1024px) 100vw, 55vw"
               />
             </div>
           </div>

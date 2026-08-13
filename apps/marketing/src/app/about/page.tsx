@@ -7,7 +7,7 @@ import { Container } from "@/components/ui/container";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Learn about Pacific North Systems, a founder-led custom software company based in Vancouver, British Columbia.",
+    "Learn about Pacific North Systems, a founder-led custom software company based in Vancouver and serving clients worldwide.",
 };
 
 const values = [
@@ -38,9 +38,9 @@ export default function AboutPage() {
               Technical experience, grounded in real operations.
             </h1>
             <p className="mt-8 max-w-2xl text-xl leading-8 text-pns-text-muted">
-              Pacific North Systems is a Vancouver-based software company that
-              helps operational businesses replace fragmented processes with
-              clear, reliable systems.
+              Pacific North Systems is based in Vancouver and works with
+              businesses worldwide to replace fragmented processes with clear,
+              reliable systems.
             </p>
           </div>
         </Container>
