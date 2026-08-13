@@ -49,12 +49,12 @@ export default function HomePage() {
       <section className="relative isolate overflow-hidden border-b border-black/8 bg-white md:bg-[#051226]">
         <div className="absolute inset-0 hidden md:block" aria-hidden="true">
           <BackgroundVideo />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,18,38,0.90)_0%,rgba(5,18,38,0.78)_42%,rgba(5,18,38,0.42)_68%,rgba(5,18,38,0.14)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,18,38,0.72)_0%,rgba(5,18,38,0.58)_42%,rgba(5,18,38,0.76)_68%,rgba(5,18,38,0.92)_100%)]" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#051226]/15 via-transparent to-[#051226]/35" />
         </div>
         <Container className="relative z-10">
-          <div className="grid gap-14 py-20 lg:grid-cols-[1.35fr_0.65fr] lg:items-end lg:py-28">
-            <div className="max-w-[820px]">
+          <div className="py-20 lg:flex lg:justify-end lg:py-28">
+            <div className="max-w-[820px] lg:w-[68%]">
               <p className="mb-7 text-sm font-semibold uppercase tracking-[0.18em] text-pns-text-muted md:text-white/70">
                 Based in Vancouver · Working worldwide
               </p>
@@ -85,16 +85,21 @@ export default function HomePage() {
               </div>
             </div>
 
-            <aside className="border border-black/10 bg-white p-6 shadow-sm md:border-white/25 md:bg-[#051226]/58 md:text-white md:backdrop-blur-md lg:p-7">
-              <p className="text-sm font-semibold text-pns-text-primary md:text-white">
-                We work with
-              </p>
-              <p className="mt-3 leading-7 text-pns-text-muted md:text-white/78">
-                Businesses of all kinds—from growing service companies to
-                established organizations with complex operations. We work
-                remotely with clients anywhere in the world.
-              </p>
-            </aside>
+          </div>
+        </Container>
+      </section>
+
+      <section className="border-b border-black/8 bg-[#f1f4f7] py-8">
+        <Container>
+          <div className="grid gap-3 md:grid-cols-[180px_1fr] md:items-start lg:grid-cols-[220px_1fr] lg:gap-14">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-pns-text-primary">
+              Who we work with
+            </p>
+            <p className="max-w-4xl text-lg leading-8 text-pns-text-muted">
+              Businesses of all kinds—from growing service companies to
+              established organizations with complex operations. We work
+              remotely with clients anywhere in the world.
+            </p>
           </div>
         </Container>
       </section>
