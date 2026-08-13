@@ -107,15 +107,21 @@ export default function HomePage() {
       <section className="border-b border-black/8 bg-white py-14 lg:py-20">
         <Container>
           <div className="grid gap-10 md:grid-cols-[240px_1fr] md:items-center lg:grid-cols-[320px_1fr] lg:gap-16">
-            <div className="w-64 overflow-hidden bg-pns-soft-blue sm:w-72 md:w-full">
-              <Image
-                src="/images/founder.jpg"
-                alt="Vini Dias, founder of Pacific North Systems"
-                width={440}
-                height={440}
-                className="aspect-square h-auto w-full object-cover object-top"
-                priority
+            <div className="relative w-60 pb-3 pr-3 sm:w-72 md:w-full">
+              <div
+                className="absolute inset-0 translate-x-3 translate-y-3 rounded-[2rem] border border-[#183555]/30 bg-pns-soft-blue"
+                aria-hidden="true"
               />
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/80 bg-white p-1.5 shadow-[0_18px_45px_rgba(5,18,38,0.16)]">
+                <Image
+                  src="/images/founder.jpg"
+                  alt="Vini Dias, founder of Pacific North Systems"
+                  width={440}
+                  height={550}
+                  className="aspect-[4/5] h-auto w-full rounded-[1.6rem] object-cover object-top"
+                  priority
+                />
+              </div>
             </div>
             <div className="max-w-4xl">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-pns-text-muted">
