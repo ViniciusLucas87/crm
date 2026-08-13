@@ -219,12 +219,12 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <div className="relative min-h-[360px] overflow-hidden border border-white/15 bg-[#e9e6de] sm:min-h-[430px]">
+            <div className="relative min-h-[240px] overflow-hidden border border-white/15 bg-[#e9e6de] sm:min-h-[300px] lg:max-w-[620px] lg:justify-self-end lg:w-full">
               <Image
                 src="/images/yellow-cap-tours.png"
                 alt="Yellow Cap Tours"
                 fill
-                className="scale-[1.55] object-contain"
+                className="scale-[0.92] object-contain"
                 sizes="(max-width: 1024px) 100vw, 55vw"
               />
             </div>
