@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
+import { BackgroundVideo } from "@/components/home/background-video";
 import { siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = {
@@ -45,8 +46,13 @@ const principles = [
 export default function HomePage() {
   return (
     <>
-      <section className="border-b border-black/8 bg-white">
-        <Container>
+      <section className="relative isolate overflow-hidden border-b border-black/8 bg-white">
+        <div className="absolute inset-0 hidden md:block" aria-hidden="true">
+          <BackgroundVideo />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_43%,rgba(255,255,255,0.88)_65%,rgba(255,255,255,0.25)_100%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-white/25" />
+        </div>
+        <Container className="relative z-10">
           <div className="grid gap-14 py-20 lg:grid-cols-[1.35fr_0.65fr] lg:items-end lg:py-28">
             <div className="max-w-[820px]">
               <p className="mb-7 text-sm font-semibold uppercase tracking-[0.18em] text-pns-text-muted">
@@ -70,7 +76,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <aside className="border-l border-black/10 pl-6 lg:pl-8">
+            <aside className="border border-white/60 bg-white/82 p-6 shadow-sm backdrop-blur-md lg:p-7">
               <p className="text-sm font-semibold text-pns-text-primary">
                 We work with
               </p>
