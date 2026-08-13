@@ -439,7 +439,7 @@ export default function SolutionsPage() {
       </section>
 
       {/* Anchor navigation */}
-      <section className="bg-white border-b border-pns-text-primary/10 sticky top-16 z-[4]">
+      <section className="bg-white border-b border-pns-text-primary/10 sticky top-[72px] lg:top-[80px] z-[4]">
         <Container>
           <nav
             className="flex overflow-x-auto gap-4 py-3 text-sm"

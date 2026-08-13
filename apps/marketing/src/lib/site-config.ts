@@ -15,28 +15,22 @@ export const siteConfig = {
   },
   nav: {
     primary: [
-      { label: "Home", href: "/" },
-      { label: "Solutions", href: "/solutions" },
-      { label: "Free Tools", href: "/free-tools" },
-      { label: "Assessment", href: "/assessment" },
-      { label: "Blog", href: "/blog" },
+      { label: "Services", href: "/solutions" },
+      { label: "Work", href: "/work" },
+      { label: "About", href: "/about" },
+      { label: "Resources", href: "/resources" },
+      { label: "Contact", href: "/contact" },
     ],
     cta: {
-      label: "Take the Assessment",
-      href: "/assessment",
+      label: "Book a Consultation",
+      href: "https://calendly.com/vinidias-pacificnorthsystems-operations-audit/30min",
     },
   },
   footer: {
     navigation: [
-      { label: "Home", href: "/" },
-      { label: "Solutions", href: "/solutions" },
-      { label: "Free Tools", href: "/free-tools" },
-      { label: "Business Guides", href: "/business-guides" },
-      { label: "Research", href: "/research" },
-      { label: "Methodology", href: "/methodology" },
-      { label: "Demo Systems", href: "/#demo-systems" },
-      { label: "Process", href: "/#process" },
-      { label: "About", href: "/#about" },
+      { label: "About", href: "/about" },
+      { label: "Our Work", href: "/work" },
+      { label: "How We Work", href: "/process" },
       { label: "Contact", href: "/contact" },
     ],
     solutions: [
@@ -46,6 +40,14 @@ export const siteConfig = {
       { label: "AI Document Tools", href: "/solutions#ai-document-processing" },
       { label: "Integrations", href: "/solutions#system-integrations" },
       { label: "Support & Maintenance", href: "/solutions#operational-it-support" },
+    ],
+    resources: [
+      { label: "Resource Library", href: "/resources" },
+      { label: "Free Tools", href: "/free-tools" },
+      { label: "Business Guides", href: "/business-guides" },
+      { label: "Research", href: "/research" },
+      { label: "Blog", href: "/blog" },
+      { label: "Operations Assessment", href: "/assessment" },
     ],
     legal: [
       { label: "Privacy Policy", href: "/privacy" },

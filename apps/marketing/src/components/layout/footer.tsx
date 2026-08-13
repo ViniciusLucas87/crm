@@ -9,7 +9,7 @@ export function Footer() {
     <footer className="bg-[#061426] text-pns-text-light" role="contentinfo">
       <Container>
         <div className="py-16 lg:py-20">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
             {/* Brand */}
             <div className="lg:col-span-1">
               <Link
@@ -27,10 +27,28 @@ export function Footer() {
             {/* Navigation */}
             <div>
               <h4 className="text-sm font-semibold text-pns-text-soft-white mb-4">
-                Navigation
+                Company
               </h4>
               <ul className="space-y-2.5">
                 {siteConfig.footer.navigation.map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
+                      className="text-sm text-pns-text-footer-muted hover:text-pns-text-soft-white transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold text-pns-text-soft-white mb-4">
+                Resources
+              </h4>
+              <ul className="space-y-2.5">
+                {siteConfig.footer.resources.map((item) => (
                   <li key={item.label}>
                     <Link
                       href={item.href}

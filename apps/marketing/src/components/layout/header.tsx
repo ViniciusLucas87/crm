@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
@@ -10,16 +10,6 @@ import { Button } from "@/components/ui/button";
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  const handleScroll = useCallback(() => {
-    setScrolled(window.scrollY > 10);
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [handleScroll]);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -30,17 +20,12 @@ export function Header() {
 
   return (
     <header
-      className={cn(
-        "fixed top-0 left-0 right-0 z-30 transition-all duration-300",
-        scrolled
-          ? "bg-white/80 backdrop-blur-[12px] border-b border-black/8"
-          : "bg-transparent",
-      )}
+      className="sticky top-0 z-50 border-b border-black/8 bg-white/95 backdrop-blur-[12px]"
       role="banner"
     >
       <div className="w-full max-w-[1440px] pl-6 sm:pl-8 lg:pl-16 xl:pl-20 pr-6 sm:pr-8 lg:pr-12 xl:pr-16">
         <nav
-          className="flex items-center justify-between h-[72px] lg:h-[88px]"
+          className="flex items-center justify-between h-[72px] lg:h-[80px]"
           aria-label="Main navigation"
         >
           {/* Logo */}
@@ -54,10 +39,7 @@ export function Header() {
               alt="Pacific North Systems"
               width={220}
               height={48}
-              className={cn(
-                "h-[88px] lg:h-[96px] w-auto transition-all duration-300",
-                !scrolled && "brightness-0 invert",
-              )}
+              className="h-[76px] lg:h-[82px] w-auto"
               style={{ width: "auto" }}
               priority
             />
@@ -71,9 +53,7 @@ export function Header() {
                 href={item.href}
                 className={cn(
                   "text-[16px] font-bold transition-colors",
-                  scrolled
-                    ? "text-pns-text-muted hover:text-pns-text-primary"
-                    : "text-white/70 hover:text-white",
+                  "text-pns-text-muted hover:text-pns-text-primary",
                 )}
               >
                 {item.label}
@@ -83,7 +63,7 @@ export function Header() {
               variant="primary"
               size="sm"
               href={siteConfig.nav.cta.href}
-              className="!text-[15px] !rounded-lg !bg-white !text-[#051226] hover:!bg-white/90 !font-bold"
+              className="!text-[14px] !rounded-lg !font-bold"
             >
               {siteConfig.nav.cta.label}
             </Button>
@@ -91,10 +71,7 @@ export function Header() {
 
           {/* Mobile hamburger */}
           <button
-            className={cn(
-              "lg:hidden p-2 -mr-2 transition-colors",
-              scrolled ? "text-pns-text-primary" : "text-white",
-            )}
+            className="lg:hidden p-2 -mr-2 text-pns-text-primary transition-colors"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-expanded={mobileOpen}
             aria-controls="mobile-menu"
@@ -110,40 +87,39 @@ export function Header() {
       </div>
 
       {/* Mobile menu */}
-      <div
-        id="mobile-menu"
-        className={cn(
-          "lg:hidden fixed inset-0 top-[72px] bg-white z-40 transition-transform duration-300",
-          mobileOpen ? "translate-x-0" : "translate-x-full",
-        )}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Mobile navigation"
-      >
-        <div className="flex flex-col gap-1 p-6">
-          {siteConfig.nav.primary.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="py-4 text-lg font-medium text-pns-text-primary hover:text-pns-text-muted transition-colors"
-              onClick={() => setMobileOpen(false)}
-            >
-              {item.label}
-            </Link>
-          ))}
-          <div className="mt-6 pt-6 border-t border-black/10">
-            <Button
-              variant="primary"
-              size="default"
-              href={siteConfig.nav.cta.href}
-              className="w-full !rounded-lg"
-              onClick={() => setMobileOpen(false)}
-            >
-              {siteConfig.nav.cta.label}
-            </Button>
+      {mobileOpen && (
+        <div
+          id="mobile-menu"
+          className="fixed inset-x-0 top-[72px] h-[calc(100dvh-72px)] overflow-y-auto overscroll-contain bg-white lg:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mobile navigation"
+        >
+          <div className="flex flex-col gap-1 p-6">
+            {siteConfig.nav.primary.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="py-4 text-lg font-medium text-pns-text-primary hover:text-pns-text-muted transition-colors"
+                onClick={() => setMobileOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+            <div className="mt-6 pt-6 border-t border-black/10">
+              <Button
+                variant="primary"
+                size="default"
+                href={siteConfig.nav.cta.href}
+                className="w-full !rounded-lg"
+                onClick={() => setMobileOpen(false)}
+              >
+                {siteConfig.nav.cta.label}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </header>
   );
 }

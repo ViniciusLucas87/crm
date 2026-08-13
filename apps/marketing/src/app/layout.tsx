@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
-import { FloatingCTA } from "@/components/layout/floating-cta";
 import { siteConfig } from "@/lib/site-config";
 import "./globals.css";
 
@@ -86,13 +85,12 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="min-h-screen flex flex-col antialiased">
+      <body className="min-h-screen flex flex-col overflow-x-clip antialiased">
         <Header />
         <main className="flex-1" id="main-content">
           {children}
         </main>
         <Footer />
-        <FloatingCTA />
       </body>
     </html>
   );
