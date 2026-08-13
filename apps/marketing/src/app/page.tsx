@@ -106,8 +106,8 @@ export default function HomePage() {
 
       <section className="border-b border-black/8 bg-white py-14 lg:py-20">
         <Container>
-          <div className="grid gap-8 md:grid-cols-[180px_1fr] md:items-center lg:grid-cols-[220px_1fr] lg:gap-14">
-            <div className="w-36 overflow-hidden bg-pns-soft-blue md:w-full">
+          <div className="grid gap-10 md:grid-cols-[240px_1fr] md:items-center lg:grid-cols-[320px_1fr] lg:gap-16">
+            <div className="w-64 overflow-hidden bg-pns-soft-blue sm:w-72 md:w-full">
               <Image
                 src="/images/founder.jpg"
                 alt="Vini Dias, founder of Pacific North Systems"
