@@ -32,12 +32,12 @@ export default function WorkPage() {
       <section className="bg-pns-bg py-20 lg:py-28">
         <Container>
           <article className="grid gap-12 lg:grid-cols-[0.75fr_1.25fr] lg:gap-20">
-            <div className="relative min-h-[260px] overflow-hidden border border-black/10 bg-[#e9e6de] sm:min-h-[340px]">
+            <div className="relative aspect-[8/3] w-full max-w-[560px] justify-self-center overflow-hidden border border-black/10 bg-[#e9e6de] lg:justify-self-start">
               <Image
                 src="/images/yellow-cap-tours.png"
                 alt="Yellow Cap Tours"
                 fill
-                className="scale-[0.92] object-contain"
+                className="scale-[1.34] object-cover object-[56%_47%]"
                 sizes="(max-width: 1024px) 100vw, 45vw"
                 priority
               />
