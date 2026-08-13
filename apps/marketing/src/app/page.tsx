@@ -46,41 +46,50 @@ const principles = [
 export default function HomePage() {
   return (
     <>
-      <section className="relative isolate overflow-hidden border-b border-black/8 bg-white">
+      <section className="relative isolate overflow-hidden border-b border-black/8 bg-white md:bg-[#051226]">
         <div className="absolute inset-0 hidden md:block" aria-hidden="true">
           <BackgroundVideo />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_43%,rgba(255,255,255,0.88)_65%,rgba(255,255,255,0.25)_100%)]" />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-white/25" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,18,38,0.90)_0%,rgba(5,18,38,0.78)_42%,rgba(5,18,38,0.42)_68%,rgba(5,18,38,0.14)_100%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#051226]/15 via-transparent to-[#051226]/35" />
         </div>
         <Container className="relative z-10">
           <div className="grid gap-14 py-20 lg:grid-cols-[1.35fr_0.65fr] lg:items-end lg:py-28">
             <div className="max-w-[820px]">
-              <p className="mb-7 text-sm font-semibold uppercase tracking-[0.18em] text-pns-text-muted">
+              <p className="mb-7 text-sm font-semibold uppercase tracking-[0.18em] text-pns-text-muted md:text-white/70">
                 Based in Vancouver · Working worldwide
               </p>
-              <h1 className="text-[clamp(3rem,7vw,6.25rem)] font-semibold leading-[0.98] tracking-[-0.045em] text-pns-text-primary">
+              <h1 className="text-[clamp(3rem,7vw,6.25rem)] font-semibold leading-[0.98] tracking-[-0.045em] text-pns-text-primary md:text-white">
                 Software built around how your business actually runs.
               </h1>
-              <p className="mt-8 max-w-2xl text-lg leading-8 text-pns-text-muted sm:text-xl">
+              <p className="mt-8 max-w-2xl text-lg leading-8 text-pns-text-muted sm:text-xl md:text-white/78">
                 We design and build operational software for businesses that
                 have outgrown spreadsheets, disconnected tools, and manual
                 processes.
               </p>
               <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-                <Button href="/contact" size="lg">
+                <Button
+                  href="/contact"
+                  size="lg"
+                  className="md:bg-white md:!text-[#051226] md:hover:bg-white/90"
+                >
                   Discuss your project
                 </Button>
-                <Button href="/solutions" variant="outline" size="lg">
+                <Button
+                  href="/solutions"
+                  variant="outline"
+                  size="lg"
+                  className="md:border-white/45 md:!text-white md:hover:bg-white/10"
+                >
                   View our services
                 </Button>
               </div>
             </div>
 
-            <aside className="border border-white/60 bg-white/82 p-6 shadow-sm backdrop-blur-md lg:p-7">
-              <p className="text-sm font-semibold text-pns-text-primary">
+            <aside className="border border-black/10 bg-white p-6 shadow-sm md:border-white/25 md:bg-[#051226]/58 md:text-white md:backdrop-blur-md lg:p-7">
+              <p className="text-sm font-semibold text-pns-text-primary md:text-white">
                 We work with
               </p>
-              <p className="mt-3 leading-7 text-pns-text-muted">
+              <p className="mt-3 leading-7 text-pns-text-muted md:text-white/78">
                 Businesses of all kinds—from growing service companies to
                 established organizations with complex operations. We work
                 remotely with clients anywhere in the world.

@@ -20,7 +20,7 @@ export function BackgroundVideo() {
 
   return (
     <video
-      className="absolute inset-0 h-full w-full object-cover object-center"
+      className="absolute inset-0 h-full w-full object-cover object-[38%_center]"
       autoPlay
       muted
       loop
