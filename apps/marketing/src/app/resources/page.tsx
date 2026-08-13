@@ -25,7 +25,7 @@ const resources = [
   {
     title: "Research",
     description:
-      "Source-conscious planning benchmarks and methodology for Canadian small and mid-size businesses.",
+      "Carefully sourced planning benchmarks and methodology for Canadian small and midsize businesses.",
     href: "/research",
   },
   {

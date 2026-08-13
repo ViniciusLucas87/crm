@@ -60,7 +60,7 @@ export default function ContactPage() {
             Let&apos;s talk about your operations.
           </h1>
           <p className="mt-4 text-pns-text-muted leading-relaxed">
-            Every operations-heavy business has processes that could run more
+            Every business with complex operations has processes that could run more
             smoothly. Tell us what&apos;s slowing your team down, and
             we&apos;ll figure out where to start.
           </p>

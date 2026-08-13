@@ -46,18 +46,18 @@ const QUESTIONS: Question[] = [
     id: "ownership",
     text: "Is it always clear who owns each lead or customer relationship?",
     options: [
-      { label: "No — leads get dropped or double-assigned often", score: 0 },
-      { label: "Sometimes — it depends who was available", score: 1 },
-      { label: "Mostly — we have informal ownership", score: 2 },
-      { label: "Yes — assigned in a shared system", score: 3 },
-      { label: "Yes — with automatic assignment and handoff rules", score: 4 },
+      { label: "No. Leads get dropped or assigned twice often", score: 0 },
+      { label: "Sometimes. It depends who was available", score: 1 },
+      { label: "Mostly. We have informal ownership", score: 2 },
+      { label: "Yes. Leads are assigned in a shared system", score: 3 },
+      { label: "Yes, with automatic assignment and handoff rules", score: 4 },
     ],
   },
   {
     id: "stages",
     text: "Do you track what stage each lead or deal is in?",
     options: [
-      { label: "No — everything is in people's heads", score: 0 },
+      { label: "No. Everything is in people's heads", score: 0 },
       { label: "We have basic stages: new, working, closed", score: 1 },
       { label: "We track stages in a spreadsheet or whiteboard", score: 2 },
       { label: "We use pipeline stages in a CRM or project tool", score: 3 },
@@ -66,13 +66,13 @@ const QUESTIONS: Question[] = [
   },
   {
     id: "follow_up",
-    text: "How consistent is your follow-up with leads and customers?",
+    text: "How consistent is your follow up with leads and customers?",
     options: [
-      { label: "We rely on memory — reminders are missed", score: 0 },
+      { label: "We rely on memory, so reminders are missed", score: 0 },
       { label: "Calendar reminders or sticky notes", score: 1 },
       { label: "Shared task list, some items slip through", score: 2 },
       { label: "CRM tasks or automated reminders", score: 3 },
-      { label: "Automated sequences with personal follow-up triggers", score: 4 },
+      { label: "Automated sequences with personal follow up triggers", score: 4 },
     ],
   },
   {
@@ -90,22 +90,22 @@ const QUESTIONS: Question[] = [
     id: "reporting",
     text: "Can you answer 'how many deals will close this month' in under a minute?",
     options: [
-      { label: "No — we'd need to ask everyone individually", score: 0 },
+      { label: "No. We'd need to ask everyone individually", score: 0 },
       { label: "We could guess based on gut feel", score: 1 },
       { label: "We have a spreadsheet that's updated weekly", score: 2 },
-      { label: "Yes — we pull a pipeline report from our system", score: 3 },
-      { label: "Yes — our dashboard shows real-time pipeline with forecasts", score: 4 },
+      { label: "Yes. We pull a pipeline report from our system", score: 3 },
+      { label: "Yes. Our dashboard shows the current pipeline with forecasts", score: 4 },
     ],
   },
   {
     id: "integrations",
-    text: "How connected are your customer-facing tools (email, accounting, quoting, scheduling)?",
+    text: "How connected are the tools your customers interact with, such as email, accounting, quoting, and scheduling?",
     options: [
-      { label: "Completely separate — lots of copy-paste", score: 0 },
+      { label: "Completely separate, with lots of copying and pasting", score: 0 },
       { label: "A few manual exports/imports between tools", score: 1 },
       { label: "Some tools share data via basic integrations", score: 2 },
       { label: "Most tools are connected through our CRM or middleware", score: 3 },
-      { label: "Fully integrated — single source of truth across all tools", score: 4 },
+      { label: "Fully integrated, with one source of truth across all tools", score: 4 },
     ],
   },
   {
@@ -123,7 +123,7 @@ const QUESTIONS: Question[] = [
     id: "backups",
     text: "What happens to your customer data if a laptop is lost or a tool stops working?",
     options: [
-      { label: "It would be gone — no backups", score: 0 },
+      { label: "It would be gone because there are no backups", score: 0 },
       { label: "Some data is in cloud tools but not all", score: 1 },
       { label: "Most data is cloud-based with basic recovery", score: 2 },
       { label: "We have regular backups and can restore within days", score: 3 },
@@ -158,7 +158,7 @@ function calculateScore(answers: Record<string, number>): ScoreResult {
     band = "Optimized";
     bandColor = "text-green-700";
     nextSteps = [
-      "Your CRM processes are strong. Focus on continuous improvement: advanced automation, AI-assisted insights, and deeper integrations.",
+      "Your CRM processes are strong. Focus on continuous improvement through advanced automation, insights supported by AI, and deeper integrations.",
       "Consider a CRM audit to identify edge cases and optimization opportunities.",
       "Document your processes so they scale as your team grows.",
     ];
@@ -167,7 +167,7 @@ function calculateScore(answers: Record<string, number>): ScoreResult {
     bandColor = "text-blue-700";
     nextSteps = [
       "You have solid foundations but gaps in consistency and automation.",
-      "Focus on: automated lead routing, standardized follow-up sequences, and pipeline reporting.",
+      "Focus on automated lead routing, standardized follow up sequences, and pipeline reporting.",
       "A CRM consolidation project could connect your existing tools into a single workflow.",
     ];
   } else if (pct >= 35) {
@@ -175,7 +175,7 @@ function calculateScore(answers: Record<string, number>): ScoreResult {
     bandColor = "text-amber-700";
     nextSteps = [
       "You're managing leads manually. This works at small scale but creates risk as you grow.",
-      "Start with: a centralized lead database, defined pipeline stages, and basic follow-up reminders.",
+      "Start with a centralized lead database, defined pipeline stages, and basic follow up reminders.",
       "Even a simple CRM with email integration can dramatically reduce dropped leads.",
     ];
   } else {
@@ -183,9 +183,9 @@ function calculateScore(answers: Record<string, number>): ScoreResult {
     bandColor = "text-pns-assessment-error";
     nextSteps = [
       "Your current processes are likely costing you leads and revenue through inconsistency.",
-      "Priority: choose a CRM or lead-management system and migrate all contacts into it.",
-      "Define one pipeline with 3-5 stages, assign ownership for every lead, and set follow-up reminders.",
-      "Start with a simple shared process, assign every lead, and measure overdue follow-ups against today’s baseline.",
+      "Priority: choose a CRM or lead management system and migrate all contacts into it.",
+      "Define one pipeline with 3 to 5 stages, assign ownership for every lead, and set follow up reminders.",
+      "Start with a simple shared process, assign every lead, and measure overdue follow ups against today’s baseline.",
     ];
   }
 
@@ -367,7 +367,7 @@ function Results({ values, onRestart }: { values: Record<string, unknown>; onRes
             Get a free CRM readiness review
           </Button>
           <p className="mt-2 text-[13px] text-pns-text-muted">
-            Optional — we&apos;ll review your situation and suggest practical next steps.
+            Optional. We&apos;ll review your situation and suggest practical next steps.
           </p>
         </div>
       )}

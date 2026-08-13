@@ -29,7 +29,7 @@ export function Founder() {
           {/* Text side */}
           <div className="flex-1">
             <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold text-pns-text-primary">
-              Founder-led delivery
+              Founder led delivery
             </h2>
             <p className="mt-4 text-pns-text-muted leading-relaxed max-w-xl">
               Pacific North Systems is led by Vini Dias, a former Electronic

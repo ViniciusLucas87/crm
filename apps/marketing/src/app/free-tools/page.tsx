@@ -16,12 +16,12 @@ import {
 export const metadata: Metadata = {
   title: "Free Business Tools for Canadian SMBs | Pacific North Systems",
   description:
-    "Calculate manual-work costs, automation ROI, and CRM readiness — free, no signup required. Built for Canadian small and mid-size businesses by Pacific North Systems.",
+    "Calculate manual work costs, automation ROI, and CRM readiness. Free, with no signup required. Built for Canadian small and midsize businesses by Pacific North Systems.",
   alternates: { canonical: "https://pacificnorthsystems.com/free-tools" },
   openGraph: {
     title: "Free Business Tools for Canadian SMBs",
     description:
-      "Calculate manual-work costs, automation ROI, and CRM readiness — free, no signup required.",
+      "Calculate manual work costs, automation ROI, and CRM readiness. Free, with no signup required.",
   },
 };
 
@@ -38,7 +38,7 @@ const tools: ToolCard[] = [
   {
     title: "Manual Work Cost Calculator",
     description:
-      "See how much repetitive manual tasks are really costing your company each week and each year — and how many hours automation could give back.",
+      "See how much repetitive manual tasks are really costing your company each week and each year, and how many hours automation could give back.",
     href: "/free-tools/manual-work-cost-calculator",
     icon: Clock,
     metrics: ["Weekly cost", "Annual cost", "Hours recoverable"],
@@ -47,16 +47,16 @@ const tools: ToolCard[] = [
   {
     title: "Automation ROI Calculator",
     description:
-      "Get a clear, honest picture of what automation would return in year one — including payback period, net benefit, and safe worst-case estimates.",
+      "Get a clear, honest picture of what automation would return in the first year, including payback period, net benefit, and conservative estimates.",
     href: "/free-tools/automation-roi-calculator",
     icon: TrendingUp,
-    metrics: ["Net year-one benefit", "Payback months", "ROI percentage"],
+    metrics: ["Net first year benefit", "Payback months", "ROI percentage"],
     cta: "Estimate your ROI",
   },
   {
     title: "CRM Readiness Assessment",
     description:
-      "Answer 10 practical questions about how your team manages leads and customers. Get a 0–100 readiness score with prioritized next steps.",
+      "Answer 10 practical questions about how your team manages leads and customers. Get a readiness score from 0 to 100 with prioritized next steps.",
     href: "/free-tools/crm-readiness-assessment",
     icon: ClipboardCheck,
     metrics: ["Readiness score", "Maturity band", "Action plan"],
@@ -77,7 +77,7 @@ export default function FreeToolsHub() {
             </h1>
             <p className="text-pns-text-light text-[15px] leading-relaxed max-w-xl">
               No signup. No credit card. Just honest, practical calculators and
-              assessments built for operations-heavy Canadian businesses.
+              assessments built for Canadian businesses with complex operations.
             </p>
           </div>
         </Container>
@@ -131,7 +131,7 @@ export default function FreeToolsHub() {
             </h2>
             <p className="text-pns-text-muted text-[15px] leading-relaxed mb-6">
               We believe that before you can decide whether automation or custom
-              software is right for your business, you need honest numbers — not
+              software is right for your business, you need honest numbers, not
               a sales pitch. These tools help you build a business case
               independently. If the numbers make sense for you, we&apos;re here
               to talk. If they don&apos;t, we&apos;ve still helped.
@@ -156,7 +156,7 @@ export default function FreeToolsHub() {
             </h2>
             <p className="text-pns-text-muted text-[15px] leading-relaxed mb-6">
               Straightforward articles covering automation, CRM, AI, and
-              operations — written for Canadian SMB owners and operators.
+              operations, written for Canadian SMB owners and operators.
             </p>
             <Link href="/business-guides">
               <Button>

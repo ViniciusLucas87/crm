@@ -25,9 +25,9 @@ const PROBLEM_OPPORTUNITIES: Record<string, { label: string; description: string
     label: "Automated reporting",
     description: "Turn raw data into live dashboards and scheduled reports without manual spreadsheet assembly.",
   },
-  "Customer follow-up": {
-    label: "Streamline follow-ups",
-    description: "Automate reminders, status updates, and follow-up sequences so nothing falls through the cracks.",
+  "Customer follow up": {
+    label: "Streamline follow up",
+    description: "Automate reminders, status updates, and follow up sequences so nothing falls through the cracks.",
   },
   "Information spread across different systems": {
     label: "System integration",

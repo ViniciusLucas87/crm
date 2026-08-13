@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Canadian SMB Manual Work Cost Planning Baseline — 2026 | Pacific North Systems",
+  title: "Canadian SMB Manual Work Cost Planning Baseline, 2026 | Pacific North Systems",
   description:
-    "A planning baseline for estimating manual work costs in Canadian SMBs using official Canadian data and owner-supplied assumptions. Not a representative national survey.",
+    "A planning baseline for estimating manual work costs in Canadian SMBs using official Canadian data and assumptions supplied by business owners. Not a representative national survey.",
   alternates: {
     canonical: "https://pacificnorthsystems.com/research/manual-work-cost-benchmark-2026",
   },
@@ -50,7 +50,7 @@ const findings = [
 const methodology = [
   {
     heading: "What This Benchmark Is",
-    body: "This page provides a planning baseline for estimating manual work costs in Canadian small and mid-size businesses (SMBs). It is intended for business-case planning and rough cost estimation. It is not a representative national survey, a statistically sampled study, or a market research report. No survey was conducted and no customer data was used.",
+    body: "This page provides a planning baseline for estimating manual work costs in Canadian small and midsize businesses (SMBs). It is intended for business planning and rough cost estimation. It is not a representative national survey, a statistically sampled study, or a market research report. No survey was conducted and no customer data was used.",
   },
   {
     heading: "What This Benchmark Is Not",
@@ -62,7 +62,7 @@ const methodology = [
   },
   {
     heading: "Calculator Methodology",
-    body: "Our free manual work cost calculator (linked below) applies the benchmark wage and burden data to user-provided inputs: number of employees affected, hours per week spent on the task, loaded hourly cost, working weeks per year, and estimated recoverable percentage. The calculator formula is: Annual Manual Cost = Employees × Hours/Week × Loaded Hourly Rate × Weeks/Year. Recoverable Cost = Annual Cost × Recoverable Percentage. These are directional estimates for business-case planning. Actual savings depend on implementation quality, process standardization, and employee adoption.",
+    body: "Our free manual work cost calculator, linked below, applies the benchmark wage and burden data to inputs provided by the user: number of employees affected, hours per week spent on the task, loaded hourly cost, working weeks per year, and estimated recoverable percentage. The calculator formula is: Annual Manual Cost = Employees × Hours/Week × Loaded Hourly Rate × Weeks/Year. Recoverable Cost = Annual Cost × Recoverable Percentage. These are directional estimates for business planning. Actual savings depend on implementation quality, process standardization, and employee adoption.",
   },
   {
     heading: "Loaded Hourly Rate Calculation",
@@ -86,7 +86,7 @@ export default function BenchmarkPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
-    headline: "Canadian Small Business Manual Work Cost Planning Baseline — 2026",
+    headline: "Canadian Small Business Manual Work Cost Planning Baseline, 2026",
     description:
       "A planning baseline for estimating manual work costs in Canadian SMBs, built from Statistics Canada data. Not a survey; methodology clearly labelled.",
     author: { "@type": "Organization", name: "Pacific North Systems" },
@@ -117,7 +117,7 @@ export default function BenchmarkPage() {
             </Link>
             <Badge>Research · Planning Baseline</Badge>
             <h1 className="font-heading text-[clamp(1.5rem,3.5vw,2.25rem)] font-bold text-white mt-3 mb-3">
-              Canadian Small Business Manual Work Cost Planning Baseline — 2026
+              Canadian Small Business Manual Work Cost Planning Baseline, 2026
             </h1>
             <p className="text-pns-text-light text-[15px] leading-relaxed">
               A planning baseline for estimating manual work costs in Canadian
@@ -208,7 +208,7 @@ export default function BenchmarkPage() {
               20 consented observations and reports ranges or medians rather than raw
               rows. Each release will document its date range, sample source, inclusion
               rules, missing data, geographic coverage, version, and limitations. This
-              threshold is a PNS privacy policy choice—not a claim of statistical
+              threshold is a PNS privacy policy choice, not a claim of statistical
               representativeness.
             </p>
           </section>

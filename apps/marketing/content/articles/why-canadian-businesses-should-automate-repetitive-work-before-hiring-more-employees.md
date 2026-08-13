@@ -33,7 +33,7 @@ Manual work also creates variation. Names are entered differently, photos are sa
 
 ## Where the workload usually hides
 
-In many operations-heavy businesses, repetitive work is distributed across small activities: copying a job number into an email, moving photos into a folder, turning notes into a report, checking whether an approval arrived, updating a spreadsheet, scheduling the next visit, or answering the same document question repeatedly. Each task may look manageable in isolation. Together, they can occupy a meaningful part of a week.
+In many businesses with complex operations, repetitive work is distributed across small activities: copying a job number into an email, moving photos into a folder, turning notes into a report, checking whether an approval arrived, updating a spreadsheet, scheduling the next visit, or answering the same document question repeatedly. Each task may look manageable in isolation. Together, they can occupy a meaningful part of a week.
 
 ### Manual reports and inspection records
 

@@ -6,7 +6,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: `${siteConfig.name} | Custom Software for Operations-Heavy Teams`,
+    default: `${siteConfig.name} | Custom Software for Teams with Complex Operations`,
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
@@ -19,20 +19,20 @@ export const metadata: Metadata = {
     locale: "en_CA",
     url: siteConfig.url,
     siteName: siteConfig.name,
-    title: `${siteConfig.name} | Custom Software for Operations-Heavy Teams`,
+    title: `${siteConfig.name} | Custom Software for Teams with Complex Operations`,
     description: siteConfig.description,
     images: [
       {
         url: "/images/social.png",
         width: 1200,
         height: 630,
-        alt: `${siteConfig.name} - Custom software and automation for operations-heavy teams`,
+        alt: `${siteConfig.name}: Custom software and automation for teams with complex operations`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${siteConfig.name} | Custom Software for Operations-Heavy Teams`,
+    title: `${siteConfig.name} | Custom Software for Teams with Complex Operations`,
     description: siteConfig.description,
     images: ["/images/social.png"],
   },

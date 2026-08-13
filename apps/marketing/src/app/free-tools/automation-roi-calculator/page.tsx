@@ -50,11 +50,11 @@ function calculateROI(input: ROIInput): ROIResult {
 
   const assumptionText = [
     `Labour saving: ${input.peopleAffected} people × ${input.hoursSavedPerWeek} hrs/week saved × 4.33 weeks/month × $${input.loadedHourlyCost}/hr loaded cost = $${Math.round(monthlyLabourSaving).toLocaleString()}/month.`,
-    `Implementation cost: $${input.implementationCost.toLocaleString()} (one-time). Monthly recurring: $${input.monthlyRecurringCost.toLocaleString()}/month (support, hosting, licensing).`,
+    `Initial implementation cost: $${input.implementationCost.toLocaleString()}. Monthly recurring: $${input.monthlyRecurringCost.toLocaleString()}/month for support, hosting, and licensing.`,
     input.additionalMonthlyRevenue > 0
       ? `Additional monthly revenue estimate: $${input.additionalMonthlyRevenue.toLocaleString()}/month.`
-      : `No additional revenue estimated — projection is based on labour savings only (conservative).`,
-    `Actual ROI depends on implementation quality, user adoption, process standardization, and ongoing optimization. These are directional estimates for business-case planning.`,
+      : `No additional revenue estimated. The projection is based on labour savings only and uses a conservative assumption.`,
+    `Actual ROI depends on implementation quality, user adoption, process standardization, and ongoing optimization. These are directional estimates for business planning.`,
   ].join("\n\n");
 
   return {
@@ -78,7 +78,7 @@ function ImplementationCostStep({
   return (
     <Card className="p-6 md:p-8" variant="elevated">
       <h3 className="font-heading font-semibold text-[20px] text-pns-text-primary mb-2">
-        Estimated one-time implementation cost
+        Estimated initial implementation cost
       </h3>
       <p className="text-pns-text-muted text-[15px] leading-relaxed mb-4">
         Enter a complete written estimate covering discovery, development, setup, security, migration, training, and contingency.
@@ -226,7 +226,7 @@ function RevenueStep({
         Additional monthly revenue (optional)
       </h3>
       <p className="text-pns-text-muted text-[15px] leading-relaxed mb-6">
-        If automation helps you close more deals, serve more clients, or launch new offerings, estimate the additional monthly revenue. Leave at $0 for a conservative labour-savings-only estimate.
+        If automation helps you close more deals, serve more clients, or launch new offerings, estimate the additional monthly revenue. Leave at $0 for a conservative estimate based only on labour savings.
       </p>
       <label htmlFor="additional-revenue" className="sr-only">Additional monthly revenue</label>
       <div className="flex items-center gap-3">
@@ -282,13 +282,13 @@ function Results({ values, onRestart }: { values: Record<string, unknown>; onRes
             </p>
           </div>
           <div className="bg-pns-soft-blue rounded-[12px] p-4">
-            <span className="text-[13px] text-pns-text-muted">Net year-one benefit</span>
+            <span className="text-[13px] text-pns-text-muted">Net first year benefit</span>
             <p className={`text-[24px] font-bold ${result.netYearOneBenefit >= 0 ? "text-green-700" : "text-pns-assessment-error"}`}>
               ${result.netYearOneBenefit.toLocaleString()}
             </p>
           </div>
           <div className="bg-pns-soft-blue rounded-[12px] p-4">
-            <span className="text-[13px] text-pns-text-muted">Year-one ROI</span>
+            <span className="text-[13px] text-pns-text-muted">First year ROI</span>
             <p className={`text-[24px] font-bold ${result.yearOneROI >= 0 ? "text-green-700" : "text-pns-assessment-error"}`}>
               {result.yearOneROI}%
             </p>
@@ -324,7 +324,7 @@ function Results({ values, onRestart }: { values: Record<string, unknown>; onRes
             <Users className="w-4 h-4 mr-2" />
             Get a free expert review of these numbers
           </Button>
-          <p className="mt-2 text-[13px] text-pns-text-muted">Optional — no cost, no obligation.</p>
+          <p className="mt-2 text-[13px] text-pns-text-muted">Optional. No cost and no obligation.</p>
         </div>
       )}
 

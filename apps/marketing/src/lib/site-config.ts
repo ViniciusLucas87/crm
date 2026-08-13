@@ -2,7 +2,7 @@ export const siteConfig = {
   name: "Pacific North Systems",
   tagline: "Custom software and automation for businesses worldwide.",
   description:
-    "Pacific North Systems builds custom software, workflow automation, dashboards, field tools, and AI-enabled systems for businesses worldwide.",
+    "Pacific North Systems builds custom software, workflow automation, dashboards, field tools, and AI powered systems for businesses worldwide.",
   url: "https://pacificnorthsystems.com",
   contact: {
     email: "hello@pacificnorthsystems.com",

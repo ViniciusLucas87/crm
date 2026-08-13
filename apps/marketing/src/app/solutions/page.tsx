@@ -63,9 +63,9 @@ const solutionsData: SolutionSectionData[] = [
     icon: Workflow,
     title: "Workflow Automation",
     problem:
-      "Workflow automation helps operations-heavy teams move requests, approvals, handoffs, and recurring updates without relying on memory, inbox searches, or duplicated spreadsheets.",
+      "Workflow automation helps teams with complex operations move requests, approvals, handoffs, and recurring updates without relying on memory, inbox searches, or duplicated spreadsheets.",
     whenUseful:
-      "When work moves through a predictable process with repeated handoffs, approvals, scheduling, and status updates that currently depend on email chains and manual follow-ups.",
+      "When work moves through a predictable process with repeated handoffs, approvals, scheduling, and status updates that currently depend on email chains and manual follow up.",
     whoNeedsIt:
       "Operations managers, field supervisors, project coordinators, and administrative teams who spend significant time tracking work status and routing information between departments.",
     useCases: [
@@ -193,7 +193,7 @@ const solutionsData: SolutionSectionData[] = [
     whoNeedsIt:
       "Business owners, operations managers, and department leads who need to understand work status, resource allocation, and performance without waiting for weekly manual reports.",
     useCases: [
-      "Real-time job status and progress dashboards across all active projects",
+      "Current job status and progress dashboards across all active projects",
       "Capacity and resource utilization tracking for field and office teams",
       "Revenue, cost, and margin dashboards updated from operational data",
       "Exception and bottleneck monitoring with alerts for at-risk work",
@@ -262,7 +262,7 @@ const solutionsData: SolutionSectionData[] = [
       "Pipeline and forecasting dashboards connected to operational capacity",
     ],
     exampleWorkflow:
-      "A trades company uses a generic CRM for sales and separate systems for job management and invoicing. We build a company-owned CRM that tracks from lead through quote, job execution, invoicing, and service follow-up , all in one system that matches their actual process.",
+      "A trades company uses a generic CRM for sales and separate systems for job management and invoicing. We build a CRM owned by the company that tracks each lead through quoting, job execution, invoicing, and service follow up, all in one system that matches the actual process.",
     typicalFirstVersion:
       "A focused CRM covering the core client lifecycle for one service line, with contact management, opportunity tracking, and basic job linking. Deployed within 4-6 weeks.",
     expectedOutcome:
@@ -357,7 +357,7 @@ const solutionsData: SolutionSectionData[] = [
     exampleWorkflow:
       "A field supervisor needs to quickly find the warranty terms for a specific product installed at a job site two years ago. An AI assistant searches the project documentation, contract records, and product database to surface the relevant information in seconds instead of hours of manual file searching.",
     typicalFirstVersion:
-      "A single AI-assisted workflow scoped to one type of question or task, with clear boundaries, human review, and logging. Deployed within 2-4 weeks.",
+      "One AI supported workflow scoped to one type of question or task, with clear boundaries, human review, and logging. Deployed within 2 to 4 weeks.",
     expectedOutcome:
       "Faster access to operational information, reduced time spent on routine information retrieval, and AI assistance that supports rather than replaces human judgement.",
     relevantIndustries: [

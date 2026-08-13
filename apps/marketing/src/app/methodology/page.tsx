@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 const sections = [
   {
     heading: "Editorial Independence",
-    body: "All content on pacificnorthsystems.com is created by Pacific North Systems for the benefit of Canadian small and mid-size business owners and operators. We do not accept payment for editorial content, product placements, or sponsored posts. Our research, guides, and tools are produced independently and reflect our honest assessment of the available evidence. When we link to our own services, we disclose the relationship.",
+    body: "All content on pacificnorthsystems.com is created by Pacific North Systems for the benefit of Canadian small and midsize business owners and operators. We do not accept payment for editorial content, product placements, or sponsored posts. Our research, guides, and tools are produced independently and reflect our honest assessment of the available evidence. When we link to our own services, we disclose the relationship.",
   },
   {
     heading: "Sourcing Hierarchy",
@@ -26,15 +26,15 @@ const sections = [
   },
   {
     heading: "Calculator Methodology",
-    body: "Our free tools calculate in the browser. Inputs remain in the browser session unless a visitor deliberately submits the optional follow-up form. Defaults are editable planning assumptions, not market averages. Each tool publishes its formula, a clearly hypothetical example, limitations, review date, and links to privacy information. Results are directional planning scenarios, not financial advice, validated diagnostics, or predictions.",
+    body: "Our free tools calculate in the browser. Inputs remain in the browser session unless a visitor deliberately submits the optional follow up form. Defaults are editable planning assumptions, not market averages. Each tool publishes its formula, a clearly hypothetical example, limitations, review date, and links to privacy information. Results are directional planning scenarios, not financial advice, validated diagnostics, or predictions.",
   },
   {
     heading: "AI-Assistance Disclosure",
-    body: "Some content on this site may be drafted or edited with the assistance of large language models. All AI-assisted content is reviewed, fact-checked, and approved by a human team member before publication. AI is never used to generate unverified statistics, customer testimonials, or specific financial projections. We do not use AI to impersonate human authors. AI tools are used for: initial research summaries, grammar and clarity improvements, and content formatting. All substantive claims, data points, and recommendations are human-verified.",
+    body: "Some content on this site may be drafted or edited with the assistance of large language models. All content supported by AI is reviewed, checked for accuracy, and approved by a human team member before publication. AI is never used to generate unverified statistics, customer testimonials, or specific financial projections. We do not use AI to impersonate human authors. AI tools are used for initial research summaries, grammar and clarity improvements, and content formatting. A human verifies every substantive claim, data point, and recommendation.",
   },
   {
     heading: "Author and Company Credentials",
-    body: `Pacific North Systems is a Canadian custom software and automation company based in Vancouver, BC. We build custom business applications, workflow automation, system integrations, AI-assisted document processing, dashboards and reporting, and CRM systems for small and mid-size businesses. Our team has experience in software engineering, business process analysis, and Canadian SMB operations. Contact: ${siteConfig.contact.email}. Location: ${siteConfig.contact.location}. We do not hold ourselves out as financial advisors, accountants, or legal professionals. Our tools and content are for informational and planning purposes only.`,
+    body: `Pacific North Systems is a Canadian custom software and automation company based in Vancouver, BC. We build custom business applications, workflow automation, system integrations, document processing supported by AI, dashboards and reporting, and CRM systems for small and midsize businesses. Our team has experience in software engineering, business process analysis, and Canadian SMB operations. Contact: ${siteConfig.contact.email}. Location: ${siteConfig.contact.location}. We do not hold ourselves out as financial advisors, accountants, or legal professionals. Our tools and content are for informational and planning purposes only.`,
   },
   {
     heading: "Content Review and Maintenance",

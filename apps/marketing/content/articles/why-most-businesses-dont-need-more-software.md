@@ -239,7 +239,7 @@ Only after that should you decide whether you need a new tool, an integration, a
 
 ## Process first. Software second.
 
-Pacific North Systems builds custom software and automation systems for operations-heavy businesses across British Columbia.
+Pacific North Systems builds custom software and automation systems for businesses with complex operations across British Columbia.
 
 But every project starts the same way.
 

@@ -7,13 +7,13 @@ import { Container } from "@/components/ui/container";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Learn about Pacific North Systems, a founder-led custom software company based in Vancouver and serving clients worldwide.",
+    "Learn about Pacific North Systems, a custom software company led by its founder, based in Vancouver and serving clients worldwide.",
 };
 
 const values = [
   {
     title: "Understand the real work",
-    body: "Good software starts with the people, decisions, constraints, and exceptions inside an operation—not with a list of fashionable features.",
+    body: "Good software starts with the people, decisions, constraints, and exceptions inside an operation, not with a list of fashionable features.",
   },
   {
     title: "Keep the solution practical",
@@ -61,7 +61,7 @@ export default function AboutPage() {
             </div>
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-pns-text-muted">
-                Founder-led
+                Founder led
               </p>
               <h2 className="mt-4 text-3xl font-semibold tracking-[-0.025em] text-pns-text-primary sm:text-4xl">
                 Direct access to the person responsible for the work.

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
 
 export function Hero() {
-  const trustSignals = ["Founder-led", "Based in BC", "Fast delivery"];
+  const trustSignals = ["Founder led", "Based in BC", "Fast delivery"];
 
   return (
     <section

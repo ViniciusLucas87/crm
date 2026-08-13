@@ -5,7 +5,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Terms of Service",
   description:
-    "Terms of service for Pacific North Systems — custom software and automation consulting.",
+    "Terms of service for Pacific North Systems custom software and automation consulting.",
 };
 
 export default function TermsPage() {

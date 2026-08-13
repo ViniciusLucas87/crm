@@ -8,7 +8,7 @@ import { BackgroundVideo } from "@/components/home/background-video";
 import { siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = {
-  title: "Custom Software for Operations-Heavy Businesses",
+  title: "Custom Software for Businesses with Complex Operations",
   description:
     "Pacific North Systems designs and builds practical custom software, workflow automation, and connected operational systems for businesses worldwide.",
 };
@@ -18,7 +18,7 @@ const services = [
     number: "01",
     title: "Custom operational software",
     description:
-      "Web and mobile applications designed around the way your team actually works—from internal tools and portals to field systems and custom CRMs.",
+      "Web and mobile applications designed around the way your team actually works, from internal tools and portals to field systems and custom CRMs.",
     href: "/solutions#custom-business-software",
   },
   {
@@ -96,7 +96,7 @@ export default function HomePage() {
               Who we work with
             </p>
             <p className="max-w-4xl text-lg leading-8 text-pns-text-muted">
-              Businesses of all kinds—from growing service companies to
+              Businesses of all kinds, from growing service companies to
               established organizations with complex operations. We work
               remotely with clients anywhere in the world.
             </p>
@@ -119,10 +119,10 @@ export default function HomePage() {
             </div>
             <div className="max-w-4xl">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-pns-text-muted">
-                Founder-led delivery
+                Founder led delivery
               </p>
               <h2 className="mt-3 text-2xl font-semibold leading-tight tracking-[-0.025em] text-pns-text-primary sm:text-3xl">
-                Your project is led by an experienced technical partner—not
+                Your project is led by an experienced technical partner, not
                 passed through layers of account management.
               </h2>
               <p className="mt-5 max-w-3xl leading-7 text-pns-text-muted">

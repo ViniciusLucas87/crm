@@ -83,7 +83,7 @@ function EmployeesStep({ onNext, defaultValues }: { onNext: (d: Record<string, u
         How many employees are affected by this manual task?
       </h3>
       <p className="text-pns-text-muted text-[15px] leading-relaxed mb-6">
-        Count everyone who spends meaningful time on this process — data entry,
+        Count everyone who spends meaningful time on this process, including data entry,
         report compilation, scheduling, invoicing, etc.
       </p>
       <label htmlFor="employees-affected" className="sr-only">
@@ -122,7 +122,7 @@ function HoursStep({ onNext, defaultValues }: { onNext: (d: Record<string, unkno
         How many hours per week does each employee spend on this task?
       </h3>
       <p className="text-pns-text-muted text-[15px] leading-relaxed mb-6">
-        Include time spent preparing, double-checking, re-entering data, and fixing errors — not just the core task.
+        Include time spent preparing, checking, entering data again, and fixing errors, not just the core task.
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[2, 5, 10, 15, 20, 25, 30, 40].map((h) => (
@@ -402,7 +402,7 @@ function Results({ values, onRestart }: { values: Record<string, unknown>; onRes
             Get a free expert review of these numbers
           </Button>
           <p className="mt-2 text-[13px] text-pns-text-muted">
-            Optional — we&apos;ll review your specific situation at no cost.
+            Optional. We&apos;ll review your specific situation at no cost.
           </p>
         </div>
       )}

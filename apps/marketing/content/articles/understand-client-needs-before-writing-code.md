@@ -89,7 +89,7 @@ Developers have preferences. We know certain frameworks, platforms, and patterns
 
 The technology has to fit the business constraints.
 
-A field team may need a mobile workflow that remains useful with poor connectivity. An office team may need a simple browser-based tool with strong search. A company with established accounting software may need an integration rather than a replacement. A regulated workflow may require approvals, history, and carefully controlled access from the beginning.
+A field team may need a mobile workflow that remains useful with poor connectivity. An office team may need a simple browser tool with strong search. A company with established accounting software may need an integration rather than a replacement. A regulated workflow may require approvals, history, and carefully controlled access from the beginning.
 
 Our job is to choose and shape the technology around those needs. The client should not have to reorganize a sound operation just because a developer wanted to use a particular tool.
 
@@ -97,7 +97,7 @@ Our job is to choose and shape the technology around those needs. The client sho
 
 "The software works" is not a useful measure on its own.
 
-A successful project should improve something the client can recognize. That could mean reducing the time needed to prepare a report, removing duplicate entry, shortening an approval cycle, keeping job information in one place, or making follow-up work visible.
+A successful project should improve something the client can recognize. That could mean reducing the time needed to prepare a report, removing duplicate entry, shortening an approval cycle, keeping job information in one place, or making follow up work visible.
 
 The measure should match the original problem.
 
@@ -105,7 +105,7 @@ Before development, we establish a practical baseline. The client can use our [M
 
 After launch, we compare the new workflow with the old one. If the result is not improving the operation, more features are not automatically the answer. We return to the process and find out why.
 
-## A client-needs checklist before development begins
+## A client needs checklist before development begins
 
 For any custom software project, we should be able to answer these questions together:
 

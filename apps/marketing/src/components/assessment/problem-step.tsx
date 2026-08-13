@@ -16,7 +16,7 @@ const PROBLEMS = [
   "Scheduling and dispatching",
   "Managing documents",
   "Reporting",
-  "Customer follow-up",
+  "Customer follow up",
   "Information spread across different systems",
   "Manual approvals",
   "Other",

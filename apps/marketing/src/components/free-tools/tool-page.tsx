@@ -42,8 +42,8 @@ const toolMethodology: Record<string, { formula: string; example: string; limita
     limitations: "Results exclude unentered costs and cannot predict implementation delays, adoption, failures, demand, revenue, tax, or financing effects.",
   },
   "crm-readiness-assessment": {
-    formula: "This is a Pacific North Systems planning framework. Answers receive fixed points for lead volume, ownership, follow-up visibility, response time, and reporting; the total maps to a readiness band.",
-    example: "Use the result to identify the weakest operating control, then measure that control—such as overdue next actions—before and after a small process change.",
+    formula: "This is a Pacific North Systems planning framework. Answers receive fixed points for lead volume, ownership, follow up visibility, response time, and reporting; the total maps to a readiness band.",
+    example: "Use the result to identify the weakest operating control, then measure it before and after a small process change. Overdue next actions are one useful example.",
     limitations: "The score is not a validated diagnostic, financial forecast, security assessment, or guarantee that a CRM will improve revenue.",
   },
 };
@@ -154,7 +154,7 @@ export function ToolPage({ config }: { config: ToolPageConfig }) {
               <p><strong className="text-pns-text-primary">Method:</strong> {methodology.formula}</p>
               <p><strong className="text-pns-text-primary">Worked example:</strong> {methodology.example}</p>
               <p><strong className="text-pns-text-primary">Limits:</strong> {methodology.limitations}</p>
-              <p><strong className="text-pns-text-primary">Privacy:</strong> Inputs stay in this browser session. We receive information only if you deliberately submit the optional follow-up form.</p>
+              <p><strong className="text-pns-text-primary">Privacy:</strong> Inputs stay in this browser session. We receive information only if you deliberately submit the optional follow up form.</p>
             </div>
             <div className="flex flex-wrap gap-4 mt-5 text-[14px] font-medium">
               <Link href="/methodology" className="underline hover:text-pns-text-primary">Editorial and calculator standards</Link>
@@ -286,7 +286,7 @@ export function ContactStep({
       </h3>
       <p className="text-pns-text-muted text-[15px] leading-relaxed mb-6">
         Optional. If you&apos;d like a Pacific North Systems team member to
-        review your numbers and suggest next steps — at no cost — leave your
+        review your numbers and suggest next steps at no cost. Leave your
         details below. We&apos;ll follow up within one business day.
       </p>
 
@@ -391,10 +391,10 @@ export function ContactStep({
 
       <div className="flex flex-col sm:flex-row gap-3 mt-6">
         <Button onClick={handleSubmit} disabled={submitting}>
-          {submitting ? "Submitting..." : "Submit & get follow-up"}
+          {submitting ? "Submitting..." : "Submit and get follow up"}
         </Button>
         <Button variant="ghost" onClick={handleSkip}>
-          Skip — I just want the results
+          Skip. I just want the results
         </Button>
       </div>
     </Card>

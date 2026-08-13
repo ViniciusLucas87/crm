@@ -1,8 +1,8 @@
 # Pacific North Systems
-> Custom software and automation for operations-heavy teams in Metro Vancouver.
+> Custom software and automation for teams with complex operations in Metro Vancouver.
 
 ## About
-Pacific North Systems builds custom business software, workflow automation, dashboards, field tools, and AI-enabled systems for Canadian small and mid-size businesses. We focus on replacing manual data entry, connecting disconnected tools, and building software that fits how teams actually work.
+Pacific North Systems builds custom business software, workflow automation, dashboards, field tools, and AI powered systems for Canadian small and midsize businesses. We focus on replacing manual data entry, connecting disconnected tools, and building software that fits how teams actually work.
 
 ## Key Pages
 - Home: https://pacificnorthsystems.com
@@ -15,8 +15,8 @@ Pacific North Systems builds custom business software, workflow automation, dash
 
 ## Free Tools
 - Manual Work Cost Calculator: https://pacificnorthsystems.com/free-tools/manual-work-cost-calculator | Estimate annual cost of repetitive manual tasks
-- Automation ROI Calculator: https://pacificnorthsystems.com/free-tools/automation-roi-calculator | Year-one return on automation investment
-- CRM Readiness Assessment: https://pacificnorthsystems.com/free-tools/crm-readiness-assessment | 10-question readiness score for SMBs
+- Automation ROI Calculator: https://pacificnorthsystems.com/free-tools/automation-roi-calculator | First year return on automation investment
+- CRM Readiness Assessment: https://pacificnorthsystems.com/free-tools/crm-readiness-assessment | Readiness score based on 10 questions for SMBs
 
 ## Business Guides
 - What Should I Automate First: https://pacificnorthsystems.com/business-guides/what-should-i-automate-first

@@ -9,7 +9,7 @@ import { ArrowRight, BookOpen } from "lucide-react";
 export const metadata: Metadata = {
   title: "Business Guides for Canadian SMBs | Pacific North Systems",
   description:
-    "Practical, plain-English guides on automation, CRM, AI, and operations for Canadian small and mid-size business owners. No jargon, no sales pitch.",
+    "Practical guides in plain English on automation, CRM, AI, and operations for Canadian small and midsize business owners. No jargon and no sales pitch.",
   alternates: { canonical: "https://pacificnorthsystems.com/business-guides" },
 };
 
@@ -26,7 +26,7 @@ const guides: Guide[] = [
     title: "What Should I Automate First in My Business?",
     slug: "what-should-i-automate-first",
     description:
-      "A practical framework for identifying which business process to automate first — based on volume, error rate, and employee impact — with real Canadian SMB examples.",
+      "A practical framework for identifying which business process to automate first, based on volume, error rate, and employee impact, with real Canadian SMB examples.",
     readTime: "6 min",
     category: "Automation",
   },
@@ -34,7 +34,7 @@ const guides: Guide[] = [
     title: "How Much Is Manual Paperwork Costing My Company?",
     slug: "manual-paperwork-cost",
     description:
-      "Learn how to estimate the true loaded cost of manual data entry, paper-based workflows, and rekeying — and when automation pays for itself.",
+      "Learn how to estimate the true loaded cost of manual data entry, paper workflows, and rekeying, and when automation pays for itself.",
     readTime: "5 min",
     category: "Operations",
   },
@@ -42,7 +42,7 @@ const guides: Guide[] = [
     title: "Can AI Help My Business Without Replacing Employees?",
     slug: "ai-without-replacing-employees",
     description:
-      "How Canadian SMBs are using AI for document processing, data extraction, and workflow assistance — augmenting their teams rather than replacing them.",
+      "How Canadian SMBs are using AI for document processing, data extraction, and workflow assistance to support their teams rather than replace them.",
     readTime: "7 min",
     category: "AI",
   },
@@ -50,7 +50,7 @@ const guides: Guide[] = [
     title: "How Do I Stop Leads from Falling Through the Cracks?",
     slug: "stop-leads-falling-through-cracks",
     description:
-      "Five practical steps to ensure every lead gets a timely response, clear ownership, and consistent follow-up — even when your team is busy.",
+      "Five practical steps to ensure every lead gets a timely response, clear ownership, and consistent follow up, even when your team is busy.",
     readTime: "6 min",
     category: "Sales",
   },
@@ -58,7 +58,7 @@ const guides: Guide[] = [
     title: "Do I Need a CRM for My Small Business?",
     slug: "do-i-need-a-crm",
     description:
-      "When a shared inbox or spreadsheet stops working and a CRM becomes worth the investment — a decision guide for Canadian SMB owners.",
+      "When a shared inbox or spreadsheet stops working and a CRM becomes worth the investment. A decision guide for Canadian SMB owners.",
     readTime: "5 min",
     category: "CRM",
   },
@@ -66,7 +66,7 @@ const guides: Guide[] = [
     title: "How Can I Connect Accounting, Email, Quoting, and Scheduling?",
     slug: "connect-accounting-email-quoting-scheduling",
     description:
-      "A practical guide to integrating the four most common SMB tools — accounting software, email, quoting, and scheduling — to eliminate double-entry.",
+      "A practical guide to integrating the four most common SMB tools: accounting software, email, quoting, and scheduling. The goal is to eliminate duplicate data entry.",
     readTime: "7 min",
     category: "Integrations",
   },
@@ -82,7 +82,7 @@ const guides: Guide[] = [
     title: "How Can I Use AI Securely with Customer Information?",
     slug: "ai-secure-customer-information",
     description:
-      "Practical privacy and security considerations for Canadian businesses using AI tools with customer data — PIPEDA basics, data isolation, and safe defaults.",
+      "Practical privacy and security considerations for Canadian businesses using AI tools with customer data, including PIPEDA basics, data isolation, and safe defaults.",
     readTime: "7 min",
     category: "AI",
   },
@@ -90,7 +90,7 @@ const guides: Guide[] = [
     title: "How Many Hours Could Automation Save My Company?",
     slug: "automation-hours-saved",
     description:
-      "A step-by-step method to audit your team's repetitive tasks and estimate realistic automation time savings — with a link to our free calculator.",
+      "A practical method to audit your team's repetitive tasks and estimate realistic automation time savings, with a link to our free calculator.",
     readTime: "6 min",
     category: "Automation",
   },
@@ -98,7 +98,7 @@ const guides: Guide[] = [
     title: "Why Are Employees Entering the Same Information Multiple Times?",
     slug: "employees-entering-same-information",
     description:
-      "The root causes of double-entry in Canadian SMBs — disconnected tools, manual handoffs, and paper-based workflows — and how to fix it systematically.",
+      "The root causes of duplicate data entry in Canadian SMBs, including disconnected tools, manual handoffs, and paper workflows, and how to fix them systematically.",
     readTime: "5 min",
     category: "Operations",
   },

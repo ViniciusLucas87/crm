@@ -26,7 +26,7 @@ const buildCards = [
     icon: BarChart3,
     title: "Dashboards & Reporting",
     description:
-      "Real-time insights and KPIs that help you make faster decisions.",
+      "Current insights and KPIs that help you make faster decisions.",
   },
   {
     icon: Bot,

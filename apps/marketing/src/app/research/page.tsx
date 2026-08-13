@@ -25,7 +25,7 @@ export default function ResearchHub() {
             </h1>
             <p className="text-pns-text-light text-[15px] leading-relaxed max-w-xl">
               Transparent, citation-backed benchmarks and analysis for Canadian
-              small and mid-size business operations. All data sourced from
+              small and midsize business operations. All data sourced from
               verified public sources with inline citations.
             </p>
           </div>
@@ -41,12 +41,12 @@ export default function ResearchHub() {
                   <FileText className="w-5 h-5 text-[#051226] mt-1 flex-shrink-0" />
                   <div>
                     <h3 className="font-heading font-semibold text-[16px] text-pns-text-primary mb-2">
-                      Canadian SMB Manual Work Cost Planning Baseline — 2026
+                      Canadian SMB Manual Work Cost Planning Baseline, 2026
                     </h3>
                     <p className="text-[14px] text-pns-text-muted leading-relaxed mb-3">
                       A planning baseline for estimating manual work costs in
                       Canadian SMBs, built from official Canadian business data
-                      and owner-supplied cost assumptions. Not a survey and not
+                      and cost assumptions supplied by the owner. Not a survey and not
                       a claim of achieved savings.
                     </p>
                     <span className="text-[13px] font-medium text-pns-text-primary inline-flex items-center gap-1">

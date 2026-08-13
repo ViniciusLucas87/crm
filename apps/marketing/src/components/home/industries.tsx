@@ -18,7 +18,7 @@ export function Industries() {
     <Section variant="white" id="industries">
       <Container>
         <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold text-pns-text-primary text-center">
-          Built for operations-heavy teams
+          Built for teams with complex operations
         </h2>
 
         <div className="mt-10 flex flex-wrap justify-center gap-3">

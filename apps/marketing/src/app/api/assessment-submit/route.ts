@@ -211,7 +211,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ status: "persisted", requestId, submissionId: crmData.submission_id || crmData.assessment_id || null }, { status: 201 });
     }
 
-    return NextResponse.json({ error: "Retry failed. Your form data is preserved — please try again later.", requestId, retry: true, reason: "crm_rejected" }, { status: 503 });
+    return NextResponse.json({ error: "Retry failed. Your form data is preserved. Please try again later.", requestId, retry: true, reason: "crm_rejected" }, { status: 503 });
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: msg }, { status: 500 });

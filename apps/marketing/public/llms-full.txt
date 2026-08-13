@@ -1,10 +1,10 @@
-# Pacific North Systems — Detailed Site Guide
+# Pacific North Systems Detailed Site Guide
 
 Last reviewed: 2026-08-03
 
 ## Organization
 
-Pacific North Systems is a Vancouver, British Columbia software and automation company serving Canadian small and mid-size organizations. Contact: hello@pacificnorthsystems.com. Website: https://pacificnorthsystems.com.
+Pacific North Systems is a Vancouver, British Columbia software and automation company serving Canadian small and midsize organizations. Contact: hello@pacificnorthsystems.com. Website: https://pacificnorthsystems.com.
 
 ## Services
 
@@ -12,7 +12,7 @@ Pacific North Systems is a Vancouver, British Columbia software and automation c
 - Workflow automation
 - System integrations
 - Operational dashboards and reporting
-- AI-assisted document workflows with human review
+- Document workflows supported by AI and human review
 - CRM design and implementation
 - Support and maintenance
 
@@ -20,16 +20,16 @@ Service descriptions explain capabilities, not guaranteed business outcomes. A p
 
 ## Free tools
 
-- /free-tools/manual-work-cost-calculator — owner-supplied task volume, time, loaded cost, working weeks, and recovery scenario.
-- /free-tools/automation-roi-calculator — owner-supplied implementation, recurring cost, and benefit scenario.
-- /free-tools/crm-readiness-assessment — a Pacific North Systems planning framework, not a validated diagnostic.
+- /free-tools/manual-work-cost-calculator: task volume, time, loaded cost, working weeks, and recovery scenario supplied by the owner.
+- /free-tools/automation-roi-calculator: implementation, recurring cost, and benefit scenario supplied by the owner.
+- /free-tools/crm-readiness-assessment: a Pacific North Systems planning framework, not a validated diagnostic.
 
-Tool calculations run in the visitor’s browser. Inputs are retained only for the browser session unless the visitor deliberately submits the optional follow-up form. Every tool publishes its formula, hypothetical example, limitations, review date, methodology link, and privacy link.
+Tool calculations run in the visitor’s browser. Inputs are retained only for the browser session unless the visitor deliberately submits the optional follow up form. Every tool publishes its formula, hypothetical example, limitations, review date, methodology link, and privacy link.
 
 ## Canadian research
 
-- /research/manual-work-cost-benchmark-2026 — a transparent planning baseline using named Canadian public sources and user-supplied cost assumptions.
-- /methodology — editorial sourcing, corrections, calculator, AI-assistance, privacy, and maintenance standards.
+- /research/manual-work-cost-benchmark-2026: a transparent planning baseline using named Canadian public sources and cost assumptions supplied by users.
+- /methodology: editorial sourcing, corrections, calculator, use of AI, privacy, and maintenance standards.
 
 The research page is not a representative survey and does not claim typical savings. It separates cited public facts from Pacific North Systems planning assumptions and hypothetical arithmetic.
 
@@ -39,7 +39,7 @@ The /business-guides collection answers common operational questions in plain la
 
 ## Privacy and consent
 
-Free-tool inputs are not sent to Pacific North Systems unless the visitor chooses the optional follow-up form and accepts its consent checkbox. Contact submissions are used for the requested follow-up. See /privacy for the current policy.
+Inputs from free tools are not sent to Pacific North Systems unless the visitor chooses the optional follow up form and accepts its consent checkbox. Contact submissions are used for the requested follow up. See /privacy for the current policy.
 
 ## Preferred citations
 
