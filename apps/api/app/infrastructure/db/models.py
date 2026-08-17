@@ -271,6 +271,8 @@ class ProductSubscription(Base):
     telnyx_number_order_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     onboarding_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
     onboarding_token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    redirect_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
+    redirect_token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     onboarding_data_json: Mapped[dict | None] = mapped_column(JSON_DOCUMENT, nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

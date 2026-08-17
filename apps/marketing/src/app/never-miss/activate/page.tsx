@@ -35,6 +35,7 @@ function ActivationForm() {
   const [activated, setActivated] = useState<Activated | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(true);
+  const [confirmationMessage, setConfirmationMessage] = useState("Payment received. Preparing your secure setup…");
 
   useEffect(() => {
     let cancelled = false;
@@ -44,17 +45,20 @@ function ActivationForm() {
         const checkoutSession = params.get("session_id");
         if (!activationToken && checkoutSession) {
           let exchanged: Response | null = null;
-          for (let attempt = 0; attempt < 5; attempt += 1) {
+          for (let attempt = 0; attempt < 40; attempt += 1) {
             exchanged = await fetch(`${API}/api/v1/subscriptions/onboarding/exchange`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ checkout_session_id: checkoutSession }),
             });
             if (exchanged.status !== 409) break;
+            if (!cancelled && attempt >= 3) {
+              setConfirmationMessage("Payment confirmed. Stripe is securely connecting your setup. This usually takes less than a minute…");
+            }
             await new Promise((resolve) => setTimeout(resolve, 1500));
           }
-          if (!exchanged) throw new Error("We could not confirm your payment yet.");
-          if (!exchanged.ok) throw new Error("We could not confirm your payment yet. Please use the private link in your email or try again shortly.");
+          if (!exchanged) throw new Error("Your payment is safe, but setup could not start automatically. Refresh this page or use the private link in your email.");
+          if (!exchanged.ok) throw new Error("Your payment is safe. Setup is taking longer than expected. Refresh this page or use the private link in your email.");
           const result = await exchanged.json();
           if (result.status === "active") {
             if (!cancelled) setActivated(result);
@@ -122,7 +126,7 @@ function ActivationForm() {
           <h1 className="mt-3 text-4xl font-semibold tracking-tight text-[#071729] lg:text-5xl">Connect your phone in a few minutes.</h1>
           <p className="mt-4 text-lg text-slate-600">Your payment is confirmed. Tell us how your business should answer missed calls and we will prepare the service automatically.</p>
 
-          {busy && !setup && !activated ? <div className="mt-10 flex items-center gap-3 rounded-2xl bg-white p-6 shadow"><LoaderCircle className="h-5 w-5 animate-spin" /> Confirming your subscription…</div> : null}
+          {busy && !setup && !activated ? <div className="mt-10 flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white p-6 text-[#071729] shadow"><LoaderCircle className="h-5 w-5 animate-spin text-emerald-600" /><div><p className="font-semibold">{confirmationMessage}</p><p className="mt-1 text-sm text-slate-500">Please keep this page open. You will not be charged again.</p></div></div> : null}
           {error ? <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-800">{error}</div> : null}
 
           {activated ? (

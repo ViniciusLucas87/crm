@@ -24,6 +24,7 @@ def _post_checkout_webhook(client, monkeypatch, checkout=CHECKOUT, event_id="evt
     secret = "whsec_test"
     monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", secret)
     monkeypatch.setenv("STRIPE_NEVER_MISS_PAYMENT_LINK_ID", "plink_basic")
+    monkeypatch.setenv("STRIPE_NEVER_MISS_PLUS_PAYMENT_LINK_ID", "plink_plus")
     body = json.dumps({
         "id": event_id,
         "type": "checkout.session.completed",
@@ -47,6 +48,26 @@ def test_checkout_exchange_is_idempotent(client, monkeypatch):
     assert second.status_code == 200
     assert first.json()["token"]
     assert second.json()["token"]
+
+
+def test_checkout_redirect_does_not_invalidate_email_link(client, monkeypatch):
+    assert _post_checkout_webhook(client, monkeypatch).status_code == 200
+    from app.infrastructure.db.models import ProductSubscription
+    from app.infrastructure.db.session import SessionLocal
+
+    session = SessionLocal()
+    subscription = session.query(ProductSubscription).filter_by(stripe_checkout_session_id=CHECKOUT["id"]).one()
+    original_email_hash = subscription.onboarding_token_hash
+    session.close()
+
+    response = client.post("/api/v1/subscriptions/onboarding/exchange", json={"checkout_session_id": CHECKOUT["id"]})
+    assert response.status_code == 200
+
+    session = SessionLocal()
+    subscription = session.query(ProductSubscription).filter_by(stripe_checkout_session_id=CHECKOUT["id"]).one()
+    assert subscription.onboarding_token_hash == original_email_hash
+    assert subscription.redirect_token_hash
+    session.close()
 
 
 def test_paid_customer_can_activate_without_staff(client, monkeypatch):
@@ -75,6 +96,24 @@ def test_paid_customer_can_activate_without_staff(client, monkeypatch):
     assert activation.status_code == 200, activation.text
     assert activation.json()["status"] == "active"
     assert activation.json()["assigned_phone"] == "+16045550999"
+
+
+def test_plus_plan_uses_the_same_reliable_onboarding(client, monkeypatch):
+    plus_checkout = {
+        **CHECKOUT,
+        "id": "cs_test_never_miss_plus_001",
+        "payment_link": "plink_plus",
+        "subscription": "sub_plus_001",
+    }
+    assert _post_checkout_webhook(client, monkeypatch, plus_checkout, "evt_checkout_plus_001").status_code == 200
+    exchange = client.post(
+        "/api/v1/subscriptions/onboarding/exchange",
+        json={"checkout_session_id": plus_checkout["id"]},
+    )
+    assert exchange.status_code == 200
+    status = client.get(f"/api/v1/subscriptions/onboarding/{exchange.json()['token']}")
+    assert status.status_code == 200
+    assert status.json()["plan"] == "never_miss_plus"
 
 
 def test_unpaid_checkout_is_not_fulfilled(client, monkeypatch):

@@ -87,10 +87,15 @@ def _verify_stripe_signature(payload: bytes, header: str, secret: str) -> None:
         raise HTTPException(400, "Invalid Stripe signature")
 
 
-def _issue_token(subscription: ProductSubscription) -> str:
+def _issue_token(subscription: ProductSubscription, *, channel: str = "email") -> str:
     token = secrets.token_urlsafe(40)
-    subscription.onboarding_token_hash = _sha256(token)
-    subscription.onboarding_token_expires_at = datetime.now(UTC) + timedelta(hours=24)
+    expires_at = datetime.now(UTC) + timedelta(hours=24)
+    if channel == "redirect":
+        subscription.redirect_token_hash = _sha256(token)
+        subscription.redirect_token_expires_at = expires_at
+    else:
+        subscription.onboarding_token_hash = _sha256(token)
+        subscription.onboarding_token_expires_at = expires_at
     return token
 
 
@@ -250,18 +255,28 @@ def exchange_checkout_session(
         raise HTTPException(409, "Payment confirmation is still arriving. Please try again in a few seconds.")
     if subscription.status == "active":
         return {"status": "active", "token": None}
-    token = _issue_token(subscription)
+    token = _issue_token(subscription, channel="redirect")
     session.commit()
     return {"status": subscription.status, "token": token}
 
 
 def _subscription_for_token(session: Session, token: str) -> ProductSubscription:
+    token_hash = _sha256(token)
     subscription = session.execute(
-        select(ProductSubscription).where(ProductSubscription.onboarding_token_hash == _sha256(token))
+        select(ProductSubscription).where(
+            (ProductSubscription.onboarding_token_hash == token_hash)
+            | (ProductSubscription.redirect_token_hash == token_hash)
+        )
     ).scalar_one_or_none()
-    if not subscription or not subscription.onboarding_token_expires_at:
+    if not subscription:
         raise HTTPException(404, "This activation link is invalid")
-    expires = subscription.onboarding_token_expires_at
+    expires = (
+        subscription.onboarding_token_expires_at
+        if subscription.onboarding_token_hash == token_hash
+        else subscription.redirect_token_expires_at
+    )
+    if not expires:
+        raise HTTPException(404, "This activation link is invalid")
     if expires.tzinfo is None:
         expires = expires.replace(tzinfo=UTC)
     if expires < datetime.now(UTC) and subscription.status != "active":
