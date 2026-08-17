@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle2, LoaderCircle, PhoneCall } from "lucide-react";
 import { Container } from "@/components/ui/container";
 
-const API = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+const API = "";
 
 type Setup = {
   plan: "never_miss" | "never_miss_plus";
