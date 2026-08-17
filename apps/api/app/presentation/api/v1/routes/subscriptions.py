@@ -311,7 +311,9 @@ def _provision_telnyx_number(area_code: str, reference: str) -> tuple[str, str]:
     if os.getenv("TELNYX_AUTO_PROVISION_ENABLED", "false").lower() != "true":
         raise RuntimeError("Automatic number provisioning is not enabled")
     api_key = os.getenv("TELNYX_API_KEY", "")
-    connection_id = os.getenv("TELNYX_CONNECTION_ID", "") or os.getenv("TELNYX_APPLICATION_ID", "")
+    # New customer numbers must receive inbound Call Control webhooks. The
+    # credential connection is outbound-only and would immediately reject calls.
+    connection_id = os.getenv("TELNYX_APPLICATION_ID", "") or os.getenv("TELNYX_CONNECTION_ID", "")
     messaging_profile_id = os.getenv("TELNYX_MESSAGING_PROFILE_ID", "")
     if not all((api_key, connection_id, messaging_profile_id)):
         raise RuntimeError("Telnyx provisioning credentials are incomplete")
