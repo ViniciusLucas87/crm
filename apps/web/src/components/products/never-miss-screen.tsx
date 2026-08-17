@@ -154,7 +154,7 @@ export function NeverMissScreen() {
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3"><PhoneMissed className="text-cyan-300" /><div><h2 className="text-xl font-semibold text-white">Never Miss</h2><p className="text-sm text-slate-400">$19.99/month · Automatic reply and callback reminders.</p></div></div>
+          <div className="flex items-center gap-3"><PhoneMissed className="text-cyan-300" /><div><h2 className="text-xl font-semibold text-white">Never Miss</h2><p className="text-sm text-slate-400">$39/month · Automatic reply and callback reminders.</p></div></div>
           <Button onClick={() => void load()}><RefreshCw className="mr-2 inline h-4 w-4" />Refresh</Button>
         </div>
 
@@ -170,7 +170,7 @@ export function NeverMissScreen() {
           <label className="text-sm text-slate-300">Business name<input className={`${inputClass} mt-1`} value={config.business_name ?? ""} onChange={(e) => setConfig({ ...config, business_name: e.target.value })} /></label>
           <label className="text-sm text-slate-300">Business phone<input className={`${inputClass} mt-1`} value={config.business_phone ?? ""} onChange={(e) => setConfig({ ...config, business_phone: e.target.value })} placeholder="+16045550100" /></label>
           <label className="text-sm text-slate-300">Notification phone<input className={`${inputClass} mt-1`} value={config.notification_phone ?? ""} onChange={(e) => setConfig({ ...config, notification_phone: e.target.value })} placeholder="+16045550101" /></label>
-          <label className="text-sm text-slate-300">Package<select className={`${inputClass} mt-1`} value={config.plan} onChange={(e) => setConfig({ ...config, plan: e.target.value })}><option value="never_miss">Never Miss · $19.99/month</option><option value="never_miss_plus">Never Miss Plus · $59/month</option></select></label>
+          <label className="text-sm text-slate-300">Package<select className={`${inputClass} mt-1`} value={config.plan} onChange={(e) => setConfig({ ...config, plan: e.target.value })}><option value="never_miss">Never Miss · $39/month</option><option value="never_miss_plus">Never Miss Plus · $89/month</option></select></label>
           <label className="text-sm text-slate-300 md:col-span-2">Recovery message<textarea className={`${inputClass} mt-1 min-h-24`} value={config.recovery_message ?? ""} onChange={(e) => setConfig({ ...config, recovery_message: e.target.value })} /></label>
           <label className="flex items-center gap-3 text-sm text-slate-300"><input type="checkbox" checked={config.enabled} onChange={(e) => setConfig({ ...config, enabled: e.target.checked })} />Enable missed call recovery</label>
           <div className="text-right"><Button variant="primary" type="submit"><Save className="mr-2 inline h-4 w-4" />Save configuration</Button></div>
@@ -178,7 +178,7 @@ export function NeverMissScreen() {
       </section>
 
       <section className="space-y-4">
-        <div className="flex items-center gap-3"><Inbox className="text-cyan-300" /><div><h2 className="text-xl font-semibold text-white">Never Miss Plus</h2><p className="text-sm text-slate-400">$59/month · Everything in Never Miss, plus one inbox for calls, texts, forms, and website inquiries.</p></div></div>
+        <div className="flex items-center gap-3"><Inbox className="text-cyan-300" /><div><h2 className="text-xl font-semibold text-white">Never Miss Plus</h2><p className="text-sm text-slate-400">$89/month · Everything in Never Miss, plus one inbox for calls, texts, forms, and website inquiries.</p></div></div>
         <form onSubmit={createLead} className={`${cardClass} grid gap-3 md:grid-cols-4`}>
           <input required className={inputClass} placeholder="Contact name" value={leadName} onChange={(e) => setLeadName(e.target.value)} />
           <input className={inputClass} placeholder="Phone number" value={leadPhone} onChange={(e) => setLeadPhone(e.target.value)} />

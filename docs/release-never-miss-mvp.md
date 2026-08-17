@@ -4,7 +4,7 @@ Date: 2026-08-17
 
 ## Packages
 
-### Never Miss · CAD $19.99/month
+### Never Miss · CAD $39/month
 
 The existing Telnyx missed call recovery workflow is now configurable by organization. The MVP supports:
 
@@ -16,7 +16,7 @@ The existing Telnyx missed call recovery workflow is now configurable by organiz
 6. Automatic creation of a customer inquiry from a missed call
 7. Existing spam screening, STOP handling, event reconciliation, and SMS idempotency
 
-### Never Miss Plus · CAD $59/month
+### Never Miss Plus · CAD $89/month
 
 The MVP provides:
 

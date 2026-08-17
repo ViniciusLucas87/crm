@@ -132,17 +132,19 @@ function ActivationForm() {
           {activated ? (
             <section className="mt-10 rounded-3xl bg-[#071729] p-8 text-white shadow-xl">
               <CheckCircle2 className="h-12 w-12 text-cyan-300" />
-              <h2 className="mt-5 text-3xl font-semibold">Your Never Miss number is ready.</h2>
-              <p className="mt-4 text-lg text-white/75">New service number</p>
+              <h2 className="mt-5 text-3xl font-semibold">Your current business number stays the same.</h2>
+              <p className="mt-4 text-lg text-white/75">Private Never Miss routing line</p>
               <p className="mt-1 text-4xl font-semibold tracking-tight">{activated.assigned_phone}</p>
+              <p className="mt-3 text-sm text-white/60">Do not advertise this number. Customers continue calling {activated.forward_from || "your existing business number"}.</p>
               <div className="mt-7 rounded-2xl bg-white/10 p-5">
-                <p className="font-semibold">One last self service step</p>
-                <p className="mt-2 text-white/75">Set unanswered call forwarding on your business phone to the number above. Then call your business, let it ring without answering, and confirm that the automatic text arrives.</p>
+                <p className="font-semibold">Connect unanswered calls</p>
+                <ol className="mt-3 space-y-2 text-white/75"><li>1. Open call forwarding settings or contact your phone carrier.</li><li>2. Ask to forward unanswered calls only to the private routing line above.</li><li>3. Call your normal business number, do not answer, and confirm the automatic text arrives.</li></ol>
+                <p className="mt-4 text-sm text-white/60">Answered calls continue working normally. Never Miss only handles calls you cannot take.</p>
               </div>
             </section>
           ) : setup ? (
             <form onSubmit={activate} className="mt-10 space-y-6 rounded-3xl bg-white p-7 shadow-xl sm:p-9">
-              <div className="rounded-2xl bg-[#edf5f5] p-5"><p className="font-semibold text-[#071729]">Your plan: {setup.plan === "never_miss_plus" ? "Never Miss Plus" : "Never Miss"}</p><p className="mt-1 text-sm text-slate-600">Includes one local Canadian service number.</p></div>
+              <div className="rounded-2xl bg-[#edf5f5] p-5"><p className="font-semibold text-[#071729]">Your plan: {setup.plan === "never_miss_plus" ? "Never Miss Plus" : "Never Miss"}</p><p className="mt-1 text-sm text-slate-600">Keep your existing business number. A private routing line handles only unanswered calls.</p></div>
               <Field label="Business name" name="business_name" defaultValue={setup.business_name} required />
               <Field label="Your name" name="contact_name" defaultValue={setup.customer_name} required />
               <Field label="Business phone customers call today" name="existing_business_phone" type="tel" placeholder="+1 604 555 0123" required />

@@ -44,13 +44,13 @@ const workflow = [
 const packages = [
   {
     name: "Never Miss",
-    price: "$19.99",
+    price: "$39",
     description: "For an owner who needs every missed caller to hear back quickly.",
     features: ["Automatic text after a missed call", "Custom reply message", "Callback reminders", "Missed call history"],
   },
   {
     name: "Never Miss Plus",
-    price: "$59",
+    price: "$89",
     description: "For a team that wants every new inquiry organized in one place.",
     features: ["Everything in Never Miss", "Replies collected in one inbox", "Website and form inquiries", "Contact status and next action", "Simple follow-up tracking"],
   },
@@ -77,7 +77,7 @@ export default function ProductsPage() {
             <p className="mt-7 max-w-xl text-xl leading-8 text-white/85">You keep working. We let the caller know you will get back to them and put the job on your callback list.</p>
             <p className="mt-4 text-base font-semibold text-white">No new phone number. No complicated setup. No lost lead.</p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Button href="/never-miss/checkout?plan=never-miss" size="lg" className="bg-cyan-300 !text-[#071729] hover:bg-cyan-200">Start Never Miss for $19.99/month <ArrowRight className="h-4 w-4" /></Button>
+              <Button href="/never-miss/checkout?plan=never-miss" size="lg" className="bg-cyan-300 !text-[#071729] hover:bg-cyan-200">Start Never Miss for $39/month <ArrowRight className="h-4 w-4" /></Button>
               <Button href="#how-it-works" variant="outline" size="lg" className="border-white/40 !text-white hover:bg-white/10">See what happens</Button>
             </div>
             <p className="mt-4 text-sm text-white/65">We set it up with you. Cancel anytime.</p>
@@ -155,7 +155,7 @@ export default function ProductsPage() {
 
       <section className="bg-[#071729] py-20 text-white">
         <Container size="narrow">
-          <div className="text-center"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-300">Never Miss</p><h2 className="mt-4 text-4xl font-semibold tracking-tight lg:text-5xl">Start for CAD $19.99 per month.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/75">We connect your phone, write the message with you, and test a real missed call. See how many customers it saves.</p><div className="mt-8"><Button href="/never-miss/checkout?plan=never-miss" size="lg" className="bg-cyan-300 !text-[#071729] hover:bg-cyan-200">Start Never Miss <ArrowRight className="h-4 w-4" /></Button></div><p className="mt-4 text-sm text-white/55">Cancel anytime. No annual contract. No software training required.</p></div>
+          <div className="text-center"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-300">Never Miss</p><h2 className="mt-4 text-4xl font-semibold tracking-tight lg:text-5xl">Keep your number. Start for CAD $39 per month.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/75">Customers keep calling the number they already know. We connect the unanswered calls, write your reply, and test the complete workflow.</p><div className="mt-8"><Button href="/never-miss/checkout?plan=never-miss" size="lg" className="bg-cyan-300 !text-[#071729] hover:bg-cyan-200">Start Never Miss <ArrowRight className="h-4 w-4" /></Button></div><p className="mt-4 text-sm text-white/55">Cancel anytime. No annual contract. No software training required.</p></div>
         </Container>
       </section>
     </main>

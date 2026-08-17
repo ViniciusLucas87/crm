@@ -25,13 +25,13 @@ function trustedStripePaymentLink(value: string | undefined): string | undefined
 const plans = {
   "never-miss": {
     name: "Never Miss",
-    price: "$19.99",
+    price: "$39",
     checkoutUrl: trustedStripePaymentLink(process.env.NEVER_MISS_CHECKOUT_URL),
     features: ["Automatic missed call text", "Custom reply message", "Callback reminders", "Missed call history"],
   },
   "never-miss-plus": {
     name: "Never Miss Plus",
-    price: "$59",
+    price: "$89",
     checkoutUrl: trustedStripePaymentLink(process.env.NEVER_MISS_PLUS_CHECKOUT_URL),
     features: ["Everything in Never Miss", "One inbox for customer replies", "Website and form inquiries", "Simple follow up tracking"],
   },
