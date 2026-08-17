@@ -209,7 +209,7 @@ RETRY_DELAYS = [0, 30, 120, 600]  # seconds: immediate, 30s, 2m, 10m
 @celery_app.task(
     name="intelligence.enrich_lead",
     bind=True,
-    max_retries=4,
+    max_retries=0,
     default_retry_delay=30,
     acks_late=True,
     reject_on_worker_lost=True,
@@ -224,7 +224,6 @@ def enrich_lead(self, lead_id: int, organization_id: int, company_name: str,
     One failed enrichment never blocks other jobs.
     """
     from app.infrastructure.db.models import Lead, EnrichmentJob, LeadTimelineEvent
-    from app.application.llm.provider import LLMMessage, create_provider
     from sqlalchemy import update
 
     job_id = self.request.id
@@ -269,6 +268,28 @@ def enrich_lead(self, lead_id: int, organization_id: int, company_name: str,
             gresp = loop.run_until_complete(gateway.chat(messages, gcfg))
         finally:
             loop.close()
+
+        unavailable_models = {
+            "disabled", "redis_unavailable", "budget_blocked", "error", "lock_timeout",
+        }
+        if gresp.model in unavailable_models:
+            reason = f"LLM enrichment deferred: {gresp.model}"
+            db.execute(
+                update(EnrichmentJob).where(EnrichmentJob.id == job_id)
+                .values(status="deferred", completed_at=datetime.now(UTC), error_message=reason)
+            )
+            db.execute(
+                update(Lead).where(Lead.id == lead_id)
+                .values(enrichment_status="pending")
+            )
+            db.add(LeadTimelineEvent(
+                organization_id=organization_id,
+                lead_id=lead_id,
+                event_type="ai_enrichment_deferred",
+                description=reason,
+            ))
+            db.commit()
+            return {"status": "deferred", "lead_id": lead_id, "reason": gresp.model}
 
         data = _parse_json(gresp.content)
 
@@ -318,9 +339,6 @@ def enrich_lead(self, lead_id: int, organization_id: int, company_name: str,
             .values(status="completed", completed_at=datetime.now(UTC), processing_time_ms=elapsed_ms)
         )
         db.commit()
-
-        # ── Queue next stage: Google Maps Intelligence ──
-        _enqueue_next_stage(lead_id, organization_id, "intelligence.google_maps")
 
         logger.info("Enrichment complete for lead %d (%s): PNS Fit %d", lead_id, company_name, data.get("pns_fit_score", 50))
         return {"status": "completed", "lead_id": lead_id, "pns_fit_score": data.get("pns_fit_score")}
@@ -380,7 +398,7 @@ def ping() -> str:
 @celery_app.task(
     name="intelligence.google_maps",
     bind=True,
-    max_retries=4,
+    max_retries=0,
     default_retry_delay=30,
     acks_late=True,
     reject_on_worker_lost=True,
@@ -568,7 +586,7 @@ Respond with JSON only:
 @celery_app.task(
     name="intelligence.product_recommendation",
     bind=True,
-    max_retries=3,
+    max_retries=0,
     default_retry_delay=60,
     acks_late=True,
     reject_on_worker_lost=True,
@@ -580,10 +598,10 @@ def product_recommendation(self, lead_id: int, organization_id: int) -> dict:
     Recommends the best first product and generates email + phone pitches.
     Consumes all existing intelligence (AI Research, Google Maps, PNS Fit).
     """
+    from app.application.llm.provider import LLMMessage
     from app.infrastructure.db.models import Lead, EnrichmentJob, LeadTimelineEvent
-    from app.application.llm.provider import LLMConfig, LLMMessage, create_provider
     from sqlalchemy import update, select
-    import asyncio, os
+    import asyncio
 
     job_id = self.request.id
     db = _db_session_factory()
@@ -633,8 +651,8 @@ def product_recommendation(self, lead_id: int, organization_id: int) -> dict:
         gateway = get_llm_gateway()
         gcfg = GatewayConfig(feature="enrichment", organization_id=1, temperature=0.3)
         messages = [
-            LLMMsg(role="system", content="You are a senior sales engineer. Return JSON only."),
-            LLMMsg(role="user", content=prompt),
+            LLMMessage(role="system", content="You are a senior sales engineer. Return JSON only."),
+            LLMMessage(role="user", content=prompt),
         ]
 
         loop = asyncio.new_event_loop()
@@ -807,7 +825,7 @@ _NEXT_STAGE = {
 # WEBSITE INTELLIGENCE
 # ═══════════════════════════════════════════════════════════
 
-@celery_app.task(name="intelligence.website", bind=True, max_retries=4, default_retry_delay=30, acks_late=True, reject_on_worker_lost=True)
+@celery_app.task(name="intelligence.website", bind=True, max_retries=0, default_retry_delay=30, acks_late=True, reject_on_worker_lost=True)
 def website_intel(self, lead_id: int, organization_id: int) -> dict:
     from app.application.intelligence.website import WebsiteIntelligenceProvider
     return _run_intelligence_stage(self, lead_id, organization_id, WebsiteIntelligenceProvider, "website_data", "Website Intelligence")
@@ -817,7 +835,7 @@ def website_intel(self, lead_id: int, organization_id: int) -> dict:
 # GOOGLE REVIEWS INTELLIGENCE
 # ═══════════════════════════════════════════════════════════
 
-@celery_app.task(name="intelligence.google_reviews", bind=True, max_retries=4, default_retry_delay=30, acks_late=True, reject_on_worker_lost=True)
+@celery_app.task(name="intelligence.google_reviews", bind=True, max_retries=0, default_retry_delay=30, acks_late=True, reject_on_worker_lost=True)
 def google_reviews_intel(self, lead_id: int, organization_id: int) -> dict:
     from app.application.intelligence.google_reviews import GoogleReviewsProvider
 
@@ -844,7 +862,7 @@ def google_reviews_intel(self, lead_id: int, organization_id: int) -> dict:
 # LINKEDIN INTELLIGENCE
 # ═══════════════════════════════════════════════════════════
 
-@celery_app.task(name="intelligence.linkedin", bind=True, max_retries=4, default_retry_delay=30, acks_late=True, reject_on_worker_lost=True)
+@celery_app.task(name="intelligence.linkedin", bind=True, max_retries=0, default_retry_delay=30, acks_late=True, reject_on_worker_lost=True)
 def linkedin_intel(self, lead_id: int, organization_id: int) -> dict:
     from app.application.intelligence.linkedin import LinkedInProvider
     return _run_intelligence_stage(self, lead_id, organization_id, LinkedInProvider, "linkedin_data", "LinkedIn Intelligence")

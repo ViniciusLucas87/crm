@@ -1,12 +1,22 @@
 from datetime import UTC, date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, JSON, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.db.base import Base
-
 
 # Keep PostgreSQL's efficient JSONB in production while allowing the SQLite
 # test database to render the same model metadata.
@@ -214,6 +224,95 @@ class OrganizationMembership(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     role: Mapped[str] = mapped_column(String(50), default="member", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+
+
+class ProductConfiguration(Base):
+    """Per-organization settings for packaged PNS products."""
+    __tablename__ = "product_configurations"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "product_code", name="uq_product_config_org_code"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    plan: Mapped[str] = mapped_column(String(30), default="never_miss", nullable=False)
+    business_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    business_phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    notification_phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    recovery_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    business_hours_json: Mapped[dict | None] = mapped_column(JSON_DOCUMENT, nullable=True)
+    monthly_call_limit: Mapped[int] = mapped_column(Integer, default=50, nullable=False)
+    monthly_message_limit: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
+    intake_key_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
+
+
+class ProductSubscription(Base):
+    """Paid packaged-product subscription and its self-service provisioning state."""
+    __tablename__ = "product_subscriptions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    organization_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True, index=True)
+    stripe_checkout_session_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    stripe_subscription_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True, index=True)
+    stripe_payment_link_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    plan: Mapped[str] = mapped_column(String(30), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), default="paid", nullable=False, index=True)
+    customer_email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    customer_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    business_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    existing_phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    notification_phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    assigned_phone: Mapped[str | None] = mapped_column(String(50), nullable=True, unique=True)
+    telnyx_number_order_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    onboarding_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
+    onboarding_token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    onboarding_data_json: Mapped[dict | None] = mapped_column(JSON_DOCUMENT, nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
+
+
+class StripeWebhookEvent(Base):
+    """Minimal immutable Stripe event ledger used for idempotent fulfillment."""
+    __tablename__ = "stripe_webhook_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    stripe_event_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    event_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    livemode: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    processed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+
+
+class LeadCaptureRecord(Base):
+    """Normalized inbound inquiry shared by website, phone, SMS, and forms."""
+    __tablename__ = "lead_capture_records"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "source", "external_id", name="uq_lead_capture_source_external"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    source: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    external_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    company_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(30), default="new", nullable=False, index=True)
+    priority: Mapped[str] = mapped_column(String(20), default="normal", nullable=False)
+    owner_user_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    next_action: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    next_action_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    metadata_json: Mapped[dict | None] = mapped_column(JSON_DOCUMENT, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
 
 
 # ── Telemetry Models ──

@@ -1,7 +1,7 @@
 "use client";
 
 import { useTelephony } from "@/lib/telephony-context";
-import { PhoneOff, Mic, MicOff, Pause, Play, Circle, ChevronDown, Radio } from "lucide-react";
+import { PhoneOff, Mic, MicOff, Pause, Play, Circle, ChevronDown, Radio, PhoneIncoming } from "lucide-react";
 
 function formatDuration(s: number) {
   const m = Math.floor(s / 60);
@@ -13,8 +13,48 @@ function formatDuration(s: number) {
 }
 
 export function GlobalCallBar() {
-  const { call, endCall, toggleMute, toggleHold, toggleRecording, resetCall, setMinimized, isMinimized } = useTelephony();
+  const { call, incomingCall, endCall, toggleMute, toggleHold, toggleRecording, resetCall, setMinimized, isMinimized, answerIncomingCall, declineIncomingCall } = useTelephony();
   const isActive = ["dialing", "ringing", "connected", "muted", "on_hold", "recording"].includes(call.state);
+
+  // ── Inbound ringing ──
+  if (incomingCall && incomingCall.state === "ringing") {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-cyan-500/30 bg-slate-900/95 backdrop-blur-xl shadow-2xl shadow-cyan-500/10">
+        <div className="flex items-center gap-4 px-4 py-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="rounded-full bg-cyan-500/20 p-3 animate-pulse">
+              <PhoneIncoming className="h-5 w-5 text-cyan-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-white">Incoming call</p>
+              <p className="text-base font-semibold text-cyan-300 truncate">
+                {incomingCall.callerName !== incomingCall.callerNumber
+                  ? incomingCall.callerName
+                  : incomingCall.callerNumber}
+              </p>
+              <p className="text-xs text-slate-400">{incomingCall.callerNumber}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={declineIncomingCall}
+              className="rounded-full bg-red-500 p-3 text-white hover:bg-red-600 transition"
+              title="Decline"
+            >
+              <PhoneOff className="h-5 w-5" />
+            </button>
+            <button
+              onClick={answerIncomingCall}
+              className="rounded-full bg-emerald-500 p-3 text-white hover:bg-emerald-600 transition"
+              title="Answer"
+            >
+              <PhoneIncoming className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (call.state === "idle" || call.state === "registering") return null;
 

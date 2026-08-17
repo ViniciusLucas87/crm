@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { MessageSquare, Phone, Calendar, CheckSquare, TrendingUp, Heart, User, Clock, Target } from "lucide-react";
+import { MessageSquare, Phone, Calendar, CheckSquare, TrendingUp, Heart, User, Clock, Target, Mail } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,6 +32,7 @@ type TimelineEvent = {
 type Stats = {
   call_count: number;
   activity_count: number;
+  email_count: number;
   task_count: number;
   total_events: number;
   total_call_duration_seconds: number;
@@ -52,6 +53,7 @@ const EVENT_ICONS: Record<string, typeof Phone> = {
   call: Phone,
   activity: Calendar,
   task: CheckSquare,
+  email: Mail,
 };
 
 export function CompanyConversationTab({ companyId }: { companyId: number }) {
@@ -185,6 +187,7 @@ export function CompanyConversationTab({ companyId }: { companyId: number }) {
       {stats && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard icon={Phone} label="Calls" value={stats.call_count > 0 ? String(stats.call_count) : "No calls yet"} />
+          <StatCard icon={Mail} label="Emails" value={stats.email_count > 0 ? String(stats.email_count) : "No emails yet"} />
           <StatCard icon={Calendar} label="Activities" value={stats.activity_count > 0 ? String(stats.activity_count) : "No activities"} />
           <StatCard icon={CheckSquare} label="Tasks" value={stats.task_count > 0 ? String(stats.task_count) : "No tasks"} />
           <StatCard icon={Clock} label="Days Active" value={stats.days_active > 0 ? String(stats.days_active) : "0"} />
@@ -221,7 +224,7 @@ export function CompanyConversationTab({ companyId }: { companyId: number }) {
 
           {timeline.length === 0 ? (
             <p className="text-sm text-slate-500 py-8 text-center">
-              No events yet. Calls, activities, and tasks linked to this conversation will appear here.
+              No events yet. Calls, emails, activities, and tasks linked to this conversation will appear here.
             </p>
           ) : (
             <div className="space-y-1">
@@ -241,6 +244,7 @@ export function CompanyConversationTab({ companyId }: { companyId: number }) {
                       <p className="text-sm text-slate-300 mt-0.5">
                         {event.type === "call" && `${event.data.direction === "outbound" ? "📞 Outbound" : "📞 Inbound"} call · ${event.data.status}${event.data.duration_seconds ? ` · ${Math.floor(Number(event.data.duration_seconds) / 60)}m ${Number(event.data.duration_seconds) % 60}s` : ""}`}
                         {event.type === "activity" && `${String(event.data.activity_type)}${event.data.subject ? `: ${String(event.data.subject)}` : ""}`}
+                        {event.type === "email" && `${event.data.direction === "outbound" ? "Outbound" : "Inbound"} email${event.data.subject ? `: ${String(event.data.subject)}` : ""}${event.data.to_address ? ` · ${String(event.data.to_address)}` : ""}`}
                         {event.type === "task" && `${String(event.data.title)} · ${String(event.data.status)} · ${String(event.data.priority)}`}
                       </p>
                     </div>

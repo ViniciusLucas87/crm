@@ -50,6 +50,7 @@ export interface WrtcDiagnostics {
   sdkLoaded: boolean;
   clientState: WrtcState;
   callState: WrtcCallState;
+  direction: "outbound" | "inbound" | "";
   micGranted: boolean;
   localTrack: boolean;
   remoteTrack: boolean;
@@ -65,6 +66,13 @@ export interface WrtcDiagnostics {
   held: boolean;
 }
 
+export interface IncomingCallInfo {
+  callId: string;
+  callerNumber: string;
+  callerName: string;
+  state: "ringing" | "answered" | "ended" | "declined";
+}
+
 // ── Singleton state ──
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,11 +80,14 @@ let _client: any = null;
 let _micStream: MediaStream | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _activeCall: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _incomingCall: any = null;
 let _remoteAudio: HTMLAudioElement | null = null;
 const _diagnostics: WrtcDiagnostics = {
   sdkLoaded: false,
   clientState: "uninitialized",
   callState: "idle",
+  direction: "",
   micGranted: false,
   localTrack: false,
   remoteTrack: false,
@@ -93,6 +104,8 @@ const _diagnostics: WrtcDiagnostics = {
 };
 let _onDiagnosticsChange: ((d: WrtcDiagnostics) => void) | null = null;
 let _onCallStateChange: ((state: WrtcCallState, callId?: string) => void) | null = null;
+let _onIncomingCall: ((info: IncomingCallInfo) => void) | null = null;
+let _onIncomingCallEnded: (() => void) | null = null;
 let _previousCallState: string | null = null;
 let _tokenRefreshCallback: (() => Promise<string>) | null = null;
 let _reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -107,6 +120,14 @@ export function onDiagnosticsChange(cb: (d: WrtcDiagnostics) => void) {
 
 export function onCallStateChange(cb: (state: WrtcCallState, callId?: string) => void) {
   _onCallStateChange = cb;
+}
+
+export function onIncomingCall(cb: (info: IncomingCallInfo) => void) {
+  _onIncomingCall = cb;
+}
+
+export function onIncomingCallEnded(cb: () => void) {
+  _onIncomingCallEnded = cb;
 }
 
 function updateDiagnostics(partial: Partial<WrtcDiagnostics>) {
@@ -258,9 +279,38 @@ export async function initWebRTC(login: string, password: string): Promise<void>
       if (notification.type !== "callUpdate") return;
 
       const call = notification.call as Record<string, unknown>;
-      if (!call || call.id !== _activeCall?.id) return;
+      if (!call) return;
 
+      const callId = call.id as string;
       const newState = call.state as string;
+      const direction = call.direction as string;
+
+      // Inbound call: different call ID than our active outbound call
+      if (direction === "incoming" || (!_activeCall && callId)) {
+        if (!_incomingCall && newState !== "hangup" && newState !== "destroy" && newState !== "purge") {
+          _incomingCall = call;
+          const callerNumber = (call.caller_id_number || call.callerNumber || call.caller_number || "Unknown") as string;
+          const callerName = (call.caller_id_name || call.callerName || call.caller_name || callerNumber) as string;
+          updateDiagnostics({ callState: "ringing", direction: "inbound" });
+          _onIncomingCall?.({
+            callId: callId,
+            callerNumber,
+            callerName,
+            state: "ringing",
+          });
+        }
+        // Track state changes for the incoming call
+        if (_incomingCall && callId === _incomingCall.id) {
+          if (newState === "active") {
+            updateDiagnostics({ callState: "active" });
+          } else if (newState === "hangup" || newState === "destroy" || newState === "purge") {
+            cleanupIncomingCall();
+          }
+        }
+        return;
+      }
+
+      if (callId !== _activeCall?.id) return;
 
       if (newState === _previousCallState) return;
       _previousCallState = newState;
@@ -531,6 +581,7 @@ function cleanupCall() {
   releaseMicrophone();
   updateDiagnostics({
     callState: "idle",
+    direction: "",
     remoteTrack: false,
     packetsSent: 0,
     packetsReceived: 0,
@@ -541,6 +592,43 @@ function cleanupCall() {
     muted: false,
     held: false,
   });
+}
+
+// ── Inbound call handling ──
+
+export async function answerIncomingCall(): Promise<void> {
+  if (!_incomingCall) return;
+  try {
+    const micStream = await acquireMicrophone();
+    const remoteAudio = ensureRemoteAudio();
+    _incomingCall.answer({
+      localStream: micStream,
+      remoteElement: remoteAudio,
+    });
+    _activeCall = _incomingCall;
+    _incomingCall = null;
+    updateDiagnostics({ callState: "active", direction: "inbound", localTrack: true });
+    _onCallStateChange?.("active");
+  } catch (e) {
+    updateDiagnostics({ callState: "error" });
+    throw e;
+  }
+}
+
+export async function declineIncomingCall(): Promise<void> {
+  if (!_incomingCall) return;
+  try {
+    _incomingCall.hangup();
+  } catch {
+    // cleanup anyway
+  }
+  cleanupIncomingCall();
+}
+
+function cleanupIncomingCall() {
+  _incomingCall = null;
+  updateDiagnostics({ callState: "idle", direction: "" });
+  _onIncomingCallEnded?.();
 }
 
 // ── Disconnect ──

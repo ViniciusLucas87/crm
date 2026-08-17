@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.presentation.api.v1.routes import actions, agents, ai, assessments, audit, auth, companies, contacts, conversations, copilot, dashboard, decision_maker, demand, documents, enrich, health, health_llm, intelligence, knowledge, leads, mcp, operations, reports, sales, sales_coach, scoring, search, telemetry, telephony, timeline, transcription, workers, assessment_public
+from app.presentation.api.v1.routes import actions, agents, ai, assessments, audit, auth, companies, contacts, conversations, copilot, dashboard, decision_maker, demand, documents, enrich, health, health_llm, intelligence, knowledge, leads, mcp, operations, products, reports, sales, sales_coach, scoring, search, telemetry, telephony, timeline, transcription, workers, assessment_public, subscriptions
 
 api_router = APIRouter()
 api_router.include_router(health.router, tags=["health"])
@@ -21,6 +21,8 @@ api_router.include_router(agents.router, tags=["agents"])
 api_router.include_router(enrich.router, tags=["enrich"])
 api_router.include_router(reports.router, tags=["reports"])
 api_router.include_router(telephony.router, tags=["telephony"])
+api_router.include_router(products.router, tags=["products"])
+api_router.include_router(subscriptions.router, tags=["subscriptions"])
 api_router.include_router(telemetry.router, tags=["telemetry"])
 api_router.include_router(operations.router, prefix="/operations", tags=["operations"])
 api_router.include_router(decision_maker.router, tags=["decision-maker"])

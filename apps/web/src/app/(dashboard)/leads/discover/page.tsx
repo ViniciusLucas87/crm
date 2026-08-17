@@ -39,7 +39,7 @@ export default function DiscoverPage() {
   const [industry, setIndustry] = useState("");
   const [city, setCity] = useState("");
   const [keyword, setKeyword] = useState("");
-  const [count, setCount] = useState(5);
+  const [count, setCount] = useState(3);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DiscoveryResponse | null>(null);
   const [error, setError] = useState("");
@@ -72,7 +72,7 @@ export default function DiscoverPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-white">AI Prospect Discovery</h2>
-          <p className="text-sm text-slate-400">AI researches real companies and creates leads automatically.</p>
+          <p className="text-sm text-slate-400">AI finds candidate companies. Enrichment runs only after you approve a lead.</p>
         </div>
         <Link href="/leads/saved-searches"><Button variant="secondary" size="sm"><Bookmark className="mr-1 h-3.5 w-3.5" />Saved</Button></Link>
       </div>
@@ -200,11 +200,11 @@ export default function DiscoverPage() {
               <Sparkles className="mx-auto h-10 w-10 text-cyan-400" />
               <h3 className="mt-3 text-lg font-semibold text-white">AI Prospect Discovery Engine</h3>
               <p className="mt-1 text-sm text-slate-400 max-w-md mx-auto">
-                Enter search criteria above or click a quick search. The AI will discover real companies,
-                research them, calculate opportunity scores, and create leads automatically in your workspace.
+                Enter search criteria above or click a quick search. The AI will suggest candidate companies
+                and create reviewable leads. Only approved leads receive additional AI enrichment.
               </p>
               <p className="mt-2 text-xs text-slate-500">
-                Providers: AI-powered discovery (LLM) · Future: Google Maps, Clearbit, LinkedIn
+                Cost control: one discovery request, then one enrichment request per approved lead.
               </p>
             </div>
           </Card>

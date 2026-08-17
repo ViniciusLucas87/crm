@@ -651,6 +651,19 @@ def _resolve_tenant(session: Session, destination_number: str | None) -> int:
         except Exception:
             pass
 
+    # Self-service subscriptions are provisioned dynamically, so their number
+    # mapping lives in the database rather than a deploy-time environment map.
+    from app.infrastructure.db.models import ProductConfiguration
+    dynamic_config = session.execute(
+        select(ProductConfiguration).where(
+            ProductConfiguration.product_code == "never_miss",
+            ProductConfiguration.enabled.is_(True),
+            ProductConfiguration.business_phone == destination_number,
+        )
+    ).scalar_one_or_none()
+    if dynamic_config:
+        return dynamic_config.organization_id
+
     if os.environ.get("ENVIRONMENT", "development") == "production":
         logger.error("Tenant not mapped for destination %s", _redact_number(destination_number))
         raise ValueError("Tenant resolution failed")
@@ -683,6 +696,20 @@ def _resolve_sms_tenant(
         if candidate and candidate in tenant_map:
             return int(tenant_map[candidate])
 
+    from app.infrastructure.db.models import ProductConfiguration
+    for candidate in (primary, secondary):
+        if not candidate:
+            continue
+        dynamic_config = session.execute(
+            select(ProductConfiguration).where(
+                ProductConfiguration.product_code == "never_miss",
+                ProductConfiguration.enabled.is_(True),
+                ProductConfiguration.business_phone == candidate,
+            )
+        ).scalar_one_or_none()
+        if dynamic_config:
+            return dynamic_config.organization_id
+
     return _resolve_tenant(session, primary)
 
 
@@ -702,7 +729,7 @@ async def sms_webhook(request: Request, session: Session = Depends(get_db_sessio
     from app.application.intake.webhook_verify import verify_webhook_signature
     from app.application.intake import normalize_phone
     from app.application.intake.sms import suppress_phone, remove_suppression
-    from app.infrastructure.db.models import ProviderWebhookEvent, PhoneSuppression, Activity
+    from app.infrastructure.db.models import Activity, LeadCaptureRecord, ProviderWebhookEvent
     from sqlalchemy.exc import IntegrityError
     import hashlib
 
@@ -806,6 +833,18 @@ async def sms_webhook(request: Request, session: Session = Depends(get_db_sessio
             body=text,
         )
         session.add(activity)
+        captured = LeadCaptureRecord(
+            organization_id=org_id,
+            source="sms",
+            external_id=provider_event_id,
+            phone=normalized_from or from_number,
+            summary=text,
+            status="new",
+            priority="normal",
+            next_action="Reply to the text message",
+            metadata_json={"provider_event_id": provider_event_id},
+        )
+        session.add(captured)
 
     wh_event.processing_status = "processed"
     session.commit()

@@ -5,16 +5,15 @@ Conversations aggregate calls, emails, meetings, tasks, and notes
 into a single timeline representing an ongoing customer relationship.
 """
 
-import json
 import logging
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select, func, and_
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.infrastructure.auth.clerk import AuthContext, require_permission
-from app.infrastructure.db.models import Conversation, Call, Activity, Task
+from app.infrastructure.db.models import Activity, Call, Conversation, EmailMessage, Task
 from app.infrastructure.db.session import get_db_session
 
 logger = logging.getLogger(__name__)
@@ -41,6 +40,14 @@ def _health_label(score: int) -> str:
         if score in r:
             return label
     return "Inactive"
+
+
+def _days_since(value: datetime | None) -> int:
+    if not value:
+        return 0
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC)
+    return max(0, (datetime.now(UTC) - value).days)
 
 
 def _conversation_to_dict(c: Conversation) -> dict:
@@ -210,7 +217,15 @@ def conversation_timeline(
 
     # Activities
     activities = session.execute(
-        select(Activity).where(Activity.conversation_id == conversation_id).order_by(Activity.created_at.desc()).limit(50)
+        select(Activity).where(
+            Activity.conversation_id == conversation_id,
+            Activity.id.not_in(
+                select(EmailMessage.activity_id).where(
+                    EmailMessage.organization_id == ctx.organization_id,
+                    EmailMessage.activity_id.is_not(None),
+                )
+            ),
+        ).order_by(Activity.created_at.desc()).limit(50)
     ).scalars().all()
     for a in activities:
         events.append({
@@ -218,6 +233,35 @@ def conversation_timeline(
             "id": a.id,
             "timestamp": str(a.created_at),
             "data": {"activity_type": a.activity_type, "subject": a.subject},
+        })
+
+    # Emails explicitly linked to this conversation, plus older company emails
+    # that predate conversation linking. Organization and company scoping keeps
+    # the fallback tenant-safe while making historical outreach visible.
+    emails = session.execute(
+        select(EmailMessage).where(
+            EmailMessage.organization_id == ctx.organization_id,
+            EmailMessage.company_id == conv.company_id,
+            or_(
+                EmailMessage.conversation_id == conversation_id,
+                EmailMessage.conversation_id.is_(None),
+            ),
+        ).order_by(EmailMessage.created_at.desc()).limit(50)
+    ).scalars().all()
+    for email in emails:
+        events.append({
+            "type": "email",
+            "id": email.id,
+            "timestamp": str(email.sent_at or email.received_at or email.created_at),
+            "data": {
+                "direction": email.direction,
+                "status": email.status,
+                "delivery_status": email.delivery_status,
+                "from_address": email.from_address,
+                "to_address": email.to_address,
+                "subject": email.subject,
+                "provider": email.provider,
+            },
         })
 
     # Tasks
@@ -273,6 +317,17 @@ def conversation_stats(
         select(func.count(Task.id)).where(Task.conversation_id == conversation_id)
     ).scalar() or 0
 
+    email_count = session.execute(
+        select(func.count(EmailMessage.id)).where(
+            EmailMessage.organization_id == ctx.organization_id,
+            EmailMessage.company_id == conv.company_id,
+            or_(
+                EmailMessage.conversation_id == conversation_id,
+                EmailMessage.conversation_id.is_(None),
+            ),
+        )
+    ).scalar() or 0
+
     total_duration = session.execute(
         select(func.sum(Call.duration_seconds)).where(
             Call.conversation_id == conversation_id,
@@ -284,13 +339,14 @@ def conversation_stats(
         "conversation_id": conversation_id,
         "call_count": call_count,
         "activity_count": activity_count,
+        "email_count": email_count,
         "task_count": task_count,
-        "total_events": call_count + activity_count + task_count,
+        "total_events": call_count + activity_count + email_count + task_count,
         "total_call_duration_seconds": total_duration,
         "relationship_stage": conv.relationship_stage,
         "health_score": conv.health_score,
         "health_label": _health_label(conv.health_score),
-        "days_active": (datetime.now(UTC) - conv.created_at).days if conv.created_at else 0,
+        "days_active": _days_since(conv.created_at),
     }
 
 

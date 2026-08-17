@@ -13,6 +13,7 @@ import hashlib
 import hmac
 import json
 import logging
+import re
 import uuid
 from typing import Any
 
@@ -23,6 +24,44 @@ from app.application.telephony import CallProvider, CallResult
 logger = logging.getLogger(__name__)
 
 TELNYX_API_BASE = "https://api.telnyx.com/v2"
+
+_SENSITIVE_RESPONSE_KEYS = {
+    "api_key",
+    "authorization",
+    "login_token",
+    "password",
+    "sip_password",
+    "sip_username",
+    "token",
+}
+
+
+def _redact_sensitive_payload(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: (
+                "[REDACTED]"
+                if str(key).lower() in _SENSITIVE_RESPONSE_KEYS
+                else _redact_sensitive_payload(item)
+            )
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_redact_sensitive_payload(item) for item in value]
+    return value
+
+
+def _safe_response_text(response: httpx.Response, limit: int = 500) -> str:
+    """Return provider diagnostics with credential-like fields removed."""
+    try:
+        return json.dumps(_redact_sensitive_payload(response.json()), separators=(",", ":"))[:limit]
+    except (ValueError, TypeError):
+        text = response.text[:limit]
+        return re.sub(
+            r'(?i)(sip_password|sip_username|password|login_token|token|api_key)(["\s:=]+)([^",\s}]+)',
+            r'\1\2[REDACTED]',
+            text,
+        )
 
 
 class TelnyxProvider(CallProvider):
@@ -125,17 +164,16 @@ class TelnyxProvider(CallProvider):
 
             r = await self._http.post(endpoint, json=payload)
             elapsed_ms = (_time.monotonic() - t0) * 1000
-            resp_text = r.text[:1000]
-
             logger.info(
-                "Telnyx: POST %s completed | correlation=%s | status=%s | elapsed=%.0fms | body=%s",
-                endpoint, correlation_id, r.status_code, elapsed_ms, resp_text,
+                "Telnyx: POST %s completed | correlation=%s | status=%s | elapsed=%.0fms",
+                endpoint, correlation_id, r.status_code, elapsed_ms,
             )
 
             if r.status_code not in (200, 201):
+                safe_response = _safe_response_text(r)
                 logger.error(
                     "Telnyx: telephony_credentials failed | correlation=%s | status=%s | body=%s",
-                    correlation_id, r.status_code, r.text,
+                    correlation_id, r.status_code, safe_response,
                 )
                 return {
                     "token": "",
@@ -144,7 +182,7 @@ class TelnyxProvider(CallProvider):
                     "diagnostics": {
                         "endpoint": f"{TELNYX_API_BASE}{endpoint}",
                         "status": r.status_code,
-                        "response_body": r.text[:500],
+                        "response_body": safe_response,
                         "elapsed_ms": round(elapsed_ms, 1),
                         "correlation_id": correlation_id,
                     },

@@ -43,8 +43,14 @@ FEATURE_OUTPUT_TOKENS = {
     "enrichment":LLM_OUT_ENRICHMENT, "discovery":LLM_OUT_DISCOVERY, "proposal":LLM_OUT_PROPOSAL,
     "mcp":LLM_OUT_MCP, "default":LLM_OUT_CLASSIFICATION,
 }
+# Hard per-request context ceilings. A single feature should never inherit the
+# full global context window unless it genuinely needs it.
+FEATURE_INPUT_TOKENS = {
+    "coaching": 3000, "classification": 2500, "enrichment": 2000,
+    "discovery": 3000, "proposal": 6000, "mcp": 4000, "default": 2500,
+}
 FEATURE_CACHE_TTL = {
-    "enrichment":86400, "discovery":300, "coaching":60, "classification":3600,
+    "enrichment":86400, "discovery":86400, "coaching":60, "classification":3600,
     "proposal":3600, "mcp":300, "default":3600,
 }
 # ═══════════════════════════════════════════════════════════
@@ -77,11 +83,11 @@ def _reserve_output(feature: str, config_max: int | None = None) -> int:
     feature_cap = FEATURE_OUTPUT_TOKENS.get(feature, FEATURE_OUTPUT_TOKENS["default"])
     return max(config_max or 0, feature_cap)
 
-LLM_GLOBAL_DAILY_LIMIT    = _env_float("LLM_GLOBAL_DAILY_COST_LIMIT", 0.50)
-LLM_GLOBAL_MONTHLY_LIMIT  = _env_float("LLM_GLOBAL_MONTHLY_COST_LIMIT", 10.00)
-LLM_ORG_DAILY_LIMIT       = _env_float("LLM_ORG_DAILY_COST_LIMIT", 1.00)
-LLM_ORG_MONTHLY_LIMIT     = _env_float("LLM_ORG_MONTHLY_COST_LIMIT", 5.00)
-LLM_ORG_DAILY_REQUESTS    = _env_int("LLM_ORG_DAILY_REQUESTS", 500)
+LLM_GLOBAL_DAILY_LIMIT    = _env_float("LLM_GLOBAL_DAILY_COST_LIMIT", 0.10)
+LLM_GLOBAL_MONTHLY_LIMIT  = _env_float("LLM_GLOBAL_MONTHLY_COST_LIMIT", 2.00)
+LLM_ORG_DAILY_LIMIT       = _env_float("LLM_ORG_DAILY_COST_LIMIT", 0.10)
+LLM_ORG_MONTHLY_LIMIT     = _env_float("LLM_ORG_MONTHLY_COST_LIMIT", 2.00)
+LLM_ORG_DAILY_REQUESTS    = _env_int("LLM_ORG_DAILY_REQUESTS", 100)
 LLM_ORG_DAILY_IN_TOKENS   = _env_int("LLM_ORG_DAILY_INPUT_TOKENS", 500000)
 LLM_ORG_DAILY_OUT_TOKENS  = _env_int("LLM_ORG_DAILY_OUTPUT_TOKENS", 100000)
 
@@ -275,7 +281,8 @@ class LLMGateway:
 
         model = cfg.model or (LLM_PRO_MODEL if f in LLM_PRO_FEATURES else LLM_FLASH_MODEL)
         max_out = _reserve_output(f, cfg.max_tokens)
-        messages = _truncate(messages, LLM_MAX_INPUT_TOKENS)
+        input_cap = min(LLM_MAX_INPUT_TOKENS, FEATURE_INPUT_TOKENS.get(f, FEATURE_INPUT_TOKENS["default"]))
+        messages = _truncate(messages, input_cap)
         cache_key = _cache_key(f, model, messages, cfg.temperature, max_out, cfg.tools or [], cfg.tool_choice)
 
         r = _get_redis()
@@ -338,7 +345,7 @@ class LLMGateway:
 
         # ── Atomic reservation ──
         try:
-            res_in = _reserve_input(messages, f)
+            res_in = _reserve_input(messages, f, input_cap)
             res_out = max_out
             p = MODEL_PRICING.get(model, MODEL_PRICING["default"])
             res_cost = (res_in/1000)*p["input"] + (res_out/1000)*p["output"]
@@ -427,13 +434,14 @@ class LLMGateway:
 
         model = cfg.model or LLM_FLASH_MODEL
         max_out = _reserve_output(f, cfg.max_tokens)
-        messages = _truncate(messages, LLM_MAX_INPUT_TOKENS)
+        input_cap = min(LLM_MAX_INPUT_TOKENS, FEATURE_INPUT_TOKENS.get(f, FEATURE_INPUT_TOKENS["default"]))
+        messages = _truncate(messages, input_cap)
 
         r = _get_redis()
         if r is False:
             yield _fallback(f); return
 
-        res_in = _reserve_input(messages, f)
+        res_in = _reserve_input(messages, f, input_cap)
         res_out = max_out
         p = MODEL_PRICING.get(model, MODEL_PRICING["default"])
         res_cost = (res_in/1000)*p["input"] + (res_out/1000)*p["output"]

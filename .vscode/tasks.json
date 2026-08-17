@@ -4068,6 +4068,343 @@
 			"type": "shell",
 			"command": "git add -A; git status --short",
 			"problemMatcher": []
+		},
+		{
+			"label": "Check remaining lint error",
+			"type": "shell",
+			"command": "cd apps/marketing; pnpm lint 2>&1 | Select-String error",
+			"problemMatcher": []
+		},
+		{
+			"label": "Final lint + typecheck + tests + build",
+			"type": "shell",
+			"command": "cd apps/marketing; Write-Host '--- Lint ---'; pnpm lint 2>&1 | Select-Object -Last 3; Write-Host '--- Typecheck ---'; npx tsc --noEmit 2>&1 | Select-Object -Last 3; Write-Host '--- Tests ---'; pnpm test -- --run 2>&1 | Select-Object -Last 10; Write-Host '--- Build ---'; pnpm build 2>&1 | Select-Object -Last 5",
+			"problemMatcher": []
+		},
+		{
+			"label": "Final lint+typecheck+tests+build",
+			"type": "shell",
+			"command": "cd apps/marketing; echo '--- Lint ---' && pnpm lint 2>&1 | Select-Object -Last 3; echo '--- Typecheck ---' && npx tsc --noEmit 2>&1 | Select-Object -Last 3; echo '--- Tests ---' && pnpm test -- --run 2>&1 | Select-Object -Last 10; echo '--- Build ---' && pnpm build 2>&1 | Select-Object -Last 5",
+			"problemMatcher": []
+		},
+		{
+			"label": "Final check: lint typecheck tests build",
+			"type": "shell",
+			"command": "cd apps/marketing; Write-Host 'LINT:'; pnpm lint 2>&1 | Select-Object -Last 3; Write-Host 'BUILD:'; pnpm build 2>&1 | Select-Object -Last 5; Write-Host 'TESTS:'; pnpm test -- --run 2>&1 | Select-Object -Last 15",
+			"problemMatcher": []
+		},
+		{
+			"label": "Build marketing only",
+			"type": "shell",
+			"command": "cd apps/marketing; pnpm build 2>&1 | Select-Object -Last 20",
+			"problemMatcher": []
+		},
+		{
+			"label": "Fix elevated -> variant elevated",
+			"type": "shell",
+			"command": "cd apps/marketing; python -c \"import os,re; files=['src/app/free-tools/page.tsx','src/app/free-tools/manual-work-cost-calculator/page.tsx','src/app/free-tools/automation-roi-calculator/page.tsx','src/app/free-tools/crm-readiness-assessment/page.tsx','src/app/business-guides/page.tsx','src/app/business-guides/[slug]/page.tsx','src/components/free-tools/tool-page.tsx']; [os.system(f'sed -i \\\"s/ elevated/ variant=\\\"elevated\\\"/g; s/,\\\\s*variant=\\\\\"elevated\\\\\"//g\\\" {f}') for f in files]; print('done')\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Final build + test",
+			"type": "shell",
+			"command": "cd apps/marketing; Write-Host 'BUILD:'; pnpm build 2>&1 | Select-Object -Last 8; Write-Host 'TESTS:'; pnpm test --run 2>&1 | Select-Object -Last 12",
+			"problemMatcher": []
+		},
+		{
+			"label": "Build + test marketing",
+			"type": "shell",
+			"command": "cd apps/marketing; Write-Host 'BUILD:'; pnpm build 2>&1 | Select-Object -Last 5; Write-Host 'TEST:'; npx vitest --run 2>&1 | Select-Object -Last 15",
+			"problemMatcher": []
+		},
+		{
+			"label": "Full build error output",
+			"type": "shell",
+			"command": "cd apps/marketing; pnpm build 2>&1 | Select-Object -First 60",
+			"problemMatcher": []
+		},
+		{
+			"label": "Fix all elevated props",
+			"type": "shell",
+			"command": "python tools/fix_elevated.py; Write-Host 'Done'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Build + test marketing final",
+			"type": "shell",
+			"command": "cd apps/marketing; Write-Host 'BUILD:'; pnpm build 2>&1 | Select-Object -Last 5; Write-Host 'TESTS:'; npx vitest --run 2>&1 | Select-Object -Last 12",
+			"problemMatcher": []
+		},
+		{
+			"label": "Full build error",
+			"type": "shell",
+			"command": "cd apps/marketing; pnpm build 2>&1 | Select-String 'rror|line' | Select-Object -First 15",
+			"problemMatcher": []
+		},
+		{
+			"label": "Final build marketing",
+			"type": "shell",
+			"command": "cd apps/marketing; pnpm build 2>&1 | Select-Object -Last 5",
+			"problemMatcher": []
+		},
+		{
+			"label": "Build error detail",
+			"type": "shell",
+			"command": "cd apps/marketing; pnpm build 2>&1 | Select-String 'Type error|rror TS' | Select-Object -First 5",
+			"problemMatcher": []
+		},
+		{
+			"label": "Clean build marketing",
+			"type": "shell",
+			"command": "cd apps/marketing; Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue; pnpm build 2>&1 | Select-Object -Last 8",
+			"problemMatcher": []
+		},
+		{
+			"label": "Final: lint test build API tests",
+			"type": "shell",
+			"command": "cd apps/marketing; Write-Host '=== LINT ==='; pnpm lint 2>&1 | Select-Object -Last 2; Write-Host '=== MARKETING TESTS ==='; npx vitest --run 2>&1 | Select-Object -Last 10; Write-Host '=== BUILD OK ==='",
+			"problemMatcher": []
+		},
+		{
+			"label": "Clean up helpers",
+			"type": "shell",
+			"command": "Remove-Item fix_elevated.py,fix_elevated2.py,tools/fix_elevated.py -Force -ErrorAction SilentlyContinue; Write-Host 'Cleaned'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Remove tools dir if empty",
+			"type": "shell",
+			"command": "if (Test-Path tools) { Remove-Item tools -Recurse -Force -ErrorAction SilentlyContinue }; Write-Host 'Done'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Final: lint + test + build marketing",
+			"type": "shell",
+			"command": "cd apps/marketing; Write-Host 'LINT:'; pnpm lint 2>&1 | Select-Object -Last 2; Write-Host 'BUILD:'; pnpm build 2>&1 | Select-Object -Last 6; Write-Host 'TESTS:'; npx vitest --run 2>&1 | Select-Object -Last 8",
+			"problemMatcher": []
+		},
+		{
+			"label": "Final: lint + build marketing",
+			"type": "shell",
+			"command": "cd apps/marketing; Write-Host 'LINT:'; pnpm lint 2>&1 | Select-Object -Last 3; Write-Host 'BUILD:'; pnpm build 2>&1 | Select-Object -Last 5",
+			"problemMatcher": []
+		},
+		{
+			"label": "Run marketing tests",
+			"type": "shell",
+			"command": "cd apps/marketing; npx vitest --run 2>&1 | Select-Object -Last 8",
+			"problemMatcher": []
+		},
+		{
+			"label": "Apply migration + build API",
+			"type": "shell",
+			"command": "cd apps/api; docker compose exec -T api alembic upgrade head 2>&1 | Select-Object -Last 3; docker compose build api 2>&1 | Select-String 'Image.*Built'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Start API + migrate + run tests",
+			"type": "shell",
+			"command": "docker compose up -d api --force-recreate 2>&1 | Select-Object -Last 2; Start-Sleep -Seconds 6; docker compose exec -T api alembic upgrade head 2>&1 | Select-Object -Last 3; docker compose run --rm -T api sh -c 'pip install pytest pytest-asyncio -q && python -m pytest tests/test_health.py tests/test_companies.py tests/test_auth.py -q --tb=short 2>&1'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Run full API tests",
+			"type": "shell",
+			"command": "docker compose run --rm -T api sh -c 'pip install pytest pytest-asyncio httpx -q && python -m pytest tests/ -q --tb=line 2>&1'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Build API to check errors",
+			"type": "shell",
+			"command": "docker compose build api 2>&1 | Select-String 'error|Error|Built' | Select-Object -First 10",
+			"problemMatcher": []
+		},
+		{
+			"label": "Run API tests",
+			"type": "shell",
+			"command": "docker compose run --rm -T api sh -c 'pip install pytest pytest-asyncio httpx -q && python -m pytest tests/ -q --tb=short 2>&1'",
+			"problemMatcher": []
+		},
+		{
+			"label": "Full API test suite",
+			"type": "shell",
+			"command": "docker compose run --rm -T api python -m pytest tests/ -q --tb=short",
+			"problemMatcher": []
+		},
+		{
+			"label": "Install pytest + run tests",
+			"type": "shell",
+			"command": "docker compose run --rm -T api sh -c \"pip install pytest pytest-asyncio httpx -q && python -m pytest tests/ -q --tb=short\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Install pytest",
+			"type": "shell",
+			"command": "docker compose run --rm -T api sh -c \"pip install pytest pytest-asyncio httpx -q\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Run tests from Docker",
+			"type": "shell",
+			"command": "docker compose run --rm api sh -c pip install pytest pytest-asyncio httpx -q ; docker compose run --rm api python -m pytest tests/ -q --tb=short",
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Python env in container",
+			"type": "shell",
+			"command": "docker compose run --rm api python -c \"import pytest; print(pytest.__version__)\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Test API suite",
+			"type": "shell",
+			"command": "docker compose build api 2>&1 ; docker compose run --rm api python -m pip install pytest pytest-asyncio httpx -q 2>&1 ; docker compose run --rm api python -m pytest tests/ -q --tb=short 2>&1",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Run tests in one container",
+			"type": "shell",
+			"command": "docker compose run --rm api python -c \"import subprocess; subprocess.run(['pip','install','-q','pytest','pytest-asyncio','httpx']); subprocess.run(['pytest','tests/','-q','--tb=short'])\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Run tests via temp script",
+			"type": "shell",
+			"command": "Set-Content -Path run_tests.py -Value \"import subprocess; subprocess.run(['pip','install','-q','pytest','pytest-asyncio','httpx']); subprocess.run(['pytest','tests/','-q','--tb=short'])\" ; docker compose run --rm -v ${PWD}/run_tests.py:/tmp/run_tests.py api python /tmp/run_tests.py ; Remove-Item run_tests.py",
+			"problemMatcher": []
+		},
+		{
+			"label": "Build + run tests",
+			"type": "shell",
+			"command": "docker compose build api ; docker compose run --rm api python run_tests.py",
+			"problemMatcher": []
+		},
+		{
+			"label": "Clean temp file",
+			"type": "shell",
+			"command": "Remove-Item \"c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\api\\run_tests.py\" -ErrorAction SilentlyContinue",
+			"problemMatcher": []
+		},
+		{
+			"label": "Build + model check",
+			"type": "shell",
+			"command": "docker compose build api 2>&1",
+			"problemMatcher": []
+		},
+		{
+			"label": "Full tests",
+			"type": "shell",
+			"command": "docker compose run --rm api sh -lc \"pip install -q -r requirements-dev.txt && python -m pytest tests -q --tb=short\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Run full tests",
+			"type": "shell",
+			"command": "cmd /c \"docker compose run --rm api sh -lc \"pip install -q -r requirements-dev.txt && python -m pytest tests -q --tb=short\"\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Run tests via script",
+			"type": "shell",
+			"command": "docker compose build api ; docker compose run --rm api sh run_tests.sh",
+			"problemMatcher": []
+		},
+		{
+			"label": "Run full tests with Phase 1",
+			"type": "shell",
+			"command": "docker compose build api ; docker compose run --rm api sh run_tests.sh",
+			"problemMatcher": []
+		},
+		{
+			"label": "Build + run all tests",
+			"type": "shell",
+			"command": "docker compose build api ; docker compose run --rm api sh run_tests.sh",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rebuild + test all",
+			"type": "shell",
+			"command": "docker compose build api ; docker compose run --rm api sh run_tests.sh",
+			"problemMatcher": []
+		},
+		{
+			"label": "Build + test v4",
+			"type": "shell",
+			"command": "docker compose build api ; docker compose run --rm api sh run_tests.sh",
+			"problemMatcher": []
+		},
+		{
+			"label": "Final build + test",
+			"type": "shell",
+			"command": "docker compose build api ; docker compose run --rm api sh run_tests.sh",
+			"problemMatcher": []
+		},
+		{
+			"label": "Remove temp + build + run tests",
+			"type": "shell",
+			"command": "Remove-Item \"c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\api\\run_tests.py\" -EA SilentlyContinue; Remove-Item \"c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\api\\run_tests.sh\" -EA SilentlyContinue; Write-Host \"Building...\"; docker compose build api 2>&1 | Select-Object -Last 3; Write-Host \"Running tests...\"; docker compose run --rm api sh -lc \"pip install -q -r requirements-dev.txt && python -m pytest tests -q --tb=short\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Remove temp files",
+			"type": "shell",
+			"command": "Remove-Item \"c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\api\\run_tests.py\" -EA SilentlyContinue; Remove-Item \"c:\\Users\\vinic\\OneDrive\\Desktop\\PacificNorthSystems\\CRM System\\apps\\api\\run_tests.sh\" -EA SilentlyContinue; Write-Host \"Temp files removed\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Build API",
+			"type": "shell",
+			"command": "docker compose build api 2>&1 | Select-Object -Last 5",
+			"problemMatcher": []
+		},
+		{
+			"label": "Run full test suite",
+			"type": "shell",
+			"command": "cmd /c \"docker compose run --rm api sh -lc \"pip install -q -r requirements-dev.txt && python -m pytest tests -q --tb=short\"\"",
+			"problemMatcher": []
+		},
+		{
+			"label": "Build and run tests",
+			"type": "shell",
+			"command": "docker compose build api; docker compose run --rm api sh /app/test_runner.sh",
+			"problemMatcher": []
+		},
+		{
+			"label": "Build and run tests v2",
+			"type": "shell",
+			"command": "docker compose build api; docker compose run --rm api sh /app/test_runner.sh",
+			"problemMatcher": []
+		},
+		{
+			"label": "Build and run tests v3",
+			"type": "shell",
+			"command": "docker compose build api; docker compose run --rm api sh /app/test_runner.sh",
+			"problemMatcher": []
+		},
+		{
+			"label": "Final build + test + cleanup",
+			"type": "shell",
+			"command": "docker compose build api; docker compose run --rm api sh /app/test_runner.sh",
+			"problemMatcher": []
+		},
+		{
+			"label": "Clean up temp files",
+			"type": "shell",
+			"command": "del apps\\api\\run_tests.py 2>$null; del apps\\api\\run_tests.sh 2>$null; del apps\\api\\test_runner.sh 2>$null; Write-Host Cleaned",
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify temp files removed",
+			"type": "shell",
+			"command": "if (Test-Path apps\\api\\run_tests.py) { Write-Host \"run_tests.py EXISTS\" } else { Write-Host \"run_tests.py removed\" }; if (Test-Path apps\\api\\run_tests.sh) { Write-Host \"run_tests.sh EXISTS\" } else { Write-Host \"run_tests.sh removed\" }; if (Test-Path apps\\api\\test_runner.sh) { Write-Host \"test_runner.sh EXISTS\" } else { Write-Host \"test_runner.sh removed\" }",
+			"problemMatcher": []
+		},
+		{
+			"label": "Final build without temp files",
+			"type": "shell",
+			"command": "docker compose build api --no-cache 2>&1 | Select-String 'Built|error|Error|FAILED' | Select-Object -First 5",
+			"problemMatcher": []
 		}
 	]
 }

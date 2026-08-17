@@ -35,7 +35,6 @@ ROLE_PERMISSIONS: dict[str, set[str]] = {
     },
 }
 
-
 class AuthContext(BaseModel):
     user_id: int
     email: str
@@ -134,6 +133,15 @@ def _decode_clerk_token(token: str) -> dict[str, Any]:
 
 
 def _get_or_create_default_org(session: Session) -> Organization:
+    default_slug = get_settings().crm_default_organization_slug.strip() or "pacific-north-systems"
+    default_org = (
+        session.execute(select(Organization).where(Organization.slug == default_slug))
+        .scalars()
+        .first()
+    )
+    if default_org is not None:
+        return default_org
+
     organizations = session.execute(select(Organization).order_by(Organization.id.asc())).scalars().all()
     if len(organizations) == 1:
         return organizations[0]
@@ -143,7 +151,7 @@ def _get_or_create_default_org(session: Session) -> Organization:
             detail="Organization context is required",
         )
 
-    org = Organization(name="Pacific North Systems", slug="pacific-north-systems")
+    org = Organization(name="Pacific North Systems", slug=default_slug)
     session.add(org)
     session.commit()
     session.refresh(org)

@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -69,7 +71,24 @@ class SqlActivityRepository:
         self._session = session
 
     def create(self, data: ActivityCreate, organization_id: int) -> ActivityRead:
+        from app.infrastructure.db.models import Conversation
+
         act = Activity(organization_id=organization_id, **data.model_dump())
+        conversation = self._session.execute(
+            select(Conversation).where(
+                Conversation.organization_id == organization_id,
+                Conversation.company_id == data.company_id,
+                Conversation.status == "active",
+            ).order_by(Conversation.updated_at.desc())
+        ).scalars().first()
+        if conversation:
+            act.conversation_id = conversation.id
+            conversation.last_activity_at = datetime.now(UTC)
+            if (
+                conversation.relationship_stage == "new"
+                and data.activity_type in {"call", "email", "meeting"}
+            ):
+                conversation.relationship_stage = "contacted"
         self._session.add(act)
         self._session.commit()
         self._session.refresh(act)

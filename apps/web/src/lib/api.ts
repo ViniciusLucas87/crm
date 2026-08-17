@@ -328,7 +328,7 @@ export async function listActivities(companyId: number, params: { page?: number;
 }
 
 export async function createActivity(input: ActivityCreateInput): Promise<Activity> {
-  const r = await fetch(`${API_BASE_URL}/activities`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
+  const r = await fetch(`${API_BASE_URL}/activities`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(toSnakeKeys(input as unknown as Record<string, unknown>)) });
   if (!r.ok) throw new ApiError(`Failed: ${r.status}`, r.status);
   const a = await r.json();
   return { id: a.id, companyId: a.company_id, contactId: a.contact_id, activityType: a.activity_type, subject: a.subject, body: a.body, dueDate: a.due_date, completedAt: a.completed_at, createdAt: a.created_at };

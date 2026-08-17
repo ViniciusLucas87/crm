@@ -15,6 +15,7 @@ export const siteConfig = {
   },
   nav: {
     primary: [
+      { label: "Never Miss", href: "/never-miss" },
       { label: "Services", href: "/solutions" },
       { label: "Work", href: "/work" },
       { label: "About", href: "/about" },
@@ -28,6 +29,7 @@ export const siteConfig = {
   },
   footer: {
     navigation: [
+      { label: "Never Miss", href: "/never-miss" },
       { label: "About", href: "/about" },
       { label: "Our Work", href: "/work" },
       { label: "How We Work", href: "/process" },

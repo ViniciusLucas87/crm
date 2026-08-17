@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     clerk_issuer: str | None = None
     clerk_jwks_url: str | None = None
     crm_allowed_user_ids: str = ""
+    crm_default_organization_slug: str = "pacific-north-systems"
     deepseek_api_key: str = ""
     deepseek_api_base: str = "https://api.deepseek.com/v1"
     deepseek_model: str = "deepseek-chat"

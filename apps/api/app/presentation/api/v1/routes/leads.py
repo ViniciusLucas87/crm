@@ -28,7 +28,15 @@ from app.application.sales.outreach import OutreachGenerator
 from app.application.sales.research_pipeline import ResearchPipeline, RESEARCH_STAGES, STAGE_STATUSES
 from app.application.sales.scoring import ScoringEngine
 from app.infrastructure.auth.clerk import AuthContext, require_permission
-from app.infrastructure.db.models import Company, Contact, Lead, LeadTimelineEvent, Opportunity, SavedSearch
+from app.infrastructure.db.models import (
+    Company,
+    Contact,
+    EnrichmentJob,
+    Lead,
+    LeadTimelineEvent,
+    Opportunity,
+    SavedSearch,
+)
 from app.infrastructure.db.session import get_db_session
 
 router = APIRouter(prefix="/leads", tags=["leads"])
@@ -77,6 +85,46 @@ def _get_enrichment() -> EnrichmentService:
     return EnrichmentService(api_key=DEEPSEEK_KEY)
 
 
+def _queue_approved_lead_enrichment(
+    session: Session, lead: Lead, organization_id: int
+) -> str | None:
+    """Queue one consolidated enrichment only after an AI-discovered lead is approved."""
+    if lead.source != "ai_discovery":
+        return None
+    if lead.enrichment_status in {"queued", "processing", "complete"}:
+        return None
+
+    from app.application.sales.task_dispatcher import queue_enrichment
+
+    job_id = queue_enrichment(
+        lead_id=lead.id,
+        organization_id=organization_id,
+        company_name=lead.name,
+        industry=lead.industry or "",
+        city=lead.city or "",
+        province=lead.province or "",
+        employees=lead.employees,
+        description=lead.description or "",
+    )
+    lead.enrichment_status = "queued"
+    lead.enrichment_job_id = job_id
+    session.add(EnrichmentJob(
+        id=job_id,
+        organization_id=organization_id,
+        lead_id=lead.id,
+        discovery_source="approved_lead",
+        status="queued",
+        priority=0,
+    ))
+    session.add(LeadTimelineEvent(
+        organization_id=organization_id,
+        lead_id=lead.id,
+        event_type="ai_enrichment_queued",
+        description="Approved lead queued for one consolidated AI enrichment.",
+    ))
+    return job_id
+
+
 # ── Request Models ──
 
 class LeadCreate(BaseModel):
@@ -116,7 +164,9 @@ class SmartImport(BaseModel):
     create_company: bool = True
     create_contacts: bool = True
     create_opportunity: bool = True
-    launch_enrichment: bool = True
+    # Approved AI-discovered leads are already enriched once. Import should not
+    # silently launch a second paid request unless explicitly requested.
+    launch_enrichment: bool = False
     generate_analysis: bool = False
     generate_proposal: bool = False
     generate_outreach: bool = False
@@ -269,6 +319,11 @@ def update_status(
         raise HTTPException(status_code=404, detail="Lead not found")
     old_status = lead.status
     lead.status = status
+    enrichment_job_id = None
+    if status == "approved" and old_status != "approved":
+        enrichment_job_id = _queue_approved_lead_enrichment(
+            session, lead, ctx.organization_id
+        )
     session.add(lead)
     session.add(LeadTimelineEvent(
         organization_id=ctx.organization_id, lead_id=lead.id,
@@ -277,7 +332,12 @@ def update_status(
         metadata_json=json.dumps({"from": old_status, "to": status}),
     ))
     session.commit()
-    return {"id": lead.id, "status": lead.status, "previous": old_status}
+    return {
+        "id": lead.id,
+        "status": lead.status,
+        "previous": old_status,
+        "enrichment_job_id": enrichment_job_id,
+    }
 
 
 # ═══════════════════════════════════════════════════════════
@@ -300,8 +360,13 @@ def bulk_action(
     results: list[dict] = []
     for lead in leads:
         old = lead.status
+        enrichment_job_id = None
         if body.action == "approve":
             lead.status = "approved"
+            if old != "approved":
+                enrichment_job_id = _queue_approved_lead_enrichment(
+                    session, lead, ctx.organization_id
+                )
         elif body.action == "reject":
             lead.status = "rejected"
         elif body.action == "archive":
@@ -314,7 +379,12 @@ def bulk_action(
             event_type="bulk_action",
             description=f"Bulk {body.action or body.status}: {old} → {lead.status}",
         ))
-        results.append({"id": lead.id, "status": lead.status, "previous": old})
+        results.append({
+            "id": lead.id,
+            "status": lead.status,
+            "previous": old,
+            "enrichment_job_id": enrichment_job_id,
+        })
 
     session.commit()
     return {"updated": len(results), "results": results}
@@ -909,7 +979,7 @@ class DiscoveryRequest(BaseModel):
     max_employees: int | None = None
     keyword: str = ""
     business_type: str = ""
-    count: int = 5
+    count: int = 3
 
 
 @router.post("/discover")

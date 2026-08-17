@@ -42,6 +42,11 @@ TOKEN_CLAIMS = {
         "org_name": "Other Org",
         "org_role": "admin",
     },
+    "operator-no-org": {
+        "sub": "user_operator",
+        "email": "operator@pacificnorthsystems.com",
+        "name": "PNS Operator",
+    },
 }
 
 

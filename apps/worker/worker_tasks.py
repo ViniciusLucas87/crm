@@ -123,7 +123,7 @@ def _get_redis_sync():
 
 OVERLAP_LOCKS: dict[str, int] = {
     "workers.company_enrichment": 1800,     # 30m
-    "workers.fact_verification": 900,       # 15m
+    "workers.fact_verification": 86400,     # daily
     "workers.entity_resolution": 3600,      # 1h
     "workers.relationship_discovery": 1800,
     "workers.technology_detection": 1800,
@@ -145,6 +145,7 @@ OVERLAP_LOCKS: dict[str, int] = {
     "workers.call_missed_call_recovery": 30,
     "workers.sms_missed_call_recovery": 30,
     "workers.sms_inbound_webhook": 30,
+    "workers.operational_cleanup": 7200,
 }
 
 
@@ -185,10 +186,33 @@ class _UniqueTask(CeleryTask):
 
 celery_app.Task = _UniqueTask
 
+# Scheduled pollers often find no work. Recording a job and run for every
+# empty 15-second poll produced hundreds of thousands of audit rows. Direct
+# event dispatches still carry an event/job identifier and remain tracked.
+UNTRACKED_EMPTY_POLLERS = {
+    "workers.outbox_process_email",
+    "workers.knowledge_assessment_ingestion",
+    "workers.call_timeline_projection",
+    "workers.call_metrics_recalculation",
+    "workers.call_knowledge_ingestion",
+    "workers.call_missed_call_recovery",
+    "workers.sms_missed_call_recovery",
+    "workers.sms_inbound_webhook",
+    "workers.email_timeline_projection",
+    "workers.email_metrics_recalculation",
+    "workers.outbox_process_assessment_lifecycle",
+    "workers.imap_ingestion",
+}
+
 
 @task_prerun.connect
 def _record_task_prerun(task_id=None, task=None, args=None, kwargs=None, **_extras):
     if task is None or not task.name.startswith("workers."):
+        return
+    payload = kwargs or {}
+    if task.name in UNTRACKED_EMPTY_POLLERS and not any(
+        payload.get(key) is not None for key in ("event_id", "job_id", "event_type")
+    ):
         return
     db = _get_db()
     try:
@@ -196,7 +220,6 @@ def _record_task_prerun(task_id=None, task=None, args=None, kwargs=None, **_extr
 
         worker_name = _worker_name_from_task(task.name)
         queue_name = getattr(task.request, "delivery_info", {}).get("routing_key", "normal") if getattr(task, "request", None) else "normal"
-        payload = kwargs or {}
         job_id = payload.get("job_id")
         if job_id is None:
             job = create_worker_job(
@@ -261,6 +284,32 @@ def _record_task_retry(request=None, reason=None, einfo=None, **_extras):
             payload=getattr(request, "kwargs", {}) if request else {},
             queue_name=getattr(request, "delivery_info", {}).get("routing_key", "normal"),
         )
+    finally:
+        db.close()
+
+
+@celery_app.task(
+    name="workers.operational_cleanup",
+    bind=True,
+    max_retries=0,
+    queue="low",
+)
+def operational_cleanup(self, dry_run: bool = False, **_context):
+    """Nightly retention for generated operational records only."""
+    if os.getenv("OPERATIONAL_CLEANUP_ENABLED", "true").lower() not in ("true", "1", "yes"):
+        return {"skipped": "disabled"}
+
+    from operational_cleanup import cleanup_operational_history
+
+    db = _get_db()
+    try:
+        result = cleanup_operational_history(db, dry_run=dry_run)
+        logger.info("Operational cleanup complete: %s", result)
+        return result
+    except Exception:
+        db.rollback()
+        logger.exception("Operational cleanup failed")
+        raise
     finally:
         db.close()
 
@@ -356,7 +405,7 @@ def company_enrichment(self, company_id: int | None = None, **context):
 @celery_app.task(
     name="workers.fact_verification",
     bind=True,
-    max_retries=3,
+    max_retries=0,
     default_retry_delay=60,
     queue="high",
 )
@@ -381,9 +430,11 @@ def fact_verification(self, **context):
             ).first()
 
             fact.confidence = min(1.0, fact.confidence + 0.15) if corroborated else max(0.1, fact.confidence - 0.02)
-            db.commit()
             verified += 1
 
+        # Commit once so a batch cannot create a burst of persistence events.
+        if verified:
+            db.commit()
         return {"verified": verified}
     except Exception as exc:
         logger.error(f"Fact verification failed: {exc}")
@@ -747,14 +798,20 @@ def recommendation_engine(self, **context):
 # ═══════════════════════════════════════════════════════════
 
 celery_app.conf.beat_schedule = {
+    # 11:15 UTC is approximately 3–4 a.m. in Vancouver, depending on DST.
+    "operational-cleanup-nightly": {
+        "task": "workers.operational_cleanup",
+        "schedule": crontab(hour=11, minute=15),
+        "options": {"queue": "low"},
+    },
     "company-enrichment-every-30m": {
         "task": "workers.company_enrichment",
         "schedule": crontab(minute="*/30"),
         "options": {"queue": "normal"},
     },
-    "fact-verification-every-15m": {
+    "fact-verification-daily": {
         "task": "workers.fact_verification",
-        "schedule": crontab(minute="*/15"),
+        "schedule": crontab(hour=1, minute=30),
         "options": {"queue": "high"},
     },
     "entity-resolution-daily": {
@@ -1436,6 +1493,47 @@ def email_timeline_projection(self, event_id: int | None = None, **context):
             try:
                 event.status = "processing"; event.attempt_count += 1; event.last_attempt_at = datetime.now(UTC); db.commit()
                 payload = event.payload_json or {}
+                from app.infrastructure.db.models import Activity, Conversation, EmailMessage
+                email = db.query(EmailMessage).filter(
+                    EmailMessage.public_uuid == payload.get("email_uuid")
+                ).first()
+                if email and email.company_id:
+                    conv = db.query(Conversation).filter(
+                        Conversation.organization_id == email.organization_id,
+                        Conversation.company_id == email.company_id,
+                        Conversation.status == "active",
+                    ).order_by(Conversation.updated_at.desc()).first()
+                    if not conv:
+                        conv = Conversation(
+                            organization_id=email.organization_id,
+                            company_id=email.company_id,
+                            primary_contact_id=email.contact_id,
+                            status="active",
+                            relationship_stage="contacted",
+                            last_activity_at=email.sent_at or email.received_at or email.created_at,
+                        )
+                        db.add(conv)
+                        db.flush()
+                    email.conversation_id = conv.id
+                    if not conv.primary_contact_id and email.contact_id:
+                        conv.primary_contact_id = email.contact_id
+                    conv.last_activity_at = email.sent_at or email.received_at or email.created_at
+                    if conv.relationship_stage == "new":
+                        conv.relationship_stage = "contacted"
+                    if not email.activity_id:
+                        activity = Activity(
+                            organization_id=email.organization_id,
+                            company_id=email.company_id,
+                            contact_id=email.contact_id,
+                            conversation_id=conv.id,
+                            activity_type="email",
+                            subject=email.subject,
+                            body=email.plain_text,
+                            created_at=email.sent_at or email.received_at or email.created_at,
+                        )
+                        db.add(activity)
+                        db.flush()
+                        email.activity_id = activity.id
                 from app.infrastructure.db.knowledge_graph import KnowledgeEvent
                 ke = KnowledgeEvent(
                     entity_type="company", entity_id=payload.get("company_id", 0) or 0,
@@ -2079,7 +2177,7 @@ def call_missed_call_recovery(self, event_id: int | None = None, **context):
     """
     db = _get_db()
     try:
-        from app.infrastructure.db.models import OutboxEvent, Call, Task, Activity, ProviderWebhookEvent
+        from app.infrastructure.db.models import Activity, Call, LeadCaptureRecord, OutboxEvent, ProviderWebhookEvent, Task
         from app.application.intake.sms import can_send_sms
 
         events = _fetch_outbox_events(db, RECONCILIATION_EVENT, event_id, lock=False)
@@ -2189,6 +2287,25 @@ def call_missed_call_recovery(self, event_id: int | None = None, **context):
                 db_session_clean.add(activity)
                 db_session_clean.flush()
 
+                captured = db_session_clean.query(LeadCaptureRecord).filter(
+                    LeadCaptureRecord.organization_id == org_id,
+                    LeadCaptureRecord.source == "phone",
+                    LeadCaptureRecord.external_id == call.public_uuid,
+                ).first()
+                if captured is None:
+                    db_session_clean.add(LeadCaptureRecord(
+                        organization_id=org_id,
+                        source="phone",
+                        external_id=call.public_uuid,
+                        phone=normalized_caller,
+                        summary="Missed inbound call. Callback required.",
+                        status="new",
+                        priority="high",
+                        next_action="Return the missed call",
+                        next_action_at=datetime.now(UTC) + timedelta(hours=2),
+                        metadata_json={"call_id": call.id, "spam_score": spam_score},
+                    ))
+
                 sms_outbox = OutboxEvent(
                     event_type=SMS_RECOVERY_EVENT,
                     payload_json={
@@ -2247,7 +2364,7 @@ def sms_missed_call_recovery(self, event_id: int | None = None, **context):
     """
     db = _get_db()
     try:
-        from app.infrastructure.db.models import OutboxEvent, Call, PhoneSuppression
+        from app.infrastructure.db.models import Call, ProductConfiguration
         from app.application.intake.sms import can_send_sms, MISSED_CALL_SMS_MESSAGE
 
         events = _fetch_outbox_events(db, SMS_RECOVERY_EVENT, event_id, lock=False)
@@ -2295,6 +2412,32 @@ def sms_missed_call_recovery(self, event_id: int | None = None, **context):
 
                 call = db_session_clean.query(Call).filter(Call.id == call_id).first()
 
+                # Packaged-product configuration is tenant-specific. Existing
+                # PNS organizations without a product row retain the proven
+                # legacy behavior during migration.
+                product_config = db_session_clean.query(ProductConfiguration).filter(
+                    ProductConfiguration.organization_id == org_id,
+                    ProductConfiguration.product_code == "never_miss",
+                ).first()
+                if product_config and not product_config.enabled:
+                    logger.info("SMS skipped: Never Miss disabled for org=%s", org_id)
+                    _mark_event_completed(db_session_clean, event)
+                    continue
+
+                if product_config:
+                    month_start = datetime.now(UTC).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                    messages_this_month = db_session_clean.query(Call).filter(
+                        Call.organization_id == org_id,
+                        Call.sms_sent_at.isnot(None),
+                        Call.sms_sent_at >= month_start,
+                    ).count()
+                    if messages_this_month >= product_config.monthly_message_limit:
+                        logger.warning("SMS skipped: monthly message limit reached for org=%s", org_id)
+                        if call:
+                            call.sms_status = "limit_reached"
+                        _mark_event_completed(db_session_clean, event)
+                        continue
+
                 # ── Spam quarantine ──
                 if call and (call.spam_score or 0) >= 30:
                     logger.info(
@@ -2311,7 +2454,16 @@ def sms_missed_call_recovery(self, event_id: int | None = None, **context):
                 # ── Provider configuration ──
                 telnyx_api_key = os.getenv("TELNYX_API_KEY", "")
                 telnyx_messaging_profile_id = os.getenv("TELNYX_MESSAGING_PROFILE_ID", "")
-                pns_phone = os.getenv("PNS_PHONE_NUMBER", "")
+                pns_phone = (
+                    product_config.business_phone
+                    if product_config and product_config.business_phone
+                    else os.getenv("PNS_PHONE_NUMBER", "")
+                )
+                recovery_message = (
+                    product_config.recovery_message.strip()
+                    if product_config and product_config.recovery_message
+                    else MISSED_CALL_SMS_MESSAGE
+                )
 
                 if not telnyx_api_key:
                     logger.error(
@@ -2333,7 +2485,7 @@ def sms_missed_call_recovery(self, event_id: int | None = None, **context):
                     messaging_profile_id=telnyx_messaging_profile_id,
                     from_phone=pns_phone,
                     to_phone=normalized,
-                    message=MISSED_CALL_SMS_MESSAGE,
+                    message=recovery_message,
                     idempotency_key=provider_idem_key,
                 )
 

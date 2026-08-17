@@ -30,12 +30,16 @@ class EventType(str, Enum):
 
 WORKER_EVENT_SUBSCRIPTIONS: dict[str, list[EventType]] = {
     "company_enrichment": [EventType.COMPANY_CREATED, EventType.COMPANY_UPDATED, EventType.LEAD_IMPORTED, EventType.FACT_EXPIRED],
-    "fact_verification": [EventType.FACT_CREATED, EventType.FACT_UPDATED, EventType.TRANSCRIPT_COMPLETED, EventType.KNOWLEDGE_DECAYED],
+    # FACT_UPDATED is intentionally excluded: verification updates confidence,
+    # which would otherwise dispatch another verification job indefinitely.
+    "fact_verification": [EventType.FACT_CREATED, EventType.TRANSCRIPT_COMPLETED, EventType.KNOWLEDGE_DECAYED],
     "entity_resolution": [EventType.COMPANY_CREATED, EventType.LEAD_IMPORTED, EventType.CONTACT_CREATED],
     "relationship_discovery": [EventType.FACT_CREATED, EventType.TRANSCRIPT_COMPLETED, EventType.PROPOSAL_GENERATED, EventType.MEETING_SCHEDULED],
     "technology_detection": [EventType.COMPANY_CREATED, EventType.COMPANY_UPDATED, EventType.TRANSCRIPT_COMPLETED, EventType.LEAD_IMPORTED],
     "buying_signal_detector": [EventType.BUYING_SIGNAL_DETECTED, EventType.TRANSCRIPT_COMPLETED, EventType.EMAIL_SENT, EventType.MEETING_SCHEDULED, EventType.PROPOSAL_GENERATED, EventType.TASK_CREATED],
-    "knowledge_decay": [EventType.FACT_CREATED, EventType.FACT_UPDATED],
+    # Decay is a daily maintenance job. Event-triggering it on every fact write
+    # creates a self-amplifying update loop and unnecessary database load.
+    "knowledge_decay": [],
     "reasoning": [EventType.FACT_CREATED, EventType.FACT_VERIFIED, EventType.RELATIONSHIP_CREATED, EventType.TRANSCRIPT_COMPLETED, EventType.BUYING_SIGNAL_DETECTED, EventType.OPPORTUNITY_UPDATED],
     "timeline_generator": [EventType.COMPANY_CREATED, EventType.LEAD_IMPORTED, EventType.CALL_ENDED, EventType.PROPOSAL_GENERATED, EventType.OPPORTUNITY_WON, EventType.OPPORTUNITY_LOST, EventType.TASK_COMPLETED, EventType.PIPELINE_STAGE_CHANGED],
     "opportunity_scoring": [EventType.OPPORTUNITY_CREATED, EventType.OPPORTUNITY_UPDATED, EventType.FACT_CREATED, EventType.BUYING_SIGNAL_DETECTED, EventType.CALL_ENDED, EventType.PROPOSAL_GENERATED],

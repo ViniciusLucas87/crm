@@ -52,6 +52,7 @@ export default function DailyBriefPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [enriching, setEnriching] = useState(false);
 
   useEffect(() => {
     fetch("/api/ai/brief").then(r => r.ok ? r.json() : Promise.reject(r.status)).then((d: Record<string, unknown>) => {
@@ -66,11 +67,29 @@ export default function DailyBriefPage() {
       researchQueue: (d.research_queue as Record<string, unknown>[] || []).map(b => ({ type: b.type as string, title: b.title as string, description: b.description as string, companyName: b.company_name as string, companyId: b.company_id as number })),
       actions: (d.actions as Record<string, unknown>[] || []).map(b => ({ type: b.type as string, title: b.title as string, description: b.description as string, reason: b.reason as string })),
       }; setBrief(b);
-      // Fetch AI enrichment
-      fetch("/api/ai/enrich/daily_brief", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ context: { priorities: b.priorities.slice(0,3), signals: b.signals.slice(0,3), followUps: b.followUps.slice(0,2), overdueTasks: b.overdueTasks.slice(0,2) } }) })
-        .then(r => r.ok ? r.json() : null).then(d => { if (d?.enriched) setAiInsight(d.content); }).catch(() => {});
     }).catch(e => setError(String(e))).finally(() => setLoading(false));
   }, []);
+
+  const generateAiInsight = async () => {
+    if (!brief || enriching) return;
+    setEnriching(true);
+    try {
+      const response = await fetch("/api/ai/enrich/daily_brief", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ context: {
+          priorities: brief.priorities.slice(0, 3),
+          signals: brief.signals.slice(0, 3),
+          followUps: brief.followUps.slice(0, 2),
+          overdueTasks: brief.overdueTasks.slice(0, 2),
+        } }),
+      });
+      const data = response.ok ? await response.json() : null;
+      if (data?.enriched) setAiInsight(data.content);
+    } finally {
+      setEnriching(false);
+    }
+  };
 
   if (loading) return <div className="space-y-4">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>;
   if (error) return <Card><p className="text-red-400">{error}</p></Card>;
@@ -93,6 +112,24 @@ export default function DailyBriefPage() {
       </section>
 
       {/* AI Insight Banner */}
+      {!aiInsight && (
+        <Card className="border-cyan-400/10 bg-gradient-to-r from-cyan-950/30 to-violet-950/10">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-white">AI Executive Brief</p>
+              <p className="mt-0.5 text-xs text-slate-400">Uses DeepSeek only when you request it.</p>
+            </div>
+            <button
+              type="button"
+              onClick={generateAiInsight}
+              disabled={enriching}
+              className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {enriching ? "Generating..." : "Generate AI Brief"}
+            </button>
+          </div>
+        </Card>
+      )}
       {aiInsight && (
         <Card className="border-cyan-400/10 bg-gradient-to-r from-cyan-950/40 to-violet-950/20">
           <div className="flex items-start gap-3">

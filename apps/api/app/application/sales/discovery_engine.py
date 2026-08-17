@@ -23,8 +23,6 @@ import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
-
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -72,7 +70,7 @@ class DiscoveryCriteria:
     max_employees: int | None = None
     keyword: str = ""
     business_type: str = ""
-    count: int = 5
+    count: int = 3
     organization_id: int = 1
     excluded_names: list[str] = field(default_factory=list)
 
@@ -161,12 +159,12 @@ class LLMDiscoveryProvider(DiscoveryProvider):
         if criteria.keyword:
             parts.append(f"Keywords: {criteria.keyword}")
 
-        query = "Find exactly " + (f"{criteria.count} " if criteria.count else "5 ")
+        query = "Find exactly " + (f"{criteria.count} " if criteria.count else "3 ")
         query += "real companies matching: " + "; ".join(parts) if parts else "companies in the Pacific Northwest"
         query += ". Return JSON with company name, industry, city, province, employees, website, and description."
         if criteria.excluded_names:
             query += " Do not return any of these companies already in our CRM: " + "; ".join(criteria.excluded_names[:100]) + "."
-        query += f" The companies array must contain {criteria.count or 5} distinct, non-empty results."
+        query += f" The companies array must contain {criteria.count or 3} distinct, non-empty results."
 
         try:
             from app.application.llm.gateway import get_llm_gateway, GatewayConfig
@@ -176,7 +174,7 @@ class LLMDiscoveryProvider(DiscoveryProvider):
                 organization_id=criteria.organization_id,
                 temperature=0.55,
                 max_tokens=1200,
-                bypass_cache=True,
+                bypass_cache=False,
             )
             messages = [
                 LLMMessage(role="system", content=DISCOVERY_SYSTEM_PROMPT),
@@ -189,7 +187,7 @@ class LLMDiscoveryProvider(DiscoveryProvider):
                 return []
 
             companies = self._parse_companies(resp.content)
-            return companies[: criteria.count or 5]
+            return companies[: criteria.count or 3]
         except Exception as e:
             logger.exception("LLM discovery failed: %s", e)
             return self._fallback_discover(criteria)
@@ -348,16 +346,6 @@ Act as Pacific North Systems' founder. Think about: would I spend MY limited tim
             elif "```" in content:
                 content = content.split("```")[1].split("```")[0]
             return json.loads(content)
-            company.estimated_deal_high = data.get("estimated_deal_high")
-            company.opportunity_score = data.get("opportunity_score", 50)
-            company.confidence_score = data.get("confidence_score", 60)
-            company.revenue_estimate = data.get("revenue_estimate", "") or ""
-
-        except Exception as e:
-            logger.exception("LLM enrich failed for %s: %s", company.name, e)
-            company.executive_summary = self._fallback_summary(company)
-
-        return company
 
     def _parse_companies(self, content: str) -> list[DiscoveredCompany]:
         try:
@@ -430,7 +418,7 @@ class DiscoveryEngine:
     async def discover(
         self, organization_id: int, criteria: DiscoveryCriteria
     ) -> DiscoveryResult:
-        """Discover companies, create leads immediately, queue background enrichment."""
+        """Discover companies and create reviewable leads without automatic enrichment."""
         start = time.time()
         result = DiscoveryResult(criteria=criteria)
 
@@ -449,10 +437,8 @@ class DiscoveryEngine:
         result.stage = "creating"
         result.progress_pct = 30
 
-        # Stage 2: Create leads immediately + queue background enrichment
-        from app.application.sales.task_dispatcher import queue_enrichment
-        from app.infrastructure.db.models import EnrichmentJob
-
+        # Stage 2: Create leads for human review. Enrichment is intentionally
+        # approval-gated so rejected prospects consume no additional AI credits.
         total = len(companies)
         for i, company in enumerate(companies):
             # Dedup check
@@ -460,25 +446,7 @@ class DiscoveryEngine:
                 result.duplicates_skipped += 1
                 continue
 
-            # Create lead immediately (no enrichment — just discovery data)
-            lead = self._create_lead_fast(organization_id, company)
-
-            # Create enrichment job record
-            job_id = queue_enrichment(
-                lead_id=lead.id,
-                organization_id=organization_id,
-                company_name=company.name,
-                industry=company.industry or "",
-                city=company.city or "",
-                province=company.province or "",
-                employees=company.employees,
-                description=company.description or "",
-            )
-            self._session.add(EnrichmentJob(
-                id=job_id, organization_id=organization_id, lead_id=lead.id,
-                discovery_source="ai_discovery", status="queued", priority=0,
-            ))
-            self._session.commit()
+            self._create_lead_fast(organization_id, company)
 
             result.companies.append(company)
             result.leads_created += 1
@@ -490,7 +458,7 @@ class DiscoveryEngine:
             f"Discovered {len(companies)} companies. "
             f"Created {result.leads_created} leads. "
             f"Skipped {result.duplicates_skipped} duplicates. "
-            f"AI enrichment running in background."
+            f"Review and approve selected leads to run one consolidated AI enrichment."
         )
         result.total_time_ms = int((time.time() - start) * 1000)
 
@@ -536,7 +504,7 @@ class DiscoveryEngine:
         self._session.add(LeadTimelineEvent(
             organization_id=org_id, lead_id=lead.id,
             event_type="ai_discovered",
-            description=f"Discovered by AI Prospect Discovery Engine. Enrichment queued.",
+            description="Discovered by AI Prospect Discovery Engine. Awaiting approval before enrichment.",
             metadata_json=json.dumps({
                 "opportunity_score": company.opportunity_score,
                 "industry": company.industry,

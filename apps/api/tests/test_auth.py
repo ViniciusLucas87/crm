@@ -42,3 +42,15 @@ def test_explicit_clerk_member_role_remains_read_only() -> None:
         clerk_user_id="user_owner",
         allowed_user_ids={"user_owner"},
     ) == "member"
+
+
+def test_no_org_context_uses_configured_default_when_other_orgs_exist(
+    client: TestClient,
+) -> None:
+    assert client.get("/api/v1/auth/me", headers=auth_headers("org1-admin")).status_code == 200
+    assert client.get("/api/v1/auth/me", headers=auth_headers("org2-admin")).status_code == 200
+
+    response = client.get("/api/v1/auth/me", headers=auth_headers("operator-no-org"))
+
+    assert response.status_code == 200
+    assert response.json()["organization_slug"] == "pacific-north-systems"

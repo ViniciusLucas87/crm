@@ -1,0 +1,402 @@
+"""Stripe fulfillment and self-service activation for Never Miss."""
+
+from __future__ import annotations
+
+import hashlib
+import hmac
+import json
+import os
+import re
+import secrets
+import time
+from datetime import UTC, datetime, timedelta
+
+import httpx
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from pydantic import BaseModel, Field
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.infrastructure.db.models import (
+    Organization,
+    ProductConfiguration,
+    ProductSubscription,
+    StripeWebhookEvent,
+)
+from app.infrastructure.db.session import get_db_session
+
+router = APIRouter(prefix="/subscriptions")
+_E164 = re.compile(r"^\+[1-9]\d{7,14}$")
+_AREA_CODE = re.compile(r"^\d{3}$")
+
+
+class ActivationInput(BaseModel):
+    business_name: str = Field(min_length=2, max_length=255)
+    contact_name: str = Field(min_length=2, max_length=255)
+    notification_phone: str = Field(max_length=50)
+    existing_business_phone: str = Field(max_length=50)
+    preferred_area_code: str = Field(pattern=r"^\d{3}$")
+    recovery_message: str = Field(min_length=20, max_length=500)
+    timezone: str = Field(default="America/Vancouver", max_length=80)
+    website_url: str | None = Field(default=None, max_length=500)
+    consent_to_text_callers: bool
+    accept_terms: bool
+
+
+class CheckoutExchangeInput(BaseModel):
+    checkout_session_id: str = Field(min_length=10, max_length=255)
+
+
+def _sha256(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _normalize_phone(value: str) -> str:
+    digits = re.sub(r"\D", "", value)
+    if len(digits) == 10:
+        digits = "1" + digits
+    normalized = "+" + digits
+    if not _E164.fullmatch(normalized):
+        raise HTTPException(422, "Enter a valid phone number including country code")
+    return normalized
+
+
+def _plan_for_payment_link(payment_link_id: str | None) -> str | None:
+    mapping = {
+        os.getenv("STRIPE_NEVER_MISS_PAYMENT_LINK_ID", ""): "never_miss",
+        os.getenv("STRIPE_NEVER_MISS_PLUS_PAYMENT_LINK_ID", ""): "never_miss_plus",
+    }
+    return mapping.get(payment_link_id or "")
+
+
+def _verify_stripe_signature(payload: bytes, header: str, secret: str) -> None:
+    values: dict[str, list[str]] = {}
+    for part in header.split(","):
+        key, _, value = part.partition("=")
+        values.setdefault(key, []).append(value)
+    try:
+        timestamp = int(values["t"][0])
+    except (KeyError, ValueError, IndexError) as exc:
+        raise HTTPException(400, "Invalid Stripe signature") from exc
+    if abs(int(time.time()) - timestamp) > 300:
+        raise HTTPException(400, "Expired Stripe signature")
+    signed = f"{timestamp}.".encode() + payload
+    expected = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()
+    if not any(hmac.compare_digest(expected, candidate) for candidate in values.get("v1", [])):
+        raise HTTPException(400, "Invalid Stripe signature")
+
+
+def _issue_token(subscription: ProductSubscription) -> str:
+    token = secrets.token_urlsafe(40)
+    subscription.onboarding_token_hash = _sha256(token)
+    subscription.onboarding_token_expires_at = datetime.now(UTC) + timedelta(hours=24)
+    return token
+
+
+def _fulfill_checkout(session: Session, checkout: dict) -> tuple[ProductSubscription, str | None]:
+    session_id = checkout.get("id")
+    payment_link_id = checkout.get("payment_link")
+    plan = _plan_for_payment_link(payment_link_id)
+    if not session_id or not plan:
+        raise HTTPException(400, "Checkout does not belong to a Never Miss plan")
+    if checkout.get("payment_status") not in {"paid", "no_payment_required"}:
+        raise HTTPException(409, "Payment is not confirmed")
+
+    existing = session.execute(
+        select(ProductSubscription).where(ProductSubscription.stripe_checkout_session_id == session_id)
+    ).scalar_one_or_none()
+    if existing:
+        return existing, None
+
+    details = checkout.get("customer_details") or {}
+    email = details.get("email") or checkout.get("customer_email")
+    if not email:
+        raise HTTPException(400, "Stripe checkout is missing the customer email")
+    token_holder = ProductSubscription(
+        stripe_checkout_session_id=session_id,
+        stripe_customer_id=checkout.get("customer"),
+        stripe_subscription_id=checkout.get("subscription"),
+        stripe_payment_link_id=payment_link_id,
+        plan=plan,
+        status="paid",
+        customer_email=email.lower(),
+        customer_name=details.get("name"),
+        notification_phone=details.get("phone"),
+    )
+    token = _issue_token(token_holder)
+    session.add(token_holder)
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        found = session.execute(
+            select(ProductSubscription).where(ProductSubscription.stripe_checkout_session_id == session_id)
+        ).scalar_one()
+        return found, None
+    session.refresh(token_holder)
+    return token_holder, token
+
+
+def _email_activation_link(subscription: ProductSubscription, token: str) -> None:
+    api_key = os.getenv("RESEND_API_KEY", "")
+    site_url = os.getenv("MARKETING_SITE_URL", "https://www.pacificnorthsystems.com").rstrip("/")
+    if not api_key:
+        return
+    link = f"{site_url}/never-miss/activate?token={token}"
+    httpx.post(
+        "https://api.resend.com/emails",
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        json={
+            "from": os.getenv("RESEND_FROM_EMAIL", "Pacific North Systems <hello@pacificnorthsystems.com>"),
+            "to": [subscription.customer_email],
+            "subject": "Activate your Never Miss service",
+            "html": (
+                "<h1>Your payment is confirmed</h1>"
+                "<p>Complete the short setup to activate your Never Miss phone workflow.</p>"
+                f'<p><a href="{link}">Activate Never Miss</a></p>'
+                "<p>This private link expires in 24 hours.</p>"
+            ),
+        },
+        timeout=5,
+    ).raise_for_status()
+
+
+@router.post("/stripe/webhook", include_in_schema=False)
+async def stripe_webhook(
+    request: Request,
+    stripe_signature: str | None = Header(default=None),
+    session: Session = Depends(get_db_session),
+):
+    secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+    if not secret or not stripe_signature:
+        raise HTTPException(503 if not secret else 400, "Stripe webhook is not configured")
+    raw = await request.body()
+    _verify_stripe_signature(raw, stripe_signature, secret)
+    try:
+        event = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(400, "Invalid JSON") from exc
+    event_id = event.get("id")
+    if not event_id:
+        raise HTTPException(400, "Missing Stripe event ID")
+    if session.execute(select(StripeWebhookEvent).where(StripeWebhookEvent.stripe_event_id == event_id)).scalar_one_or_none():
+        return {"received": True, "duplicate": True}
+
+    event_type = event.get("type", "unknown")
+    obj = (event.get("data") or {}).get("object") or {}
+    token = None
+    subscription = None
+    if event_type in {"checkout.session.completed", "checkout.session.async_payment_succeeded"}:
+        subscription, token = _fulfill_checkout(session, obj)
+    elif event_type in {"customer.subscription.deleted", "customer.subscription.paused", "invoice.payment_failed"}:
+        stripe_subscription_id = obj.get("subscription") if event_type.startswith("invoice.") else obj.get("id")
+        subscription = session.execute(
+            select(ProductSubscription).where(ProductSubscription.stripe_subscription_id == stripe_subscription_id)
+        ).scalar_one_or_none()
+        if subscription:
+            subscription.status = "past_due" if event_type == "invoice.payment_failed" else "cancelled"
+            if subscription.organization_id:
+                config = session.execute(select(ProductConfiguration).where(
+                    ProductConfiguration.organization_id == subscription.organization_id,
+                    ProductConfiguration.product_code == "never_miss",
+                )).scalar_one_or_none()
+                if config:
+                    config.enabled = False
+    elif event_type == "invoice.paid":
+        stripe_subscription_id = obj.get("subscription")
+        subscription = session.execute(
+            select(ProductSubscription).where(ProductSubscription.stripe_subscription_id == stripe_subscription_id)
+        ).scalar_one_or_none()
+        if subscription and subscription.activated_at:
+            subscription.status = "active"
+            if subscription.organization_id:
+                config = session.execute(select(ProductConfiguration).where(
+                    ProductConfiguration.organization_id == subscription.organization_id,
+                    ProductConfiguration.product_code == "never_miss",
+                )).scalar_one_or_none()
+                if config:
+                    config.enabled = True
+
+    session.add(StripeWebhookEvent(
+        stripe_event_id=event_id,
+        event_type=event_type,
+        livemode=bool(event.get("livemode")),
+    ))
+    session.commit()
+    if subscription and token:
+        try:
+            _email_activation_link(subscription, token)
+        except Exception:
+            # Payment fulfillment remains durable; the Stripe redirect is the second delivery path.
+            pass
+    return {"received": True}
+
+
+@router.post("/onboarding/exchange")
+def exchange_checkout_session(
+    payload: CheckoutExchangeInput,
+    session: Session = Depends(get_db_session),
+):
+    # The signed webhook is the authority. Payment Links wait briefly for the
+    # checkout.session.completed webhook before redirecting here, so no broad
+    # Stripe API key is required in our runtime.
+    subscription = session.execute(
+        select(ProductSubscription).where(
+            ProductSubscription.stripe_checkout_session_id == payload.checkout_session_id
+        )
+    ).scalar_one_or_none()
+    if subscription is None:
+        raise HTTPException(409, "Payment confirmation is still arriving. Please try again in a few seconds.")
+    if subscription.status == "active":
+        return {"status": "active", "token": None}
+    token = _issue_token(subscription)
+    session.commit()
+    return {"status": subscription.status, "token": token}
+
+
+def _subscription_for_token(session: Session, token: str) -> ProductSubscription:
+    subscription = session.execute(
+        select(ProductSubscription).where(ProductSubscription.onboarding_token_hash == _sha256(token))
+    ).scalar_one_or_none()
+    if not subscription or not subscription.onboarding_token_expires_at:
+        raise HTTPException(404, "This activation link is invalid")
+    expires = subscription.onboarding_token_expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=UTC)
+    if expires < datetime.now(UTC) and subscription.status != "active":
+        raise HTTPException(410, "This activation link has expired")
+    return subscription
+
+
+@router.get("/onboarding/{token}")
+def onboarding_status(token: str, session: Session = Depends(get_db_session)):
+    subscription = _subscription_for_token(session, token)
+    return {
+        "plan": subscription.plan,
+        "status": subscription.status,
+        "customer_name": subscription.customer_name,
+        "business_name": subscription.business_name,
+        "notification_phone": subscription.notification_phone,
+        "assigned_phone": subscription.assigned_phone,
+    }
+
+
+def _slug(session: Session, business_name: str) -> str:
+    base = re.sub(r"[^a-z0-9]+", "-", business_name.lower()).strip("-")[:90] or "customer"
+    candidate = base
+    suffix = 2
+    while session.execute(select(Organization).where(Organization.slug == candidate)).scalar_one_or_none():
+        candidate = f"{base}-{suffix}"
+        suffix += 1
+    return candidate
+
+
+def _provision_telnyx_number(area_code: str, reference: str) -> tuple[str, str]:
+    if os.getenv("TELNYX_AUTO_PROVISION_ENABLED", "false").lower() != "true":
+        raise RuntimeError("Automatic number provisioning is not enabled")
+    api_key = os.getenv("TELNYX_API_KEY", "")
+    connection_id = os.getenv("TELNYX_CONNECTION_ID", "") or os.getenv("TELNYX_APPLICATION_ID", "")
+    messaging_profile_id = os.getenv("TELNYX_MESSAGING_PROFILE_ID", "")
+    if not all((api_key, connection_id, messaging_profile_id)):
+        raise RuntimeError("Telnyx provisioning credentials are incomplete")
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    search = httpx.get(
+        "https://api.telnyx.com/v2/available_phone_numbers",
+        headers=headers,
+        params={
+            "filter[country_code]": "CA",
+            "filter[national_destination_code]": area_code,
+            "filter[phone_number_type]": "local",
+            "filter[features][]": "sms,voice",
+            "page[size]": 5,
+        },
+        timeout=15,
+    )
+    search.raise_for_status()
+    choices = search.json().get("data") or []
+    if not choices:
+        raise RuntimeError("No phone number is currently available in that area code")
+    phone = choices[0]["phone_number"]
+    order = httpx.post(
+        "https://api.telnyx.com/v2/number_orders",
+        headers=headers,
+        json={
+            "phone_numbers": [{"phone_number": phone}],
+            "connection_id": connection_id,
+            "messaging_profile_id": messaging_profile_id,
+            "customer_reference": reference,
+        },
+        timeout=20,
+    )
+    order.raise_for_status()
+    data = order.json().get("data") or {}
+    return phone, str(data.get("id") or "")
+
+
+@router.post("/onboarding/{token}/activate")
+def activate_subscription(token: str, payload: ActivationInput, session: Session = Depends(get_db_session)):
+    subscription = _subscription_for_token(session, token)
+    if subscription.status == "active":
+        return {"status": "active", "assigned_phone": subscription.assigned_phone, "plan": subscription.plan}
+    if not payload.accept_terms or not payload.consent_to_text_callers:
+        raise HTTPException(422, "Consent and service terms are required")
+    notification_phone = _normalize_phone(payload.notification_phone)
+    existing_phone = _normalize_phone(payload.existing_business_phone)
+
+    subscription.status = "provisioning"
+    subscription.business_name = payload.business_name.strip()
+    subscription.customer_name = payload.contact_name.strip()
+    subscription.notification_phone = notification_phone
+    subscription.existing_phone = existing_phone
+    subscription.onboarding_data_json = payload.model_dump(exclude={"accept_terms"})
+    subscription.last_error = None
+    session.commit()
+
+    try:
+        if subscription.assigned_phone:
+            assigned_phone = subscription.assigned_phone
+            order_id = subscription.telnyx_number_order_id or ""
+        else:
+            assigned_phone, order_id = _provision_telnyx_number(payload.preferred_area_code, f"pns-subscription-{subscription.id}")
+            # Persist the purchased asset before any later database work. A safe
+            # retry must reuse this number instead of purchasing another one.
+            subscription.assigned_phone = assigned_phone
+            subscription.telnyx_number_order_id = order_id
+            session.commit()
+        organization = Organization(name=payload.business_name.strip(), slug=_slug(session, payload.business_name))
+        session.add(organization)
+        session.flush()
+        limits = (50, 100) if subscription.plan == "never_miss" else (250, 500)
+        config = ProductConfiguration(
+            organization_id=organization.id,
+            product_code="never_miss",
+            enabled=True,
+            plan=subscription.plan,
+            business_name=payload.business_name.strip(),
+            business_phone=assigned_phone,
+            notification_phone=notification_phone,
+            recovery_message=payload.recovery_message.strip(),
+            business_hours_json={"timezone": payload.timezone, "existing_business_phone": existing_phone, "website_url": payload.website_url},
+            monthly_call_limit=limits[0],
+            monthly_message_limit=limits[1],
+        )
+        session.add(config)
+        subscription.organization_id = organization.id
+        subscription.status = "active"
+        subscription.activated_at = datetime.now(UTC)
+        session.commit()
+        return {
+            "status": "active",
+            "plan": subscription.plan,
+            "assigned_phone": assigned_phone,
+            "forward_from": existing_phone,
+            "next_step": "Forward unanswered calls from your business number to your new Never Miss number, then place one unanswered test call.",
+        }
+    except Exception as exc:
+        session.rollback()
+        subscription = _subscription_for_token(session, token)
+        subscription.status = "failed"
+        subscription.last_error = str(exc)[:1000]
+        session.commit()
+        raise HTTPException(503, "We saved your setup, but automatic phone activation did not finish. Please retry shortly.") from exc

@@ -2,7 +2,9 @@
 node_modules/
 .pnpm-store/
 .next/
+.next-stale-*/
 coverage/
+*.tsbuildinfo
 
 # Python
 __pycache__/
@@ -19,6 +21,7 @@ __pycache__/
 # Build artifacts
 version.json
 *.log
+backups/
 
 # IDE
 .vscode/*.code-workspace

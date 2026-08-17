@@ -20,7 +20,7 @@ def test_discovery_ignores_gateway_fallback_instead_of_creating_blank_lead():
     assert companies == []
 
 
-def test_discovery_requests_fresh_results_and_excludes_existing_names():
+def test_discovery_uses_cache_and_excludes_existing_names():
     gateway = Mock()
     gateway.chat = AsyncMock(return_value=SimpleNamespace(
         model="deepseek-v4-flash",
@@ -45,6 +45,6 @@ def test_discovery_requests_fresh_results_and_excludes_existing_names():
     messages, config = gateway.chat.await_args.args
     assert config.feature == "discovery"
     assert config.organization_id == 7
-    assert config.bypass_cache is True
+    assert config.bypass_cache is False
     assert "Existing Builder Ltd." in messages[-1].content
     assert "exactly 3" in messages[-1].content

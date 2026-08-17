@@ -6,6 +6,8 @@ import {
   makeCall as wrtcMakeCall,
   hangupCall as wrtcHangup,
   disconnect as wrtcDisconnect,
+  answerIncomingCall as wrtcAnswerIncoming,
+  declineIncomingCall as wrtcDeclineIncoming,
   muteCall,
   unmuteCall,
   holdCall as wrtcHold,
@@ -17,8 +19,11 @@ import {
   getMicrophoneStream,
   getRemoteStream,
   onCallStateChange,
+  onIncomingCall,
+  onIncomingCallEnded,
   type WrtcCallState,
   type WrtcDiagnostics,
+  type IncomingCallInfo,
 } from "@/lib/webrtc-client";
 import { useTranscription, type TranscriptionState } from "@/lib/transcription";
 
@@ -47,8 +52,11 @@ export type ActiveCall = {
 
 type TelephonyContextValue = {
   call: ActiveCall;
+  incomingCall: IncomingCallInfo | null;
   startCall: (companyId: number, phoneNumber: string, companyName?: string, contactName?: string) => Promise<void>;
   endCall: () => Promise<void>;
+  answerIncomingCall: () => Promise<void>;
+  declineIncomingCall: () => Promise<void>;
   toggleMute: () => Promise<void>;
   toggleHold: () => Promise<void>;
   toggleRecording: () => Promise<void>;
@@ -94,10 +102,12 @@ export function TelephonyProvider({ children }: { children: ReactNode }) {
   const [isMinimized, setMinimized] = useState(false);
   const [diagnostics, setDiagnostics] = useState<WrtcDiagnostics>(getDiagnostics());
   const [transcriptId, setTranscriptId] = useState<number | null>(null);
+  const [incomingCall, setIncomingCall] = useState<IncomingCallInfo | null>(null);
   const tokenRef = useRef<string | null>(null);
   const wrtcCallIdRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const prevStateRef = useRef<CallState>("idle");
+  const registeredRef = useRef(false);
 
   // ── Transcription hook ──
   const transcription = useTranscription();
@@ -115,7 +125,49 @@ export function TelephonyProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // ── WebRTC init ──
+  // ── Auto-register WebRTC on mount ──
+  useEffect(() => {
+    let cancelled = false;
+    async function register() {
+      if (registeredRef.current) return;
+      try {
+        setCall(c => ({ ...c, state: "registering" }));
+        const r = await fetch("/api/telephony/register", { method: "POST" });
+        if (!r.ok) throw new Error(`Registration failed (${r.status})`);
+        const d = await r.json();
+        if (!d.token) throw new Error("No token in registration response");
+        tokenRef.current = d.token;
+        const decoded = atob(d.token);
+        const colonIdx = decoded.indexOf(":");
+        if (colonIdx === -1) throw new Error("Invalid token format");
+        const login = decoded.slice(0, colonIdx);
+        const password = decoded.slice(colonIdx + 1);
+        await initWebRTC(login, password);
+        if (!cancelled) {
+          registeredRef.current = true;
+          setCall(c => ({ ...c, state: "idle", registered: true }));
+        }
+      } catch {
+        if (!cancelled) {
+          setCall(c => ({ ...c, state: "idle", registered: false }));
+        }
+      }
+    }
+    register();
+    return () => { cancelled = true; };
+  }, []);
+
+  // ── Incoming call listeners ──
+  useEffect(() => {
+    onIncomingCall((info) => {
+      setIncomingCall(info);
+      setCall(c => ({ ...c, state: "ringing" }));
+    });
+    onIncomingCallEnded(() => {
+      setIncomingCall(null);
+      setCall(c => ({ ...c, state: "idle" }));
+    });
+  }, []);
 
   useEffect(() => {
     // Subscribe to call state changes from WebRTC client
@@ -243,6 +295,20 @@ export function TelephonyProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const answerIncoming = useCallback(async () => {
+    try {
+      await wrtcAnswerIncoming();
+      setIncomingCall(prev => prev ? { ...prev, state: "answered" } : null);
+    } catch (e: unknown) {
+      setCall(c => ({ ...c, error: e instanceof Error ? e.message : "Failed to answer call" }));
+    }
+  }, []);
+
+  const declineIncoming = useCallback(async () => {
+    await wrtcDeclineIncoming();
+    setIncomingCall(prev => prev ? { ...prev, state: "declined" } : null);
+  }, []);
+
   const endCall = useCallback(async () => {
     await wrtcHangup();
     if (tokenRef.current) {
@@ -311,7 +377,7 @@ export function TelephonyProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <TelephonyContext.Provider value={{ call, startCall, endCall, toggleMute, toggleHold, toggleRecording, resetCall, setMinimized, isMinimized, diagnostics, setVolume, setSpeaker, transcription, transcriptId }}>
+    <TelephonyContext.Provider value={{ call, incomingCall, startCall, endCall, answerIncomingCall: answerIncoming, declineIncomingCall: declineIncoming, toggleMute, toggleHold, toggleRecording, resetCall, setMinimized, isMinimized, diagnostics, setVolume, setSpeaker, transcription, transcriptId }}>
       {children}
     </TelephonyContext.Provider>
   );

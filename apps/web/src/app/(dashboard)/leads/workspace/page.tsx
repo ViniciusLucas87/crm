@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { Search, ArrowRight, Building2, CheckCircle, XCircle, Archive, FlaskConical, Sparkles } from "lucide-react";
+import { Search, ArrowRight, Building2, CheckCircle, XCircle, Archive, FlaskConical, Sparkles, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,12 @@ export default function LeadWorkspacePage() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkError, setBulkError] = useState("");
   const [bulkNotice, setBulkNotice] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const [createBusy, setCreateBusy] = useState(false);
+  const [createError, setCreateError] = useState("");
+  const [newLead, setNewLead] = useState({
+    name: "", website: "", industry: "", city: "", province: "BC", description: "",
+  });
 
   const fetchLeads = useCallback(() => {
     const params = new URLSearchParams();
@@ -110,6 +116,33 @@ export default function LeadWorkspacePage() {
     }
   };
 
+  const createLead = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCreateBusy(true);
+    setCreateError("");
+    try {
+      const response = await fetch("/api/leads/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...newLead,
+          country: "Canada",
+          source: "manual_research",
+          tags: "manual-research",
+        }),
+      });
+      if (!response.ok) throw new Error(`Create lead failed (${response.status})`);
+      setNewLead({ name: "", website: "", industry: "", city: "", province: "BC", description: "" });
+      setAddOpen(false);
+      setBulkNotice("Lead added to the active pipeline.");
+      fetchLeads();
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : "Create lead failed. Please retry.");
+    } finally {
+      setCreateBusy(false);
+    }
+  };
+
   const statusLabel = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
   const enrichmentBadge = (l: Lead) => {
@@ -131,6 +164,9 @@ export default function LeadWorkspacePage() {
           <p className="mt-1 text-sm text-slate-400">Select companies to research, approve, reject, or archive. Every change is saved automatically.</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="primary" size="sm" onClick={() => setAddOpen(open => !open)}>
+            <Plus className="mr-1 h-3.5 w-3.5" />Add Lead
+          </Button>
           {selected.size > 0 && (
             <>
               <Button variant="primary" size="sm" onClick={() => bulkAction("approve")}><CheckCircle className="mr-1 h-3.5 w-3.5" />Approve ({selected.size})</Button>
@@ -146,6 +182,32 @@ export default function LeadWorkspacePage() {
       {bulkError && <div role="alert" className="rounded-lg border border-red-400/20 bg-red-400/5 px-3 py-2"><p className="text-sm font-medium text-red-300">That action was not completed</p><p className="mt-0.5 text-xs text-slate-400">No records were removed. Please try again.</p></div>}
       {bulkNotice && <p role="status" className="rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-sm text-emerald-300">{bulkNotice}</p>}
       {selected.size > 0 && !bulkBusy && <p className="text-xs text-cyan-300">{selected.size} selected. Choose an action above; nothing happens until you click a button.</p>}
+
+      {addOpen && (
+        <Card>
+          <form className="space-y-3" onSubmit={createLead}>
+            <div>
+              <h3 className="text-sm font-semibold text-white">Add a researched lead</h3>
+              <p className="text-xs text-slate-500">Start with verified public company information. Research and outreach remain separate approval steps.</p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <input required aria-label="Company name" placeholder="Company name" value={newLead.name} onChange={event => setNewLead({ ...newLead, name: event.target.value })} className="rounded-lg border border-white/10 bg-slate-800/50 px-3 py-2 text-sm text-white placeholder:text-slate-500" />
+              <input required aria-label="Website" type="url" placeholder="https://example.com" value={newLead.website} onChange={event => setNewLead({ ...newLead, website: event.target.value })} className="rounded-lg border border-white/10 bg-slate-800/50 px-3 py-2 text-sm text-white placeholder:text-slate-500" />
+              <input aria-label="Industry" placeholder="Industry" value={newLead.industry} onChange={event => setNewLead({ ...newLead, industry: event.target.value })} className="rounded-lg border border-white/10 bg-slate-800/50 px-3 py-2 text-sm text-white placeholder:text-slate-500" />
+              <div className="grid grid-cols-[1fr_100px] gap-2">
+                <input aria-label="City" placeholder="City" value={newLead.city} onChange={event => setNewLead({ ...newLead, city: event.target.value })} className="rounded-lg border border-white/10 bg-slate-800/50 px-3 py-2 text-sm text-white placeholder:text-slate-500" />
+                <input aria-label="Province" placeholder="Province" value={newLead.province} onChange={event => setNewLead({ ...newLead, province: event.target.value })} className="rounded-lg border border-white/10 bg-slate-800/50 px-3 py-2 text-sm text-white placeholder:text-slate-500" />
+              </div>
+            </div>
+            <textarea aria-label="Research notes" placeholder="Why this company may be a fit" value={newLead.description} onChange={event => setNewLead({ ...newLead, description: event.target.value })} className="min-h-20 w-full rounded-lg border border-white/10 bg-slate-800/50 px-3 py-2 text-sm text-white placeholder:text-slate-500" />
+            {createError && <p role="alert" className="text-xs text-red-300">{createError}</p>}
+            <div className="flex gap-2">
+              <Button type="submit" variant="primary" disabled={createBusy}>{createBusy ? "Adding…" : "Add to Pipeline"}</Button>
+              <Button type="button" variant="secondary" onClick={() => setAddOpen(false)}>Cancel</Button>
+            </div>
+          </form>
+        </Card>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
