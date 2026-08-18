@@ -38,11 +38,31 @@ export default function PrivacyPage() {
                 <li>Complete the Business Automation Assessment</li>
                 <li>Contact us via email at {siteConfig.contact.email}</li>
                 <li>Call us at {siteConfig.contact.phone}</li>
+                <li>Purchase, activate, or use Never Miss</li>
               </ul>
               <p className="mt-3">
                 This may include your name, email address, phone number, company
                 name, industry, and the operational information you choose to
                 share.
+              </p>
+            </Section>
+
+            <Section title="Never Miss Call and Message Data">
+              <p>
+                When a customer uses Never Miss, we process the customer&apos;s
+                business settings and limited call and message records needed to
+                detect an unanswered call, send the configured reply, organize a
+                callback, prevent abuse, and provide service history. This can
+                include telephone numbers, timestamps, delivery status, message
+                content, opt-out status, and technical event identifiers.
+              </p>
+              <p className="mt-3">
+                We use Stripe for billing, Telnyx for telephone and messaging
+                infrastructure, Resend for service email, and our hosting and
+                database providers to operate the product. We do not sell this
+                information. Customers may request access or deletion, subject
+                to legal, fraud-prevention, billing, and operational retention
+                requirements.
               </p>
             </Section>
 

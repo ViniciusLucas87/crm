@@ -2,7 +2,7 @@
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, CreditCard, LoaderCircle, PauseCircle, Save } from "lucide-react";
+import { CheckCircle2, CreditCard, Headphones, LoaderCircle, PauseCircle, Save } from "lucide-react";
 import { Container } from "@/components/ui/container";
 
 type Account = {
@@ -18,6 +18,13 @@ type Account = {
   timezone?: string;
   website_url?: string;
   billing_portal_url?: string;
+  support_email: string;
+  calls_this_month: number;
+  messages_this_month: number;
+  monthly_call_limit: number;
+  monthly_message_limit: number;
+  last_call_at?: string;
+  setup_ready: boolean;
 };
 
 export default function NeverMissManagePage() {
@@ -127,6 +134,22 @@ function Manager() {
               <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm text-white/60">{account.plan === "never_miss_plus" ? "Never Miss Plus" : "Never Miss"}</p><h2 className="mt-1 text-3xl font-semibold">{account.business_name}</h2></div><span className={`rounded-full px-4 py-2 text-sm font-semibold ${account.status === "active" ? "bg-emerald-300 text-emerald-950" : "bg-amber-200 text-amber-950"}`}>{account.status}</span></div>
               <p className="mt-6 text-sm text-white/60">Private routing number</p><p className="mt-1 text-2xl font-semibold">{account.assigned_phone || "Not provisioned"}</p>
             </section>
+            <section className="rounded-3xl bg-white p-7 shadow-xl">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div><h2 className="text-2xl font-semibold">Service check</h2><p className="mt-2 text-slate-600">A simple view of what Never Miss can see right now.</p></div>
+                <span className={`rounded-full px-4 py-2 text-sm font-semibold ${account.setup_ready ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}`}>{account.setup_ready ? "Ready for a test call" : "Setup needs attention"}</span>
+              </div>
+              <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                <StatusCard label="Calls detected this month" value={account.calls_this_month} />
+                <StatusCard label="Automatic texts sent" value={account.messages_this_month} />
+                <StatusCard label="Last call detected" value={account.last_call_at ? new Date(account.last_call_at).toLocaleString() : "No call yet"} />
+              </div>
+              <div className="mt-5 rounded-2xl bg-slate-50 p-5 text-sm leading-6 text-slate-700">
+                <p className="font-semibold text-[#071729]">Finish your connection test</p>
+                <ol className="mt-2 space-y-1"><li>1. Call your normal business number from another phone.</li><li>2. Let it ring without answering until the call ends.</li><li>3. Wait for the automatic text, reply to it, then refresh this page.</li></ol>
+                <p className="mt-3 text-slate-500">If no call appears here, unanswered-call forwarding is not connected yet.</p>
+              </div>
+            </section>
             <form onSubmit={save} className="space-y-5 rounded-3xl bg-white p-7 shadow-xl">
               <h2 className="text-2xl font-semibold">Service settings</h2>
               <Field label="Business number customers call" name="existing_business_phone" defaultValue={account.existing_business_phone} />
@@ -138,9 +161,12 @@ function Manager() {
             </form>
             <section className="rounded-3xl bg-white p-7 shadow-xl">
               <h2 className="text-2xl font-semibold">Billing and cancellation</h2>
-              <p className="mt-2 text-slate-600">Update your card, download invoices, change your plan, or cancel securely through Stripe.</p>
+              <p className="mt-2 text-slate-600">Update your card, download invoices, or cancel securely through Stripe.</p>
               {account.billing_portal_url ? <a href={account.billing_portal_url} target="_blank" rel="noreferrer" className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 px-5 font-semibold hover:bg-slate-50"><CreditCard className="h-5 w-5" />Manage billing with Stripe</a> : <p className="mt-5 rounded-xl bg-amber-50 p-4 text-amber-900">Online billing management is being prepared. Contact hello@pacificnorthsystems.com for immediate help.</p>}
               <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5"><div className="flex gap-2 font-semibold text-amber-950"><PauseCircle className="h-5 w-5" />If you cancel</div><p className="mt-2 text-sm leading-6 text-amber-900">Automatic replies stop after Stripe confirms the cancellation. Your call history stays available. Remove unanswered call forwarding from your phone or carrier settings so callers return to your normal voicemail.</p></div>
+            </section>
+            <section className="rounded-3xl border border-cyan-200 bg-cyan-50 p-7">
+              <div className="flex gap-3"><Headphones className="mt-1 h-6 w-6 text-[#0b6575]" /><div><h2 className="text-xl font-semibold">Need help?</h2><p className="mt-2 text-slate-700">Send us a message and include your business name. We will help with forwarding, voicemail, testing, or billing.</p><a className="mt-4 inline-flex min-h-12 items-center rounded-xl bg-[#071729] px-5 font-semibold text-white" href={`mailto:${account.support_email}?subject=Never%20Miss%20support%20for%20${encodeURIComponent(account.business_name || "my business")}`}>Email support</a></div></div>
             </section>
           </div>
         ) : null}
@@ -151,4 +177,8 @@ function Manager() {
 
 function Field({ label, name, ...props }: { label: string; name: string } & React.ComponentPropsWithoutRef<"input">) {
   return <label className="block"><span className="font-semibold">{label}</span><input name={name} {...props} className="mt-2 min-h-12 w-full rounded-xl border border-slate-300 px-4 py-3" /></label>;
+}
+
+function StatusCard({ label, value }: { label: string; value: string | number }) {
+  return <div className="rounded-2xl border border-slate-200 p-4"><p className="text-sm text-slate-500">{label}</p><p className="mt-2 text-xl font-semibold text-[#071729]">{value}</p></div>;
 }

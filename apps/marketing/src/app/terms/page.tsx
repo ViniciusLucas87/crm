@@ -74,7 +74,26 @@ export default function TermsPage() {
             Columbia.
           </p>
 
-          <h2>8. Contact</h2>
+          <h2>8. Never Miss Subscription Service</h2>
+          <p>
+            Never Miss responds to eligible unanswered calls with an automated
+            text and records callback information. Customers remain responsible
+            for configuring unanswered-call forwarding with their carrier,
+            keeping their reply message accurate, obtaining any consent required
+            for their use, and monitoring customer follow-up. Never Miss is not
+            an emergency service and must not be used for urgent medical, safety,
+            or emergency communications.
+          </p>
+          <p>
+            Message delivery and call forwarding depend on telephone carriers
+            and third-party networks and cannot be guaranteed. Plan usage limits
+            apply. We may pause abusive, unlawful, fraudulent, or unusually high
+            traffic to protect customers and the service. Customers may cancel
+            through the billing portal. After cancellation, automatic replies
+            stop and the customer must remove call forwarding from their carrier.
+          </p>
+
+          <h2>9. Contact</h2>
           <p>
             Questions about these terms? Contact us at{" "}
             <Link

@@ -36,6 +36,12 @@ type CapturedLead = {
   created_at: string;
 };
 
+type PilotAccount = {
+  id: number; business_name: string; customer_email: string; plan: string; status: string;
+  assigned_phone: string | null; existing_phone: string | null; setup_ready: boolean;
+  calls: number; messages_sent: number; last_call_at: string | null; last_error: string | null;
+};
+
 const emptyConfig: ProductConfig = {
   enabled: false,
   plan: "never_miss",
@@ -58,6 +64,7 @@ export function NeverMissScreen() {
   const [config, setConfig] = useState<ProductConfig>(emptyConfig);
   const [summary, setSummary] = useState<NeverMissSummary | null>(null);
   const [leads, setLeads] = useState<CapturedLead[]>([]);
+  const [testers, setTesters] = useState<PilotAccount[]>([]);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -68,14 +75,16 @@ export function NeverMissScreen() {
   const load = useCallback(async () => {
     setError("");
     try {
-      const [nextConfig, nextSummary, inbox] = await Promise.all([
+      const [nextConfig, nextSummary, inbox, pilot] = await Promise.all([
         api<ProductConfig>("/api/products/never_miss/configuration"),
         api<NeverMissSummary>("/api/products/never_miss/summary"),
         api<{ items: CapturedLead[] }>("/api/products/never_miss_plus/inbox"),
+        api<{ items: PilotAccount[] }>("/api/products/never_miss/testers").catch(() => ({ items: [] })),
       ]);
       setConfig(nextConfig);
       setSummary(nextSummary);
       setLeads(inbox.items);
+      setTesters(pilot.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : "The product workspace is unavailable");
     } finally {
@@ -151,6 +160,19 @@ export function NeverMissScreen() {
       </div>
 
       {(notice || error) && <div className={`rounded-xl border px-4 py-3 text-sm ${error ? "border-amber-400/30 bg-amber-950/20 text-amber-200" : "border-cyan-400/30 bg-cyan-950/20 text-cyan-100"}`}>{error || notice}</div>}
+
+      <section className="space-y-4">
+        <div className="flex items-center gap-3"><PhoneMissed className="text-cyan-300" /><div><h2 className="text-xl font-semibold text-white">Pilot accounts</h2><p className="text-sm text-slate-400">See who finished setup and whether real calls and replies are reaching the service.</p></div></div>
+        <div className="overflow-x-auto rounded-2xl border border-white/10">
+          <table className="w-full min-w-[850px] text-left text-sm">
+            <thead className="bg-white/5 text-slate-400"><tr><th className="p-4">Customer</th><th className="p-4">Service</th><th className="p-4">Connection</th><th className="p-4">Calls</th><th className="p-4">Texts</th><th className="p-4">Last activity</th></tr></thead>
+            <tbody className="divide-y divide-white/10">
+              {testers.map((tester) => <tr key={tester.id} className="text-slate-200"><td className="p-4"><p className="font-semibold text-white">{tester.business_name}</p><p className="text-xs text-slate-500">{tester.customer_email}</p></td><td className="p-4"><p>{tester.plan === "never_miss_plus" ? "Never Miss Plus" : "Never Miss"}</p><p className="text-xs text-slate-500">{tester.status}</p></td><td className="p-4"><span className={`rounded-full px-3 py-1 text-xs font-semibold ${tester.setup_ready ? "bg-emerald-400/15 text-emerald-200" : "bg-amber-400/15 text-amber-200"}`}>{tester.setup_ready ? "Ready" : "Needs setup"}</span>{tester.last_error ? <p className="mt-2 max-w-xs text-xs text-amber-200">{tester.last_error}</p> : null}</td><td className="p-4">{tester.calls}</td><td className="p-4">{tester.messages_sent}</td><td className="p-4 text-slate-400">{tester.last_call_at ? new Date(tester.last_call_at).toLocaleString() : "No call yet"}</td></tr>)}
+              {testers.length === 0 ? <tr><td colSpan={6} className="p-6 text-center text-slate-400">No pilot accounts yet.</td></tr> : null}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">

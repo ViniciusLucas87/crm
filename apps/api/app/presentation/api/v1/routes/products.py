@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.infrastructure.auth.clerk import AuthContext, require_permission
-from app.infrastructure.db.models import Call, LeadCaptureRecord, ProductConfiguration, Task
+from app.infrastructure.db.models import Call, LeadCaptureRecord, ProductConfiguration, ProductSubscription, Task
 from app.infrastructure.db.session import get_db_session
 
 router = APIRouter(prefix="/products")
@@ -174,6 +174,47 @@ def never_miss_summary(
             for call in sorted(missed, key=lambda item: item.created_at, reverse=True)[:20]
         ],
     }
+
+
+@router.get("/never_miss/testers")
+def never_miss_testers(
+    ctx: AuthContext = Depends(require_permission("companies:read")),
+    session: Session = Depends(get_db_session),
+):
+    """Private operator view for a controlled Never Miss pilot."""
+    if ctx.role != "admin":
+        raise HTTPException(403, "Administrator access is required")
+    subscriptions = session.execute(
+        select(ProductSubscription).order_by(ProductSubscription.created_at.desc()).limit(100)
+    ).scalars().all()
+    items = []
+    for subscription in subscriptions:
+        calls = []
+        config = None
+        if subscription.organization_id:
+            calls = session.execute(
+                select(Call).where(Call.organization_id == subscription.organization_id).order_by(Call.created_at.desc())
+            ).scalars().all()
+            config = session.execute(select(ProductConfiguration).where(
+                ProductConfiguration.organization_id == subscription.organization_id,
+                ProductConfiguration.product_code == "never_miss",
+            )).scalar_one_or_none()
+        items.append({
+            "id": subscription.id,
+            "business_name": subscription.business_name or subscription.customer_name or "Setup not completed",
+            "customer_email": subscription.customer_email,
+            "plan": subscription.plan,
+            "status": subscription.status,
+            "assigned_phone": subscription.assigned_phone,
+            "existing_phone": subscription.existing_phone,
+            "setup_ready": bool(subscription.assigned_phone and subscription.existing_phone and config and config.enabled),
+            "calls": len(calls),
+            "messages_sent": sum(1 for call in calls if call.sms_sent_at is not None),
+            "last_call_at": calls[0].created_at.isoformat() if calls else None,
+            "last_error": subscription.last_error,
+            "created_at": subscription.created_at.isoformat(),
+        })
+    return {"items": items, "total": len(items)}
 
 
 @router.post("/never_miss_plus/intake")

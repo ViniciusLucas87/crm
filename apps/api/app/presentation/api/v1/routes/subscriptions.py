@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.infrastructure.db.models import (
     Organization,
+    Call,
     ProductConfiguration,
     ProductSubscription,
     StripeWebhookEvent,
@@ -257,6 +258,21 @@ def _management_payload(session: Session, subscription: ProductSubscription) -> 
             ProductConfiguration.product_code == "never_miss",
         )).scalar_one_or_none()
     settings = config.business_hours_json or {} if config else {}
+    month_start = datetime.now(UTC).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    calls_this_month = 0
+    messages_this_month = 0
+    last_call_at = None
+    if subscription.organization_id:
+        calls = session.execute(
+            select(Call).where(
+                Call.organization_id == subscription.organization_id,
+                Call.direction == "inbound",
+                Call.created_at >= month_start,
+            ).order_by(Call.created_at.desc())
+        ).scalars().all()
+        calls_this_month = len(calls)
+        messages_this_month = sum(1 for call in calls if call.sms_sent_at is not None)
+        last_call_at = calls[0].created_at.isoformat() if calls else None
     return {
         "plan": subscription.plan,
         "status": subscription.status,
@@ -270,7 +286,37 @@ def _management_payload(session: Session, subscription: ProductSubscription) -> 
         "timezone": settings.get("timezone"),
         "website_url": settings.get("website_url"),
         "billing_portal_url": os.getenv("STRIPE_CUSTOMER_PORTAL_URL", ""),
+        "support_email": os.getenv("SUPPORT_EMAIL", "hello@pacificnorthsystems.com"),
+        "calls_this_month": calls_this_month,
+        "messages_this_month": messages_this_month,
+        "monthly_call_limit": config.monthly_call_limit if config else 0,
+        "monthly_message_limit": config.monthly_message_limit if config else 0,
+        "last_call_at": last_call_at,
+        "setup_ready": bool(subscription.assigned_phone and subscription.existing_phone and config and config.enabled),
     }
+
+
+def _email_cancellation_instructions(subscription: ProductSubscription) -> None:
+    api_key = os.getenv("RESEND_API_KEY", "")
+    if not api_key:
+        return
+    site_url = os.getenv("MARKETING_SITE_URL", "https://www.pacificnorthsystems.com").rstrip("/")
+    httpx.post(
+        "https://api.resend.com/emails",
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        json={
+            "from": os.getenv("RESEND_FROM_EMAIL", "Pacific North Systems <hello@pacificnorthsystems.com>"),
+            "to": [subscription.customer_email],
+            "subject": "Your Never Miss service has been cancelled",
+            "html": (
+                "<h1>Your Never Miss subscription is cancelled</h1>"
+                "<p>Automatic missed-call replies have been turned off.</p>"
+                "<p><strong>Important:</strong> remove unanswered-call forwarding from your phone or carrier account so unanswered callers return to your normal voicemail.</p>"
+                f'<p>Your service history is retained. <a href="{site_url}/never-miss/manage">Open your account</a> if you need your records or support.</p>'
+            ),
+        },
+        timeout=5,
+    ).raise_for_status()
 
 
 @router.post("/stripe/webhook", include_in_schema=False)
@@ -314,6 +360,27 @@ async def stripe_webhook(
                 )).scalar_one_or_none()
                 if config:
                     config.enabled = False
+    elif event_type == "customer.subscription.updated":
+        subscription = session.execute(
+            select(ProductSubscription).where(ProductSubscription.stripe_subscription_id == obj.get("id"))
+        ).scalar_one_or_none()
+        if subscription:
+            stripe_status = str(obj.get("status") or "")
+            subscription.status = {
+                "active": "active",
+                "trialing": "active",
+                "past_due": "past_due",
+                "unpaid": "past_due",
+                "canceled": "cancelled",
+                "paused": "cancelled",
+            }.get(stripe_status, subscription.status)
+            if subscription.organization_id:
+                config = session.execute(select(ProductConfiguration).where(
+                    ProductConfiguration.organization_id == subscription.organization_id,
+                    ProductConfiguration.product_code == "never_miss",
+                )).scalar_one_or_none()
+                if config:
+                    config.enabled = subscription.status == "active"
     elif event_type == "invoice.paid":
         stripe_subscription_id = obj.get("subscription")
         subscription = session.execute(
@@ -335,6 +402,11 @@ async def stripe_webhook(
         livemode=bool(event.get("livemode")),
     ))
     session.commit()
+    if event_type == "customer.subscription.deleted" and subscription:
+        try:
+            _email_cancellation_instructions(subscription)
+        except Exception:
+            pass
     if subscription and token:
         try:
             _email_activation_link(subscription, token)

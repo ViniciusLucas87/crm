@@ -191,6 +191,32 @@ def test_cancellation_webhook_disables_service_but_keeps_customer_record(client,
     assert status.json()["assigned_phone"] == "+16045550999"
 
 
+def test_subscription_update_reconciles_billing_state(client, monkeypatch):
+    assert _post_checkout_webhook(client, monkeypatch).status_code == 200
+    secret = "whsec_test"
+    body = json.dumps({
+        "id": "evt_subscription_updated_001",
+        "type": "customer.subscription.updated",
+        "livemode": False,
+        "data": {"object": {"id": CHECKOUT["subscription"], "status": "past_due"}},
+    }).encode()
+    timestamp = int(time.time())
+    signature = hmac.new(secret.encode(), f"{timestamp}.".encode() + body, hashlib.sha256).hexdigest()
+    response = client.post(
+        "/api/v1/subscriptions/stripe/webhook",
+        content=body,
+        headers={"Content-Type": "application/json", "Stripe-Signature": f"t={timestamp},v1={signature}"},
+    )
+    assert response.status_code == 200
+    from app.infrastructure.db.models import ProductSubscription
+    from app.infrastructure.db.session import SessionLocal
+
+    session = SessionLocal()
+    subscription = session.query(ProductSubscription).filter_by(stripe_subscription_id=CHECKOUT["subscription"]).one()
+    assert subscription.status == "past_due"
+    session.close()
+
+
 def test_plus_plan_uses_the_same_reliable_onboarding(client, monkeypatch):
     plus_checkout = {
         **CHECKOUT,
