@@ -49,7 +49,7 @@ class CheckoutExchangeInput(BaseModel):
 
 
 class ManagementLinkInput(BaseModel):
-    email: str = Field(min_length=5, max_length=255)
+    email: str = Field(min_length=5, max_length=255, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 class ManagementUpdateInput(BaseModel):
@@ -117,6 +117,29 @@ def _issue_management_token(subscription: ProductSubscription) -> str:
     subscription.management_token_hash = _sha256(token)
     subscription.management_token_expires_at = datetime.now(UTC) + timedelta(minutes=30)
     return token
+
+
+def _allow_management_link_request(email: str) -> bool:
+    """Apply global and per-email limits before any database lookup or email delivery."""
+    redis_url = os.getenv("REDIS_URL", "")
+    if not redis_url:
+        return os.getenv("PNS_ENV", "development").lower() != "production"
+    try:
+        import redis
+
+        client = redis.from_url(redis_url, socket_connect_timeout=2, socket_timeout=2)
+        email_key = f"security:never-miss:manage-email:{_sha256(email)}"
+        global_key = "security:never-miss:manage-global"
+        pipeline = client.pipeline(transaction=True)
+        pipeline.incr(email_key)
+        pipeline.expire(email_key, 3600, nx=True)
+        pipeline.incr(global_key)
+        pipeline.expire(global_key, 60, nx=True)
+        email_count, _, global_count, _ = pipeline.execute()
+        return int(email_count) <= 3 and int(global_count) <= 120
+    except Exception:
+        # In production, an unavailable guard must not turn into an unlimited email endpoint.
+        return os.getenv("PNS_ENV", "development").lower() != "production"
 
 
 def _fulfill_checkout(session: Session, checkout: dict) -> tuple[ProductSubscription, str | None]:
@@ -345,9 +368,12 @@ def exchange_checkout_session(
 @router.post("/manage/request-link", status_code=202)
 def request_management_link(payload: ManagementLinkInput, session: Session = Depends(get_db_session)):
     # Always return the same response so this endpoint cannot be used to discover customers.
+    email = payload.email.strip().lower()
+    if not _allow_management_link_request(email):
+        raise HTTPException(429, "Too many requests. Please wait before requesting another link.", headers={"Retry-After": "3600"})
     subscription = session.execute(
         select(ProductSubscription)
-        .where(ProductSubscription.customer_email == payload.email.strip().lower())
+        .where(ProductSubscription.customer_email == email)
         .order_by(
             case((ProductSubscription.status == "active", 0), (ProductSubscription.status == "paid", 1), else_=2),
             ProductSubscription.created_at.desc(),

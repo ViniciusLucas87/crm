@@ -221,3 +221,25 @@ def test_stripe_webhook_fails_closed_without_signature(client, monkeypatch):
         headers={"Content-Type": "application/json"},
     )
     assert response.status_code == 400
+
+
+def test_management_link_request_does_not_reveal_customer_existence(client, monkeypatch):
+    monkeypatch.setattr(
+        "app.presentation.api.v1.routes.subscriptions._allow_management_link_request", lambda email: True
+    )
+    known = client.post("/api/v1/subscriptions/manage/request-link", json={"email": "owner@example.ca"})
+    unknown = client.post("/api/v1/subscriptions/manage/request-link", json={"email": "nobody@example.ca"})
+    assert known.status_code == 202
+    assert unknown.status_code == 202
+    assert known.json() == unknown.json()
+
+
+def test_management_link_request_rejects_invalid_email_and_rate_limit(client, monkeypatch):
+    invalid = client.post("/api/v1/subscriptions/manage/request-link", json={"email": "not-an-email"})
+    assert invalid.status_code == 422
+    monkeypatch.setattr(
+        "app.presentation.api.v1.routes.subscriptions._allow_management_link_request", lambda email: False
+    )
+    blocked = client.post("/api/v1/subscriptions/manage/request-link", json={"email": "owner@example.ca"})
+    assert blocked.status_code == 429
+    assert blocked.headers["retry-after"] == "3600"
