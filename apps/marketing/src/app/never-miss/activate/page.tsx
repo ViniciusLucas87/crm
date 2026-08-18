@@ -2,6 +2,7 @@
 
 import { ComponentPropsWithoutRef, FormEvent, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { CheckCircle2, LoaderCircle, PhoneCall } from "lucide-react";
 import { Container } from "@/components/ui/container";
 
@@ -138,8 +139,29 @@ function ActivationForm() {
               <p className="mt-3 text-sm text-white/60">Do not advertise this number. Customers continue calling {activated.forward_from || "your existing business number"}.</p>
               <div className="mt-7 rounded-2xl bg-white/10 p-5">
                 <p className="font-semibold">Connect unanswered calls</p>
-                <ol className="mt-3 space-y-2 text-white/75"><li>1. Open call forwarding settings or contact your phone carrier.</li><li>2. Ask to forward unanswered calls only to the private routing line above.</li><li>3. Call your normal business number, do not answer, and confirm the automatic text arrives.</li></ol>
+                <ol className="mt-3 space-y-2 text-white/75"><li>1. Choose the instructions below that match your phone.</li><li>2. Forward unanswered calls only to the private routing line above.</li><li>3. Call your normal business number from another phone, do not answer, and wait for the automatic text.</li></ol>
                 <p className="mt-4 text-sm text-white/60">Answered calls continue working normally. Never Miss only handles calls you cannot take.</p>
+              </div>
+
+              <div className="mt-8">
+                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-cyan-300">Simple phone setup</p>
+                <h3 className="mt-2 text-2xl font-semibold">Choose the option that looks familiar.</h3>
+                <p className="mt-3 text-white/70">Phone menus vary. These are examples, so the wording on your phone may be slightly different.</p>
+                <div className="mt-6 grid gap-5 md:grid-cols-3">
+                  <SetupOption image="/images/never-miss-setup/iphone-forwarding-example.png" title="iPhone" steps={["Open Settings, Apps, then Phone.", "Look for Call Forwarding or contact your carrier.", "Choose When Unanswered and enter the private routing line."]} />
+                  <SetupOption image="/images/never-miss-setup/android-forwarding-example.png" title="Android" steps={["Open the Phone app and its Settings menu.", "Open Calling accounts or Supplementary services.", "Choose Call forwarding, then When unanswered."]} />
+                  <SetupOption image="/images/never-miss-setup/dial-code-example.png" title="Carrier code" steps={[`A common code is *61*${activated.assigned_phone.replace(/\D/g, "")}#`, "Press Call and wait for confirmation.", "Codes vary, so confirm yours with your carrier if it is rejected."]} />
+                </div>
+              </div>
+
+              <div className="mt-8 rounded-2xl border border-amber-200/25 bg-amber-100/10 p-5">
+                <p className="font-semibold text-amber-100">Before changing voicemail</p>
+                <p className="mt-2 text-sm leading-6 text-white/75">On many phone plans, forwarding unanswered calls replaces the route that normally sends callers to carrier voicemail. Your saved messages should remain, but new unanswered callers may go to Never Miss instead of voicemail. If voicemail is essential to your business, confirm the behaviour with your carrier before changing it.</p>
+              </div>
+
+              <div className="mt-5 rounded-2xl bg-cyan-300/10 p-5">
+                <p className="font-semibold text-cyan-200">What to expect during the test</p>
+                <p className="mt-2 text-sm leading-6 text-white/75">Let the call ring until it forwards, then hang up. The text normally arrives within about 10 to 25 seconds. Carrier and mobile network conditions can sometimes add a little more time.</p>
               </div>
             </section>
           ) : setup ? (
@@ -161,6 +183,20 @@ function ActivationForm() {
         </div>
       </Container>
     </main>
+  );
+}
+
+function SetupOption({ image, title, steps }: { image: string; title: string; steps: string[] }) {
+  return (
+    <article className="overflow-hidden rounded-2xl bg-white text-[#071729]">
+      <div className="relative aspect-[4/5] bg-slate-100">
+        <Image src={image} alt={`${title} example for forwarding unanswered calls`} fill sizes="(min-width: 768px) 220px, 100vw" className="object-cover" />
+      </div>
+      <div className="p-5">
+        <h4 className="text-lg font-semibold">{title}</h4>
+        <ol className="mt-3 space-y-2 text-sm leading-5 text-slate-600">{steps.map((step, index) => <li key={step}><span className="font-semibold text-[#0b6575]">{index + 1}.</span> {step}</li>)}</ol>
+      </div>
+    </article>
   );
 }
 

@@ -892,14 +892,14 @@ celery_app.conf.beat_schedule = {
         "schedule": 30.0,
         "options": {"queue": "normal"},
     },
-    "missed-call-reconciliation-every-15s": {
+    "missed-call-reconciliation-every-5s": {
         "task": "workers.call_missed_call_recovery",
-        "schedule": 15.0,
+        "schedule": 5.0,
         "options": {"queue": "high"},
     },
-    "missed-call-sms-recovery-every-15s": {
+    "missed-call-sms-recovery-every-5s": {
         "task": "workers.sms_missed_call_recovery",
-        "schedule": 15.0,
+        "schedule": 5.0,
         "options": {"queue": "high"},
     },
     # Sprint 48.2 — Email projectors
