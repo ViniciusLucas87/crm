@@ -24,6 +24,7 @@ import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -34,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 # ── Data Types ──
+
 
 @dataclass
 class DiscoveredCompany:
@@ -94,6 +96,7 @@ class DiscoveryResult:
 
 # ── Provider Abstraction ──
 
+
 class DiscoveryProvider(ABC):
     """Abstract provider for company discovery.
 
@@ -109,6 +112,10 @@ class DiscoveryProvider(ABC):
     async def enrich(self, company: DiscoveredCompany) -> DiscoveredCompany:
         """Enrich a company with AI research."""
         ...
+
+
+class DiscoveryUnavailableError(RuntimeError):
+    """Raised when the configured discovery service cannot run the search."""
 
 
 # ── LLM Discovery Provider ──
@@ -165,14 +172,25 @@ class LLMDiscoveryProvider(DiscoveryProvider):
             parts.append(f"Keywords: {criteria.keyword}")
 
         query = "Find exactly " + (f"{criteria.count} " if criteria.count else "3 ")
-        query += "real companies matching: " + "; ".join(parts) if parts else "companies in the Pacific Northwest"
+        query += (
+            "real companies matching: " + "; ".join(parts)
+            if parts
+            else "companies in the Pacific Northwest"
+        )
         query += ". Return JSON with company name, industry, city, province, employees, website, and description."
         if criteria.excluded_names:
-            query += " Do not return any of these companies already in our CRM: " + "; ".join(criteria.excluded_names[:100]) + "."
-        query += f" The companies array must contain {criteria.count or 3} distinct, non-empty results."
+            query += (
+                " Do not return any of these companies already in our CRM: "
+                + "; ".join(criteria.excluded_names[:100])
+                + "."
+            )
+        query += (
+            f" The companies array must contain {criteria.count or 3} distinct, non-empty results."
+        )
 
         try:
-            from app.application.llm.gateway import get_llm_gateway, GatewayConfig
+            from app.application.llm.gateway import GatewayConfig, get_llm_gateway
+
             gateway = get_llm_gateway()
             gcfg = GatewayConfig(
                 feature="discovery",
@@ -187,12 +205,23 @@ class LLMDiscoveryProvider(DiscoveryProvider):
             ]
             resp = await gateway.chat(messages, gcfg)
 
-            if resp.model in {"disabled", "redis_unavailable", "budget_blocked", "error", "lock_timeout"}:
+            if resp.model in {
+                "disabled",
+                "redis_unavailable",
+                "budget_blocked",
+                "error",
+                "lock_timeout",
+            }:
                 logger.warning("LLM discovery unavailable: %s", resp.model)
-                return []
+                raise DiscoveryUnavailableError(
+                    "Lead discovery is temporarily unavailable because the AI research service needs attention. "
+                    "No contacts were created and no additional search cost was incurred."
+                )
 
             companies = self._parse_companies(resp.content)
             return companies[: criteria.count or 3]
+        except DiscoveryUnavailableError:
+            raise
         except Exception as e:
             logger.exception("LLM discovery failed: %s", e)
             return self._fallback_discover(criteria)
@@ -286,18 +315,26 @@ Act as Pacific North Systems' founder. Think about: would I spend MY limited tim
 }}"""
 
         try:
-            from app.application.llm.gateway import get_llm_gateway, GatewayConfig
+            from app.application.llm.gateway import GatewayConfig, get_llm_gateway
+
             gateway = get_llm_gateway()
-            gcfg = GatewayConfig(feature="enrichment", organization_id=1, temperature=0.3, max_tokens=1536)
+            gcfg = GatewayConfig(
+                feature="enrichment", organization_id=1, temperature=0.3, max_tokens=1536
+            )
             messages = [
-                LLMMessage(role="system", content="You are an expert B2B sales researcher. Return JSON only. Explain every score and recommendation."),
+                LLMMessage(
+                    role="system",
+                    content="You are an expert B2B sales researcher. Return JSON only. Explain every score and recommendation.",
+                ),
                 LLMMessage(role="user", content=prompt),
             ]
             resp = await gateway.chat(messages, gcfg)
 
             data = self._parse_json(resp.content)
 
-            company.executive_summary = data.get("executive_summary", "") or self._fallback_summary(company)
+            company.executive_summary = data.get("executive_summary", "") or self._fallback_summary(
+                company
+            )
             company.buying_signals = data.get("buying_signals", "") or ""
             company.recommended_services = data.get("recommended_services", "") or ""
             company.technology_maturity = data.get("technology_maturity", "") or "medium"
@@ -308,32 +345,36 @@ Act as Pacific North Systems' founder. Think about: would I spend MY limited tim
             company.revenue_estimate = data.get("revenue_estimate", "") or ""
 
             # Store all enrichment data as combined JSON
-            company.explainability = json.dumps({
-                "score_breakdown": data.get("score_breakdown", data.get("fit_factors", [])),
-                "confidence_factors": data.get("confidence_factors", []),
-                "signal_evidence": data.get("signal_evidence", []),
-                "service_reasoning": data.get("service_reasoning", []),
-            })
+            company.explainability = json.dumps(
+                {
+                    "score_breakdown": data.get("score_breakdown", data.get("fit_factors", [])),
+                    "confidence_factors": data.get("confidence_factors", []),
+                    "signal_evidence": data.get("signal_evidence", []),
+                    "service_reasoning": data.get("service_reasoning", []),
+                }
+            )
 
             # Store PNS fit data with founder mode fields
-            company.pns_fit_data = json.dumps({
-                "founder_recommendation": data.get("founder_recommendation", "LATER"),
-                "founder_advice": data.get("founder_advice", ""),
-                "pursue_rationale": data.get("pursue_rationale", ""),
-                "pns_fit_score": data.get("pns_fit_score", 50),
-                "fit_factors": data.get("fit_factors", []),
-                "sales_difficulty": data.get("sales_difficulty", "moderate"),
-                "estimated_sales_cycle": data.get("estimated_sales_cycle", "3 months"),
-                "sales_difficulty_rationale": data.get("sales_difficulty_rationale", ""),
-                "first_project": data.get("first_project", {}),
-                "return_on_founder_time": data.get("return_on_founder_time", {}),
-                "next_best_action": data.get("next_best_action", ""),
-                "next_action_rationale": data.get("next_action_rationale", ""),
-                "why_pns": data.get("why_pns", []),
-                "risk_factors": data.get("risk_factors", []),
-                "outreach_strategy": data.get("outreach_strategy", {}),
-                "market_intelligence": data.get("market_intelligence", {}),
-            })
+            company.pns_fit_data = json.dumps(
+                {
+                    "founder_recommendation": data.get("founder_recommendation", "LATER"),
+                    "founder_advice": data.get("founder_advice", ""),
+                    "pursue_rationale": data.get("pursue_rationale", ""),
+                    "pns_fit_score": data.get("pns_fit_score", 50),
+                    "fit_factors": data.get("fit_factors", []),
+                    "sales_difficulty": data.get("sales_difficulty", "moderate"),
+                    "estimated_sales_cycle": data.get("estimated_sales_cycle", "3 months"),
+                    "sales_difficulty_rationale": data.get("sales_difficulty_rationale", ""),
+                    "first_project": data.get("first_project", {}),
+                    "return_on_founder_time": data.get("return_on_founder_time", {}),
+                    "next_best_action": data.get("next_best_action", ""),
+                    "next_action_rationale": data.get("next_action_rationale", ""),
+                    "why_pns": data.get("why_pns", []),
+                    "risk_factors": data.get("risk_factors", []),
+                    "outreach_strategy": data.get("outreach_strategy", {}),
+                    "market_intelligence": data.get("market_intelligence", {}),
+                }
+            )
             company.pns_fit_score = data.get("pns_fit_score", 50)
 
         except Exception as e:
@@ -373,24 +414,26 @@ Act as Pacific North Systems' founder. Think about: would I spend MY limited tim
             name = str(c.get("name", "")).strip()
             if not name:
                 continue
-            result.append(DiscoveredCompany(
-                name=name,
-                industry=str(c.get("industry", "")).strip(),
-                city=str(c.get("city", "")).strip(),
-                province=str(c.get("province", c.get("state", ""))).strip(),
-                country=str(c.get("country", "")).strip(),
-                website=str(c.get("website", "")).strip(),
-                employees=c.get("employees"),
-                description=str(c.get("description", "")).strip(),
-                opportunity_score=int(c.get("opportunity_score", c.get("score", 50))),
-                confidence_score=int(c.get("confidence_score", c.get("confidence", 60))),
-                buying_signals=str(c.get("buying_signals", "")).strip(),
-                recommended_services=str(c.get("recommended_services", "")).strip(),
-                estimated_deal_low=c.get("estimated_deal_low"),
-                estimated_deal_high=c.get("estimated_deal_high"),
-                technology_maturity=str(c.get("technology_maturity", "")).strip(),
-                revenue_estimate=str(c.get("revenue_estimate", "")).strip(),
-            ))
+            result.append(
+                DiscoveredCompany(
+                    name=name,
+                    industry=str(c.get("industry", "")).strip(),
+                    city=str(c.get("city", "")).strip(),
+                    province=str(c.get("province", c.get("state", ""))).strip(),
+                    country=str(c.get("country", "")).strip(),
+                    website=str(c.get("website", "")).strip(),
+                    employees=c.get("employees"),
+                    description=str(c.get("description", "")).strip(),
+                    opportunity_score=int(c.get("opportunity_score", c.get("score", 50))),
+                    confidence_score=int(c.get("confidence_score", c.get("confidence", 60))),
+                    buying_signals=str(c.get("buying_signals", "")).strip(),
+                    recommended_services=str(c.get("recommended_services", "")).strip(),
+                    estimated_deal_low=c.get("estimated_deal_low"),
+                    estimated_deal_high=c.get("estimated_deal_high"),
+                    technology_maturity=str(c.get("technology_maturity", "")).strip(),
+                    revenue_estimate=str(c.get("revenue_estimate", "")).strip(),
+                )
+            )
         return result
 
     def _fallback_discover(self, criteria: DiscoveryCriteria) -> list[DiscoveredCompany]:
@@ -400,7 +443,11 @@ Act as Pacific North Systems' founder. Think about: would I spend MY limited tim
     def _fallback_summary(self, company: DiscoveredCompany) -> str:
         ind = company.industry or "its industry"
         city = company.city or "its region"
-        emp = f"approximately {company.employees} employees" if company.employees else "an unknown number of employees"
+        emp = (
+            f"approximately {company.employees} employees"
+            if company.employees
+            else "an unknown number of employees"
+        )
         return (
             f"{company.name} operates in {ind} based in {city} with {emp}. "
             f"The company likely faces operational challenges common to {ind} businesses, "
@@ -413,6 +460,7 @@ Act as Pacific North Systems' founder. Think about: would I spend MY limited tim
 
 # ── Discovery Engine ──
 
+
 class DiscoveryEngine:
     """Orchestrates the AI discovery → lead creation → background enrichment pipeline."""
 
@@ -420,9 +468,7 @@ class DiscoveryEngine:
         self._session = session
         self._provider = provider
 
-    async def discover(
-        self, organization_id: int, criteria: DiscoveryCriteria
-    ) -> DiscoveryResult:
+    async def discover(self, organization_id: int, criteria: DiscoveryCriteria) -> DiscoveryResult:
         """Discover companies and create reviewable leads without automatic enrichment."""
         start = time.time()
         result = DiscoveryResult(criteria=criteria)
@@ -432,7 +478,14 @@ class DiscoveryEngine:
         result.progress_pct = 20
         criteria.organization_id = organization_id
         criteria.excluded_names = self._existing_company_names(organization_id)
-        companies = await self._provider.discover(criteria)
+        try:
+            companies = await self._provider.discover(criteria)
+        except DiscoveryUnavailableError as exc:
+            result.stage = "error"
+            result.progress_pct = 0
+            result.message = str(exc)
+            result.total_time_ms = int((time.time() - start) * 1000)
+            return result
         if not companies:
             result.stage = "complete"
             result.message = "No companies found. Try different search criteria."
@@ -475,16 +528,32 @@ class DiscoveryEngine:
 
     def _existing_company_names(self, org_id: int) -> list[str]:
         """Names to exclude so repeated discovery searches produce new prospects."""
-        lead_names = self._session.execute(
-            select(Lead.name).where(Lead.organization_id == org_id).limit(100)
-        ).scalars().all()
-        company_names = self._session.execute(
-            select(Company.name).where(
-                Company.organization_id == org_id,
-                Company.is_archived.is_(False),
-            ).limit(100)
-        ).scalars().all()
-        return sorted({str(name).strip() for name in [*lead_names, *company_names] if name and str(name).strip()})
+        lead_names = (
+            self._session.execute(
+                select(Lead.name).where(Lead.organization_id == org_id).limit(100)
+            )
+            .scalars()
+            .all()
+        )
+        company_names = (
+            self._session.execute(
+                select(Company.name)
+                .where(
+                    Company.organization_id == org_id,
+                    Company.is_archived.is_(False),
+                )
+                .limit(100)
+            )
+            .scalars()
+            .all()
+        )
+        return sorted(
+            {
+                str(name).strip()
+                for name in [*lead_names, *company_names]
+                if name and str(name).strip()
+            }
+        )
 
     def _create_lead_fast(self, org_id: int, company: DiscoveredCompany) -> Lead:
         """Create a lead immediately with discovery data only — enrichment comes later."""
@@ -504,37 +573,46 @@ class DiscoveryEngine:
             status="new",
             source="ai_discovery",
             enrichment_status="pending",
-            website_data=json.dumps({
-                "evidence": company.website_evidence,
-                "public_contact": {
-                    "phone": company.public_phone or None,
-                    "email": company.public_email or None,
-                    "source_url": company.contact_source_url or None,
-                    "confidence": "official_website",
-                },
-            }) if company.website_evidence else None,
+            website_data=(
+                json.dumps(
+                    {
+                        "evidence": company.website_evidence,
+                        "public_contact": {
+                            "phone": company.public_phone or None,
+                            "email": company.public_email or None,
+                            "source_url": company.contact_source_url or None,
+                            "confidence": "official_website",
+                        },
+                    }
+                )
+                if company.website_evidence
+                else None
+            ),
         )
         self._session.add(lead)
         self._session.commit()
         self._session.refresh(lead)
 
         # Timeline event
-        self._session.add(LeadTimelineEvent(
-            organization_id=org_id, lead_id=lead.id,
-            event_type="ai_discovered",
-            description="Discovered by AI Prospect Discovery Engine. Awaiting approval before enrichment.",
-            metadata_json=json.dumps({
-                "opportunity_score": company.opportunity_score,
-                "industry": company.industry,
-                "city": company.city,
-            }),
-        ))
+        self._session.add(
+            LeadTimelineEvent(
+                organization_id=org_id,
+                lead_id=lead.id,
+                event_type="ai_discovered",
+                description="Discovered by AI Prospect Discovery Engine. Awaiting approval before enrichment.",
+                metadata_json=json.dumps(
+                    {
+                        "opportunity_score": company.opportunity_score,
+                        "industry": company.industry,
+                        "city": company.city,
+                    }
+                ),
+            )
+        )
         self._session.commit()
         return lead
 
-    async def _attach_public_contact_evidence(
-        self, companies: list[DiscoveredCompany]
-    ) -> None:
+    async def _attach_public_contact_evidence(self, companies: list[DiscoveredCompany]) -> None:
         """Attach verified public phone/email evidence from official websites."""
         from app.application.intelligence.web_fetch import collect_website_evidence
 
@@ -615,14 +693,19 @@ class DiscoveryEngine:
         self._session.refresh(lead)
 
         # Timeline event
-        self._session.add(LeadTimelineEvent(
-            organization_id=org_id, lead_id=lead.id,
-            event_type="ai_discovered",
-            description=f"Discovered by AI Prospect Discovery Engine",
-            metadata_json=json.dumps({
-                "opportunity_score": company.opportunity_score,
-                "industry": company.industry,
-                "city": company.city,
-            }),
-        ))
+        self._session.add(
+            LeadTimelineEvent(
+                organization_id=org_id,
+                lead_id=lead.id,
+                event_type="ai_discovered",
+                description="Discovered by AI Prospect Discovery Engine",
+                metadata_json=json.dumps(
+                    {
+                        "opportunity_score": company.opportunity_score,
+                        "industry": company.industry,
+                        "city": company.city,
+                    }
+                ),
+            )
+        )
         self._session.commit()

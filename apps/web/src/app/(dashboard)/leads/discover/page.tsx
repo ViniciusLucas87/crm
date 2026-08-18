@@ -58,6 +58,10 @@ export default function DiscoverPage() {
         return;
       }
       const d: DiscoveryResponse = await r.json();
+      if (d.stage === "error") {
+        setError(d.message || "The research service could not run this search. No contacts were created.");
+        return;
+      }
       setResult(d);
     } catch {
       setError("We couldn't reach the research service. Your existing leads are safe. Please check your connection and try again.");
