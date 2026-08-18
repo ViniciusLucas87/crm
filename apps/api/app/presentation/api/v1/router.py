@@ -4,6 +4,7 @@ from app.presentation.api.v1.routes import (
     actions,
     agents,
     ai,
+    app_factory,
     assessment_public,
     assessments,
     audit,
@@ -54,6 +55,7 @@ api_router.include_router(search.router, tags=["search"])
 api_router.include_router(intelligence.router, tags=["intelligence"])
 api_router.include_router(scoring.router, tags=["scoring"])
 api_router.include_router(ai.router, tags=["ai"])
+api_router.include_router(app_factory.router, tags=["app-factory"])
 api_router.include_router(mcp.router, tags=["mcp"])
 api_router.include_router(agents.router, tags=["agents"])
 api_router.include_router(enrich.router, tags=["enrich"])

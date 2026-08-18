@@ -5,7 +5,7 @@ import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
-import { Building2, CircleUserRound, LayoutDashboard, LogOut, Menu, Sparkles, X, Users, Target, ClipboardList, FolderKanban, FileText, FileCheck, BarChart3, Settings, Sun, Search, CalendarCheck2, Mail, Lightbulb, BookOpen, Phone, PhoneCall, Radar, FlaskConical, Signal, Bookmark, Send, Download, TrendingUp, Brain, Shield, Activity, PackageCheck, MessageCircle, Linkedin } from "lucide-react";
+import { Building2, CircleUserRound, LayoutDashboard, LogOut, Menu, Sparkles, X, Users, Target, ClipboardList, FolderKanban, FileText, FileCheck, BarChart3, Settings, Sun, Search, CalendarCheck2, Mail, Lightbulb, BookOpen, Phone, PhoneCall, Radar, FlaskConical, Signal, Bookmark, Send, Download, TrendingUp, Brain, Shield, Activity, PackageCheck, MessageCircle, Linkedin, Factory } from "lucide-react";
 import { DashboardErrorBoundary } from "@/components/dashboard/error-boundary";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
@@ -96,6 +96,7 @@ const navigation: NavGroup[] = [
   {
     label: "Operations",
     items: [
+      { label: "App Factory", icon: Factory, href: "/app-factory" as Route, active: true },
       { label: "Audit Log", icon: Shield, href: "/audit" as Route, active: true },
       { label: "System Status", icon: Activity, href: "/operations" as Route, active: true },
     ],

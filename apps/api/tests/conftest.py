@@ -9,8 +9,11 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.config import get_settings
 from app.infrastructure.auth import clerk as clerk_auth
-from app.infrastructure.db.base import Base
+from app.infrastructure.db import (
+    app_factory as _app_factory,  # noqa: F401 - register factory tables
+)
 from app.infrastructure.db import models as _models  # noqa: F401 - register all tables
+from app.infrastructure.db.base import Base
 from app.infrastructure.db.session import get_db_session
 from app.main import app
 

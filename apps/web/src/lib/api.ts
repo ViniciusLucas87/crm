@@ -12,6 +12,39 @@ export class ApiError extends Error {
   }
 }
 
+export type AppFactoryEvidence = {
+  source_type: string; source_title: string; source_url: string;
+  observed_at: string; signal: string; evidence_kind: string;
+};
+
+export type AppFactoryCandidate = {
+  id: number; slug: string; name: string; audience: string; problem: string;
+  proposed_format: string; proposed_price: string; distribution_thesis: string;
+  current_workaround: string; decision: string; decision_reason: string;
+  scores: Record<string, number>; total_score: number;
+  estimated_monthly_cost_cents: number; risk_level: string;
+  evidence_count: number; evidence_complete: boolean;
+  eligible_for_validation: boolean; eligible_for_build: boolean;
+  evidence: AppFactoryEvidence[];
+};
+
+export type AppFactoryPortfolio = {
+  summary: {
+    problems_researched: number; qualified_for_validation: number;
+    qualified_for_build: number; active_experiments: number;
+    monthly_experiment_cost_limit_cents: number; human_actions: string[];
+  };
+  candidates: AppFactoryCandidate[];
+  experiments: Array<{ id: number; candidate_id: number; name: string; hypothesis: string; channel: string; success_metric: string; status: string; spend_limit_cents: number; actual_spend_cents: number; visitors: number; intent_actions: number; paid_conversions: number }>;
+  guardrails: Record<string, boolean | number>;
+};
+
+export async function fetchAppFactoryPortfolio(): Promise<AppFactoryPortfolio> {
+  const response = await fetch(`${API_BASE_URL}/app-factory/portfolio`, { cache: "no-store" });
+  if (!response.ok) throw new ApiError(`Failed to load App Factory: ${response.status}`, response.status);
+  return response.json();
+}
+
 export async function fetchDashboardSummary(): Promise<DashboardSummary> {
   const response = await fetch(`${API_BASE_URL}/dashboard/summary`, {
     cache: "no-store"
