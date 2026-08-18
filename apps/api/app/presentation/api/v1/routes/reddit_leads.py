@@ -265,9 +265,8 @@ def prepare_drafts(
     if not item:
         raise HTTPException(status_code=404, detail="Reddit opportunity not found")
 
-    signal = (json.loads(item.detected_signals_json or "[]") or ["missed customer calls"])[0]
     item.public_reply_draft = (
-        f"That sounds frustrating, especially when {signal} happens while you are trying to finish the work. "
+        "That sounds frustrating, especially when it happens while you are trying to finish the work. "
         "One practical option is to keep your current business number and forward only unanswered calls to a service that immediately texts the caller and creates a callback reminder. "
         "I work with Pacific North Systems and we built Never Miss for this exact situation. I am happy to explain the setup here if it would be useful."
     )
