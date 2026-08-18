@@ -3,7 +3,12 @@ import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
-from app.application.sales.discovery_engine import DiscoveryCriteria, LLMDiscoveryProvider
+from app.application.sales.discovery_engine import (
+    DiscoveredCompany,
+    DiscoveryCriteria,
+    DiscoveryEngine,
+    LLMDiscoveryProvider,
+)
 
 
 def test_discovery_ignores_gateway_fallback_instead_of_creating_blank_lead():
@@ -48,3 +53,27 @@ def test_discovery_uses_cache_and_excludes_existing_names():
     assert config.bypass_cache is False
     assert "Existing Builder Ltd." in messages[-1].content
     assert "exactly 3" in messages[-1].content
+
+
+def test_discovery_collects_attributable_public_business_contact():
+    company = DiscoveredCompany(
+        name="Example Heating",
+        website="https://example.com",
+    )
+    evidence = {
+        "source_url": "https://example.com/",
+        "phones": ["+16045550123"],
+        "emails": ["service@example.com"],
+    }
+    engine = DiscoveryEngine.__new__(DiscoveryEngine)
+
+    with patch(
+        "app.application.intelligence.web_fetch.collect_website_evidence",
+        new=AsyncMock(return_value=evidence),
+    ):
+        asyncio.run(engine._attach_public_contact_evidence([company]))
+
+    assert company.public_phone == "+16045550123"
+    assert company.public_email == "service@example.com"
+    assert company.contact_source_url == "https://example.com/"
+    assert company.website_evidence == evidence

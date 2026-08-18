@@ -495,6 +495,36 @@ def import_to_crm(
             if created_contacts:
                 result["contact_ids"] = created_contacts
 
+        # Fall back to an attributable public business line when research did
+        # not identify a named person. Never label this contact as an owner.
+        if options.create_contacts and not result.get("contact_ids") and lead.website_data:
+            try:
+                website_data = json.loads(lead.website_data)
+                public_contact = website_data.get("public_contact", {}) if isinstance(website_data, dict) else {}
+                evidence = website_data.get("evidence", {}) if isinstance(website_data, dict) else {}
+            except (json.JSONDecodeError, TypeError):
+                public_contact, evidence = {}, {}
+            phone = str(public_contact.get("phone") or "").strip()
+            email = str(public_contact.get("email") or "").strip() or None
+            source_url = str(public_contact.get("source_url") or evidence.get("source_url") or lead.website or "").strip()
+            if phone or email:
+                contact = Contact(
+                    organization_id=ctx.organization_id,
+                    company_id=company.id,
+                    first_name="Office",
+                    last_name="Team",
+                    job_title="Public business contact",
+                    email=email,
+                    phone=phone or None,
+                    is_primary=True,
+                    confidence="verified",
+                    discovery_source="official_website",
+                    notes=f"Public contact verified from: {source_url}" if source_url else "Public contact from company website",
+                )
+                session.add(contact)
+                session.flush()
+                result["contact_ids"] = [contact.id]
+
         # Timeline event
         session.add(LeadTimelineEvent(
             organization_id=ctx.organization_id, lead_id=lead.id,
@@ -1037,6 +1067,9 @@ async def discover_prospects(
                 "explainability": json.loads(c.explainability) if c.explainability else None,
                 "pns_fit_score": c.pns_fit_score,
                 "pns_fit_data": json.loads(c.pns_fit_data) if c.pns_fit_data else None,
+                "public_phone": c.public_phone or None,
+                "public_email": c.public_email or None,
+                "contact_source_url": c.contact_source_url or None,
             }
             for c in result.companies
         ],

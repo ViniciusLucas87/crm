@@ -17,6 +17,7 @@ The engine:
   5. Returns enriched leads ready for review
 """
 
+import asyncio
 import json
 import logging
 import time
@@ -58,6 +59,10 @@ class DiscoveredCompany:
     explainability: str = ""  # JSON
     pns_fit_data: str = ""  # JSON: pns_fit_analysis + outreach_strategy
     pns_fit_score: int = 50  # PNS ICP fit score
+    website_evidence: dict[str, object] = field(default_factory=dict)
+    public_phone: str = ""
+    public_email: str = ""
+    contact_source_url: str = ""
 
 
 @dataclass
@@ -434,6 +439,10 @@ class DiscoveryEngine:
             result.total_time_ms = int((time.time() - start) * 1000)
             return result
 
+        # Read public contact details from each company's own website. This is
+        # attributable evidence and does not consume another LLM request.
+        await self._attach_public_contact_evidence(companies)
+
         result.stage = "creating"
         result.progress_pct = 30
 
@@ -495,6 +504,15 @@ class DiscoveryEngine:
             status="new",
             source="ai_discovery",
             enrichment_status="pending",
+            website_data=json.dumps({
+                "evidence": company.website_evidence,
+                "public_contact": {
+                    "phone": company.public_phone or None,
+                    "email": company.public_email or None,
+                    "source_url": company.contact_source_url or None,
+                    "confidence": "official_website",
+                },
+            }) if company.website_evidence else None,
         )
         self._session.add(lead)
         self._session.commit()
@@ -513,6 +531,31 @@ class DiscoveryEngine:
         ))
         self._session.commit()
         return lead
+
+    async def _attach_public_contact_evidence(
+        self, companies: list[DiscoveredCompany]
+    ) -> None:
+        """Attach verified public phone/email evidence from official websites."""
+        from app.application.intelligence.web_fetch import collect_website_evidence
+
+        semaphore = asyncio.Semaphore(5)
+
+        async def collect(company: DiscoveredCompany) -> None:
+            if not company.website:
+                return
+            try:
+                async with semaphore:
+                    evidence = await collect_website_evidence(company.website)
+                company.website_evidence = evidence
+                phones = evidence.get("phones") or []
+                emails = evidence.get("emails") or []
+                company.public_phone = str(phones[0]).strip() if phones else ""
+                company.public_email = str(emails[0]).strip() if emails else ""
+                company.contact_source_url = str(evidence.get("source_url") or company.website)
+            except Exception as exc:
+                logger.info("Public contact lookup skipped for %s: %s", company.name, exc)
+
+        await asyncio.gather(*(collect(company) for company in companies))
 
     def _is_duplicate(self, org_id: int, name: str, website: str) -> bool:
         # Check existing leads
