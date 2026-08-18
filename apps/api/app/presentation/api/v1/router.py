@@ -25,6 +25,7 @@ from app.presentation.api.v1.routes import (
     leads,
     linkedin_leads,
     mcp,
+    never_forget,
     operations,
     products,
     reddit_leads,
@@ -57,6 +58,7 @@ api_router.include_router(scoring.router, tags=["scoring"])
 api_router.include_router(ai.router, tags=["ai"])
 api_router.include_router(app_factory.router, tags=["app-factory"])
 api_router.include_router(mcp.router, tags=["mcp"])
+api_router.include_router(never_forget.router, tags=["never-forget"])
 api_router.include_router(agents.router, tags=["agents"])
 api_router.include_router(enrich.router, tags=["enrich"])
 api_router.include_router(reports.router, tags=["reports"])

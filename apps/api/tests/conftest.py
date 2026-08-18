@@ -13,6 +13,9 @@ from app.infrastructure.db import (
     app_factory as _app_factory,  # noqa: F401 - register factory tables
 )
 from app.infrastructure.db import models as _models  # noqa: F401 - register all tables
+from app.infrastructure.db import (
+    never_forget as _never_forget,  # noqa: F401 - register product tables
+)
 from app.infrastructure.db.base import Base
 from app.infrastructure.db.session import get_db_session
 from app.main import app
