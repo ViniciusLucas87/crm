@@ -68,3 +68,15 @@ def test_reddit_status_disallows_automated_unsolicited_messages(
     payload = response.json()
     assert payload["mode"] == "human_approved_outreach"
     assert "No automated unsolicited private messages" in payload["rules"]
+
+
+def test_reddit_status_reports_pending_commercial_approval(
+    client: TestClient, monkeypatch,
+) -> None:
+    monkeypatch.setenv("REDDIT_ACCESS_STATUS", "pending_approval")
+    response = client.get("/api/v1/reddit/status", headers=auth_headers("org1-member"))
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["access_status"] == "pending_approval"
+    assert "Approval is pending" in payload["message"]
+    assert "Manual conversation intake remains available" in payload["message"]

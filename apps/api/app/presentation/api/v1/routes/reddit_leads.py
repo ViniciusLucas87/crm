@@ -147,14 +147,21 @@ class ApprovalRequest(BaseModel):
 @router.get("/status")
 def reddit_status(ctx: AuthContext = Depends(require_permission("companies:read"))):
     configured = bool(os.getenv("REDDIT_CLIENT_ID") and os.getenv("REDDIT_CLIENT_SECRET"))
+    access_status = os.getenv("REDDIT_ACCESS_STATUS", "").strip().lower()
+    approval_pending = access_status == "pending_approval"
     return {
         "connected": False,
         "api_configured": configured,
+        "access_status": "pending_approval" if approval_pending else ("configured" if configured else "not_requested"),
         "mode": "human_approved_outreach",
         "message": (
-            "Connect a registered Reddit application to monitor approved public communities."
-            if configured
-            else "Reddit application credentials are required before live monitoring can start."
+            "Reddit commercial API access was requested. Approval is pending. Manual conversation intake remains available."
+            if approval_pending
+            else (
+                "Connect a registered Reddit application to monitor approved public communities."
+                if configured
+                else "Reddit application credentials are required before live monitoring can start."
+            )
         ),
         "rules": [
             "Public conversation monitoring only",
