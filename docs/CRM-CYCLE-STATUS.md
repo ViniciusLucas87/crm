@@ -1,6 +1,6 @@
 # CRM Cycle Status and Product Memory
 
-Last verified: August 4, 2026
+Last verified: August 17, 2026
 
 Purpose: preserve what is proven, what remains uncertain, and what should guide the next CRM development cycle. Update this document after every production acceptance run and whenever daily sales use reveals meaningful friction.
 
@@ -38,14 +38,14 @@ The CRM is ready for assisted daily sales work. The next cycle should be guided 
 | Personalized outreach | Track reply rate, meeting rate and opt outs by message style and lead source. |
 | Lead discovery and enrichment | Check accuracy of company facts and decision maker information before outreach. |
 | Call preparation | Record which scripts and objection responses help create a clear next step. |
-| Outbound browser calling | Place and document a controlled production call after explicit approval. Confirm audio, caller identity, hangup and CRM logging. |
+| Browser calling | Outbound and incoming interfaces are implemented. Run one controlled inbound production call before changing the proven mobile and Never Miss routing. Confirm browser ringing, two way audio, hangup and CRM logging. |
 | CRM MCP actions | Use the gateway during daily work and record missing context, awkward approvals and repetitive steps. |
 
 ## Not production ready or intentionally postponed
 
 | Capability | Decision |
 | --- | --- |
-| Answering incoming calls inside the browser | Postponed. Missed call recovery is the supported production workflow until ringing, answer, audio, reconnect and hangup pass an end to end test. |
+| Answering incoming calls inside the browser | Implementation and focused tests are complete. Production routing remains intentionally unchanged until a supervised end to end call proves ringing, answer, audio, reconnect, hangup and the unanswered fallback. |
 | Fully autonomous outreach | Postponed. Codex should prepare and prioritize messages, while a person approves external communication until quality and response data are established. |
 | Autonomous deal closing | Not treated as a software feature. Codex can prepare strategy, proposals and follow ups, but a founder remains responsible for commitments, pricing exceptions and contracts. |
 
@@ -86,4 +86,3 @@ Codex should begin each sales session by reading the current CRM state and this 
 | TypeScript validation | Passed |
 | Live website, assessment, CRM and API probes | Passed |
 | Latest accepted Git commit | `91a9734bd05339a1f5b84e899206e03e81bf554b` |
-

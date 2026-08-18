@@ -575,7 +575,7 @@ def _cache_key(feature: str, model: str, msgs: list[LLMMessage],
 
 
 # ═══════════════════════════════════════════════════════════
-# PROVIDER CALLS (only create_provider/AsyncOpenAI in this file)
+# PROVIDER CALLS (provider construction remains isolated in provider.py)
 # ═══════════════════════════════════════════════════════════
 
 RETRYABLE = {429, 500, 502, 503, 504}
