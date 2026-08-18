@@ -48,6 +48,19 @@ class CheckoutExchangeInput(BaseModel):
     checkout_session_id: str = Field(min_length=10, max_length=255)
 
 
+class ManagementLinkInput(BaseModel):
+    email: str = Field(min_length=5, max_length=255)
+
+
+class ManagementUpdateInput(BaseModel):
+    notification_phone: str | None = Field(default=None, max_length=50)
+    existing_business_phone: str | None = Field(default=None, max_length=50)
+    recovery_message: str | None = Field(default=None, min_length=20, max_length=500)
+    timezone: str | None = Field(default=None, max_length=80)
+    website_url: str | None = Field(default=None, max_length=500)
+    enabled: bool | None = None
+
+
 def _sha256(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
@@ -96,6 +109,13 @@ def _issue_token(subscription: ProductSubscription, *, channel: str = "email") -
     else:
         subscription.onboarding_token_hash = _sha256(token)
         subscription.onboarding_token_expires_at = expires_at
+    return token
+
+
+def _issue_management_token(subscription: ProductSubscription) -> str:
+    token = secrets.token_urlsafe(40)
+    subscription.management_token_hash = _sha256(token)
+    subscription.management_token_expires_at = datetime.now(UTC) + timedelta(minutes=30)
     return token
 
 
@@ -165,6 +185,68 @@ def _email_activation_link(subscription: ProductSubscription, token: str) -> Non
         },
         timeout=5,
     ).raise_for_status()
+
+
+def _email_management_link(subscription: ProductSubscription, token: str) -> None:
+    api_key = os.getenv("RESEND_API_KEY", "")
+    if not api_key:
+        return
+    site_url = os.getenv("MARKETING_SITE_URL", "https://www.pacificnorthsystems.com").rstrip("/")
+    link = f"{site_url}/never-miss/manage?token={token}"
+    httpx.post(
+        "https://api.resend.com/emails",
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        json={
+            "from": os.getenv("RESEND_FROM_EMAIL", "Pacific North Systems <hello@pacificnorthsystems.com>"),
+            "to": [subscription.customer_email],
+            "subject": "Your secure Never Miss account link",
+            "html": (
+                "<h1>Manage Never Miss</h1>"
+                "<p>Use this private link to update your service, pause automatic replies, or manage billing.</p>"
+                f'<p><a href="{link}">Open my Never Miss account</a></p>'
+                "<p>This link expires in 30 minutes. If you did not request it, you can ignore this email.</p>"
+            ),
+        },
+        timeout=5,
+    ).raise_for_status()
+
+
+def _management_subscription(session: Session, token: str) -> ProductSubscription:
+    subscription = session.execute(select(ProductSubscription).where(
+        ProductSubscription.management_token_hash == _sha256(token)
+    )).scalar_one_or_none()
+    if not subscription or not subscription.management_token_expires_at:
+        raise HTTPException(404, "This account link is invalid")
+    expires = subscription.management_token_expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=UTC)
+    if expires < datetime.now(UTC):
+        raise HTTPException(410, "This account link has expired. Request a fresh link.")
+    return subscription
+
+
+def _management_payload(session: Session, subscription: ProductSubscription) -> dict:
+    config = None
+    if subscription.organization_id:
+        config = session.execute(select(ProductConfiguration).where(
+            ProductConfiguration.organization_id == subscription.organization_id,
+            ProductConfiguration.product_code == "never_miss",
+        )).scalar_one_or_none()
+    settings = config.business_hours_json or {} if config else {}
+    return {
+        "plan": subscription.plan,
+        "status": subscription.status,
+        "business_name": subscription.business_name,
+        "customer_email": subscription.customer_email,
+        "assigned_phone": subscription.assigned_phone,
+        "existing_business_phone": subscription.existing_phone,
+        "notification_phone": subscription.notification_phone,
+        "recovery_message": config.recovery_message if config else None,
+        "enabled": bool(config.enabled) if config else False,
+        "timezone": settings.get("timezone"),
+        "website_url": settings.get("website_url"),
+        "billing_portal_url": os.getenv("STRIPE_CUSTOMER_PORTAL_URL", ""),
+    }
 
 
 @router.post("/stripe/webhook", include_in_schema=False)
@@ -258,6 +340,67 @@ def exchange_checkout_session(
     token = _issue_token(subscription, channel="redirect")
     session.commit()
     return {"status": subscription.status, "token": token}
+
+
+@router.post("/manage/request-link", status_code=202)
+def request_management_link(payload: ManagementLinkInput, session: Session = Depends(get_db_session)):
+    # Always return the same response so this endpoint cannot be used to discover customers.
+    subscription = session.execute(
+        select(ProductSubscription)
+        .where(ProductSubscription.customer_email == payload.email.strip().lower())
+        .order_by(ProductSubscription.created_at.desc())
+    ).scalars().first()
+    if subscription:
+        token = _issue_management_token(subscription)
+        session.commit()
+        try:
+            _email_management_link(subscription, token)
+        except Exception:
+            pass
+    return {"message": "If that email has a Never Miss account, a secure link is on its way."}
+
+
+@router.get("/manage/{token}")
+def management_status(token: str, session: Session = Depends(get_db_session)):
+    return _management_payload(session, _management_subscription(session, token))
+
+
+@router.patch("/manage/{token}")
+def update_management(token: str, payload: ManagementUpdateInput, session: Session = Depends(get_db_session)):
+    subscription = _management_subscription(session, token)
+    if not subscription.organization_id:
+        raise HTTPException(409, "Finish activation before changing service settings")
+    config = session.execute(select(ProductConfiguration).where(
+        ProductConfiguration.organization_id == subscription.organization_id,
+        ProductConfiguration.product_code == "never_miss",
+    )).scalar_one_or_none()
+    if not config:
+        raise HTTPException(404, "Never Miss configuration was not found")
+    if payload.enabled is True and subscription.status != "active":
+        raise HTTPException(409, "Billing must be active before automatic replies can be enabled")
+    if payload.notification_phone is not None:
+        value = _normalize_phone(payload.notification_phone)
+        subscription.notification_phone = value
+        config.notification_phone = value
+    if payload.existing_business_phone is not None:
+        value = _normalize_phone(payload.existing_business_phone)
+        subscription.existing_phone = value
+        settings = dict(config.business_hours_json or {})
+        settings["existing_business_phone"] = value
+        config.business_hours_json = settings
+    if payload.recovery_message is not None:
+        config.recovery_message = payload.recovery_message.strip()
+    if payload.timezone is not None or payload.website_url is not None:
+        settings = dict(config.business_hours_json or {})
+        if payload.timezone is not None:
+            settings["timezone"] = payload.timezone
+        if payload.website_url is not None:
+            settings["website_url"] = payload.website_url or None
+        config.business_hours_json = settings
+    if payload.enabled is not None:
+        config.enabled = payload.enabled
+    session.commit()
+    return _management_payload(session, subscription)
 
 
 def _subscription_for_token(session: Session, token: str) -> ProductSubscription:
@@ -402,12 +545,18 @@ def activate_subscription(token: str, payload: ActivationInput, session: Session
         subscription.organization_id = organization.id
         subscription.status = "active"
         subscription.activated_at = datetime.now(UTC)
+        management_token = _issue_management_token(subscription)
         session.commit()
+        try:
+            _email_management_link(subscription, management_token)
+        except Exception:
+            pass
         return {
             "status": "active",
             "plan": subscription.plan,
             "assigned_phone": assigned_phone,
             "forward_from": existing_phone,
+            "management_token": management_token,
             "next_step": "Forward unanswered calls from your business number to your new Never Miss number, then place one unanswered test call.",
         }
     except Exception as exc:

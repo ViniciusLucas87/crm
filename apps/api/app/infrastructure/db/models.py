@@ -273,6 +273,8 @@ class ProductSubscription(Base):
     onboarding_token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     redirect_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
     redirect_token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    management_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
+    management_token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     onboarding_data_json: Mapped[dict | None] = mapped_column(JSON_DOCUMENT, nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

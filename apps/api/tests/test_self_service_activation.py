@@ -96,6 +96,95 @@ def test_paid_customer_can_activate_without_staff(client, monkeypatch):
     assert activation.status_code == 200, activation.text
     assert activation.json()["status"] == "active"
     assert activation.json()["assigned_phone"] == "+16045550999"
+    assert activation.json()["management_token"]
+
+
+def test_customer_can_manage_settings_and_pause_service(client, monkeypatch):
+    assert _post_checkout_webhook(client, monkeypatch).status_code == 200
+    monkeypatch.setattr(
+        "app.presentation.api.v1.routes.subscriptions._provision_telnyx_number",
+        lambda area_code, reference: ("+16045550999", "order_001"),
+    )
+    token = client.post(
+        "/api/v1/subscriptions/onboarding/exchange", json={"checkout_session_id": CHECKOUT["id"]}
+    ).json()["token"]
+    activation = client.post(
+        f"/api/v1/subscriptions/onboarding/{token}/activate",
+        json={
+            "business_name": "Taylor Plumbing",
+            "contact_name": "Taylor Owner",
+            "notification_phone": "+16045550101",
+            "existing_business_phone": "+16045550102",
+            "preferred_area_code": "604",
+            "recovery_message": "Hi, this is Taylor Plumbing. Sorry we missed your call. Reply STOP to opt out.",
+            "timezone": "America/Vancouver",
+            "website_url": None,
+            "consent_to_text_callers": True,
+            "accept_terms": True,
+        },
+    )
+    management_token = activation.json()["management_token"]
+    status = client.get(f"/api/v1/subscriptions/manage/{management_token}")
+    assert status.status_code == 200
+    assert status.json()["enabled"] is True
+    updated = client.patch(
+        f"/api/v1/subscriptions/manage/{management_token}",
+        json={
+            "notification_phone": "+16045550103",
+            "recovery_message": "Hi, Taylor Plumbing missed your call. Tell us what you need. Reply STOP to opt out.",
+            "enabled": False,
+        },
+    )
+    assert updated.status_code == 200
+    assert updated.json()["notification_phone"] == "+16045550103"
+    assert updated.json()["enabled"] is False
+
+
+def test_cancellation_webhook_disables_service_but_keeps_customer_record(client, monkeypatch):
+    assert _post_checkout_webhook(client, monkeypatch).status_code == 200
+    monkeypatch.setattr(
+        "app.presentation.api.v1.routes.subscriptions._provision_telnyx_number",
+        lambda area_code, reference: ("+16045550999", "order_001"),
+    )
+    token = client.post(
+        "/api/v1/subscriptions/onboarding/exchange", json={"checkout_session_id": CHECKOUT["id"]}
+    ).json()["token"]
+    activation = client.post(
+        f"/api/v1/subscriptions/onboarding/{token}/activate",
+        json={
+            "business_name": "Taylor Plumbing",
+            "contact_name": "Taylor Owner",
+            "notification_phone": "+16045550101",
+            "existing_business_phone": "+16045550102",
+            "preferred_area_code": "604",
+            "recovery_message": "Hi, this is Taylor Plumbing. Sorry we missed your call. Reply STOP to opt out.",
+            "timezone": "America/Vancouver",
+            "website_url": None,
+            "consent_to_text_callers": True,
+            "accept_terms": True,
+        },
+    )
+    management_token = activation.json()["management_token"]
+    secret = "whsec_test"
+    body = json.dumps({
+        "id": "evt_subscription_deleted_001",
+        "type": "customer.subscription.deleted",
+        "livemode": False,
+        "data": {"object": {"id": CHECKOUT["subscription"]}},
+    }).encode()
+    timestamp = int(time.time())
+    signature = hmac.new(secret.encode(), f"{timestamp}.".encode() + body, hashlib.sha256).hexdigest()
+    response = client.post(
+        "/api/v1/subscriptions/stripe/webhook",
+        content=body,
+        headers={"Content-Type": "application/json", "Stripe-Signature": f"t={timestamp},v1={signature}"},
+    )
+    assert response.status_code == 200
+    status = client.get(f"/api/v1/subscriptions/manage/{management_token}")
+    assert status.status_code == 200
+    assert status.json()["status"] == "cancelled"
+    assert status.json()["enabled"] is False
+    assert status.json()["assigned_phone"] == "+16045550999"
 
 
 def test_plus_plan_uses_the_same_reliable_onboarding(client, monkeypatch):

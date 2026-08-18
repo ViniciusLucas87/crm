@@ -10,7 +10,7 @@ const API_BASE = (
 
 function upstreamUrl(path: string[] | undefined) {
   const safePath = path || [];
-  if (safePath[0] !== "onboarding") return null;
+  if (!new Set(["onboarding", "manage"]).has(safePath[0])) return null;
   return `${API_BASE}/api/v1/subscriptions/${safePath.map(encodeURIComponent).join("/")}`;
 }
 
@@ -33,3 +33,4 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path?: s
 
 export const GET = proxy;
 export const POST = proxy;
+export const PATCH = proxy;
