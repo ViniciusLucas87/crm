@@ -87,6 +87,8 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
+    env:
+      COMPOSE_PROJECT_NAME: pns-ci
     steps:
       - uses: actions/checkout@v4
       - name: Prepare test environment
@@ -95,7 +97,7 @@ jobs:
         run: docker compose build
       - name: Verify OCI labels
         run: |
-          API_IMAGE_ID=$(docker compose images -q api)
+          API_IMAGE_ID=$(docker image ls pns-ci-api -q)
           test -n "$API_IMAGE_ID"
           API_LABELS=$(docker inspect "$API_IMAGE_ID" --format '{{json .Config.Labels}}')
           echo "API labels: $API_LABELS"
