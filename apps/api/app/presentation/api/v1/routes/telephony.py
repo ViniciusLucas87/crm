@@ -10,6 +10,7 @@ import logging
 import os
 import re
 import uuid
+import base64
 from datetime import UTC, datetime
 from functools import lru_cache
 
@@ -430,6 +431,85 @@ def communication_history(
 REDACT = "***REDACTED***"
 
 
+async def _transfer_inbound_call(payload: dict, session: Session) -> bool:
+    """Ring the configured mobile for an inbound Never Miss number.
+
+    Incoming Voice API calls arrive parked. A transfer keeps the caller on the
+    original leg while Telnyx rings the owner's mobile. If the mobile answers,
+    Telnyx bridges both legs. If it does not, the existing hangup reconciliation
+    creates the recovery SMS and CRM callback task.
+    """
+    if os.environ.get("INBOUND_CALL_TRANSFER_ENABLED", "false").lower() not in {"1", "true", "yes"}:
+        return False
+    if payload.get("direction") not in {"incoming", "inbound"}:
+        return False
+
+    call_control_id = payload.get("call_control_id", "")
+    destination = _normalize_phone(payload.get("to", ""))
+    if not call_control_id or not destination:
+        return False
+
+    from app.infrastructure.db.models import ProductConfiguration
+
+    config = session.execute(
+        select(ProductConfiguration).where(
+            ProductConfiguration.product_code == "never_miss",
+            ProductConfiguration.enabled.is_(True),
+            ProductConfiguration.business_phone == destination,
+        )
+    ).scalar_one_or_none()
+    if not config or not config.notification_phone:
+        logger.info("Inbound transfer skipped: no enabled destination for %s", _redact_number(destination))
+        return False
+
+    mobile = _normalize_phone(config.notification_phone)
+    caller = _normalize_phone(payload.get("from", ""))
+    if not _validate_phone(mobile) or not mobile.startswith("+1") or mobile in {destination, caller}:
+        logger.error("Inbound transfer skipped: invalid forwarding destination for org=%s", config.organization_id)
+        return False
+
+    api_key = os.environ.get("TELNYX_API_KEY", "")
+    public_url = os.environ.get("TELNYX_PUBLIC_URL", "").rstrip("/")
+    if not api_key:
+        logger.error("Inbound transfer skipped: TELNYX_API_KEY is missing")
+        return False
+
+    state = base64.b64encode(
+        json.dumps({"kind": "never_miss_transfer", "organization_id": config.organization_id}).encode()
+    ).decode()
+    transfer_payload = {
+        "to": mobile,
+        "from": destination,
+        "from_display_name": "Pacific North Systems",
+        "timeout_secs": int(os.environ.get("INBOUND_CALL_TRANSFER_TIMEOUT_SECONDS", "25")),
+        "early_media": True,
+        "target_leg_client_state": state,
+        "command_id": str(uuid.uuid5(uuid.NAMESPACE_URL, f"telnyx-transfer:{call_control_id}")),
+    }
+    if public_url:
+        transfer_payload["webhook_url"] = f"{public_url}/api/v1/telephony/webhook"
+        transfer_payload["webhook_url_method"] = "POST"
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.post(
+            f"https://api.telnyx.com/v2/calls/{call_control_id}/actions/transfer",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json=transfer_payload,
+        )
+    if response.status_code not in (200, 201):
+        logger.error(
+            "Inbound transfer failed: call=%s org=%s status=%s",
+            call_control_id[:12], config.organization_id, response.status_code,
+        )
+        return False
+
+    logger.info(
+        "Inbound transfer started: call=%s org=%s destination=%s",
+        call_control_id[:12], config.organization_id, _redact_number(mobile),
+    )
+    return True
+
+
 def _redact_number(num: str | None) -> str:
     """Return last 4 digits only, or REDACT if None."""
     if not num:
@@ -532,6 +612,14 @@ async def telnyx_webhook(request: Request, session: Session = Depends(get_db_ses
             provider="telnyx",
             correlation_id=str(uuid.uuid4()),
         )
+
+    if event_type == "call.initiated":
+        try:
+            await _transfer_inbound_call(payload, session)
+        except Exception as exc:
+            # Keep the webhook ledger and recovery path alive if Telnyx rejects
+            # the live transfer. The caller can still receive missed-call care.
+            logger.exception("Inbound transfer command failed safely: %s", exc)
 
     call.provider_leg_id = provider_leg_id or call.provider_leg_id
 
