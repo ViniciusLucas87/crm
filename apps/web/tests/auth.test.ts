@@ -10,6 +10,8 @@ import { describe, expect, it } from "vitest";
 
 const WEB_URL = process.env.TEST_WEB_URL ?? "http://localhost:3000";
 const API_URL = process.env.TEST_API_URL ?? "http://localhost:8000";
+const integrationDescribe =
+  process.env.RUN_INTEGRATION_TESTS === "true" ? describe : describe.skip;
 
 async function fetchStatus(
   url: string,
@@ -29,7 +31,7 @@ async function fetchStatus(
   }
 }
 
-describe("Authorization — pages", () => {
+integrationDescribe("Authorization — pages", () => {
   // All pages are protected server-side — unauthenticated requests must redirect
   const protectedPages = [
     "/",
@@ -67,7 +69,7 @@ describe("Authorization — pages", () => {
   });
 });
 
-describe("Authorization — Next.js API routes", () => {
+integrationDescribe("Authorization — Next.js API routes", () => {
   const protectedRoutes = [
     "/api/dashboard/summary",
     "/api/companies",
@@ -87,7 +89,7 @@ describe("Authorization — Next.js API routes", () => {
   );
 });
 
-describe("Authorization — FastAPI backend", () => {
+integrationDescribe("Authorization — FastAPI backend", () => {
   it("rejects missing authorization header with 401", async () => {
     const status = await fetchStatus(`${API_URL}/api/v1/companies`);
     expect(status).toBe(401);
@@ -107,7 +109,7 @@ describe("Authorization — FastAPI backend", () => {
   });
 });
 
-describe("Authorization — failure modes", () => {
+integrationDescribe("Authorization — failure modes", () => {
   it("fails securely when backend is unreachable", async () => {
     // The proxyAuthenticatedApi returns 503 when the backend is down.
     // This test verifies the 401 still takes priority over 503.
