@@ -31,7 +31,9 @@ def test_reddit_opportunity_requires_permission_before_contact(client: TestClien
 
     drafted = client.post(f"/api/v1/reddit/opportunities/{opportunity_id}/draft", headers=headers)
     assert drafted.status_code == 200
-    assert "Pacific North Systems" in drafted.json()["public_reply_draft"]
+    assert "built a small solution" in drafted.json()["public_reply_draft"]
+    assert "Pacific North Systems" not in drafted.json()["public_reply_draft"]
+    assert "Never Miss" not in drafted.json()["public_reply_draft"]
 
     blocked = client.post(
         f"/api/v1/reddit/opportunities/{opportunity_id}/mark-contacted",

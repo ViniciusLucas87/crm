@@ -266,9 +266,9 @@ def prepare_drafts(
         raise HTTPException(status_code=404, detail="Reddit opportunity not found")
 
     item.public_reply_draft = (
-        "That sounds frustrating, especially when it happens while you are trying to finish the work. "
-        "One practical option is to keep your current business number and forward only unanswered calls to a service that immediately texts the caller and creates a callback reminder. "
-        "I work with Pacific North Systems and we built Never Miss for this exact situation. I am happy to explain the setup here if it would be useful."
+        "That is frustrating. I ran into this exact problem and built a small solution for it. "
+        "You keep your business number, callers get a text when you cannot answer, and you get a simple callback list. "
+        "If it helps, I can explain how I set it up."
     )
     item.dm_draft = (
         f"Hi {item.author_handle}, Vini here from Pacific North Systems. Thanks for the conversation in r/{item.community}. "
