@@ -75,8 +75,8 @@ export default function DiscoverPage() {
       <Breadcrumbs items={[{ label: "Lead Intelligence", href: "/leads" }, { label: "Discover" }]} />
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-white">AI Prospect Discovery</h2>
-          <p className="text-sm text-slate-400">AI finds candidate companies. Enrichment runs only after you approve a lead.</p>
+          <h2 className="text-lg font-semibold text-white">Local Prospect Discovery</h2>
+          <p className="text-sm text-slate-400">Google Places finds real businesses and public phone numbers. AI enrichment runs only after you approve a lead.</p>
         </div>
         <Link href="/leads/saved-searches"><Button variant="secondary" size="sm"><Bookmark className="mr-1 h-3.5 w-3.5" />Saved</Button></Link>
       </div>
@@ -112,7 +112,7 @@ export default function DiscoverPage() {
         <Card className="border-cyan-400/10 bg-gradient-to-br from-cyan-400/5 to-purple-400/5">
           <div className="py-8 text-center">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-cyan-400" />
-            <h3 className="mt-3 text-lg font-semibold text-white">Finding good-fit companies</h3>
+            <h3 className="mt-3 text-lg font-semibold text-white">Finding verified local companies</h3>
             <p className="mt-1 text-sm text-slate-400">
               Searching for {industry || "companies"}{city ? ` in ${city}` : ""}...
             </p>

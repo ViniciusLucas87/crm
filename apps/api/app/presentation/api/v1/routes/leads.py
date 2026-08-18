@@ -46,6 +46,7 @@ router = APIRouter(prefix="/leads", tags=["leads"])
 LEAD_STATUSES = ("new", "researching", "ready_for_review", "needs_more_research", "approved", "rejected", "archived", "imported")
 
 DEEPSEEK_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+GOOGLE_PLACES_KEY = os.getenv("GOOGLE_PLACES_API_KEY", "")
 
 
 def _lead_dict(lead: Lead) -> dict[str, Any]:
@@ -1022,10 +1023,10 @@ async def discover_prospects(
     from app.application.sales.discovery_engine import (
         DiscoveryCriteria,
         DiscoveryEngine,
-        LLMDiscoveryProvider,
+        GooglePlacesDiscoveryProvider,
     )
 
-    provider = LLMDiscoveryProvider(api_key=DEEPSEEK_KEY)
+    provider = GooglePlacesDiscoveryProvider(api_key=GOOGLE_PLACES_KEY)
     engine = DiscoveryEngine(session, provider)
 
     criteria = DiscoveryCriteria(

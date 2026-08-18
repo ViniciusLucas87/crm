@@ -25,6 +25,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
+import httpx
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -116,6 +117,120 @@ class DiscoveryProvider(ABC):
 
 class DiscoveryUnavailableError(RuntimeError):
     """Raised when the configured discovery service cannot run the search."""
+
+
+class GooglePlacesDiscoveryProvider(DiscoveryProvider):
+    """Discovers verifiable local businesses through Google Places."""
+
+    _SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
+    _FIELD_MASK = ",".join(
+        (
+            "places.id",
+            "places.displayName",
+            "places.formattedAddress",
+            "places.addressComponents",
+            "places.nationalPhoneNumber",
+            "places.internationalPhoneNumber",
+            "places.websiteUri",
+            "places.googleMapsUri",
+            "places.primaryTypeDisplayName",
+            "places.businessStatus",
+        )
+    )
+
+    def __init__(self, api_key: str) -> None:
+        self._api_key = api_key.strip()
+
+    async def discover(self, criteria: DiscoveryCriteria) -> list[DiscoveredCompany]:
+        if not self._api_key:
+            raise DiscoveryUnavailableError(
+                "Google Places is not configured yet. No contacts were created."
+            )
+
+        location = ", ".join(
+            part
+            for part in (criteria.city, criteria.province, criteria.country or "Canada")
+            if part
+        )
+        subject = criteria.keyword or criteria.business_type or criteria.industry or "businesses"
+        text_query = f"{subject} in {location}" if location else subject
+        headers = {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": self._api_key,
+            "X-Goog-FieldMask": self._FIELD_MASK,
+        }
+        payload = {
+            "textQuery": text_query,
+            "pageSize": min(max(criteria.count, 1), 20),
+            "languageCode": "en",
+            "regionCode": "CA",
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                response = await client.post(self._SEARCH_URL, headers=headers, json=payload)
+                response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            logger.error("Google Places search failed with status %s", exc.response.status_code)
+            raise DiscoveryUnavailableError(
+                "Google Places could not run this search. Check that the Places API key, billing, and API restrictions are active. No contacts were created."
+            ) from exc
+        except httpx.HTTPError as exc:
+            logger.error("Google Places search could not be reached: %s", exc)
+            raise DiscoveryUnavailableError(
+                "Google Places could not be reached. No contacts were created. Please try again shortly."
+            ) from exc
+
+        companies = [
+            self._to_company(place, criteria) for place in response.json().get("places", [])
+        ]
+        excluded = {name.casefold() for name in criteria.excluded_names}
+        return [
+            company
+            for company in companies
+            if company.name and company.name.casefold() not in excluded
+        ][: criteria.count]
+
+    async def enrich(self, company: DiscoveredCompany) -> DiscoveredCompany:
+        return company
+
+    @staticmethod
+    def _to_company(place: dict, criteria: DiscoveryCriteria) -> DiscoveredCompany:
+        components = place.get("addressComponents") or []
+
+        def address_value(component_type: str) -> str:
+            for component in components:
+                if component_type in (component.get("types") or []):
+                    return str(component.get("longText") or component.get("shortText") or "")
+            return ""
+
+        name = str((place.get("displayName") or {}).get("text") or "").strip()
+        phone = str(
+            place.get("internationalPhoneNumber") or place.get("nationalPhoneNumber") or ""
+        ).strip()
+        website = str(place.get("websiteUri") or "").strip()
+        maps_url = str(place.get("googleMapsUri") or "").strip()
+        industry = str((place.get("primaryTypeDisplayName") or {}).get("text") or criteria.industry)
+        return DiscoveredCompany(
+            name=name,
+            industry=industry,
+            city=address_value("locality") or criteria.city,
+            province=address_value("administrative_area_level_1") or criteria.province,
+            country=address_value("country") or criteria.country or "Canada",
+            website=website,
+            description=f"Verified local business listed by Google Places at {place.get('formattedAddress', '')}.",
+            confidence_score=95,
+            public_phone=phone,
+            contact_source_url=website or maps_url,
+            website_evidence={
+                "provider": "google_places",
+                "place_id": place.get("id"),
+                "source_url": maps_url,
+                "formatted_address": place.get("formattedAddress"),
+                "business_status": place.get("businessStatus"),
+                "phones": [phone] if phone else [],
+            },
+        )
 
 
 # ── LLM Discovery Provider ──
@@ -571,7 +686,7 @@ class DiscoveryEngine:
             opportunity_score=company.opportunity_score,
             confidence_score=company.confidence_score,
             status="new",
-            source="ai_discovery",
+            source="google_places",
             enrichment_status="pending",
             website_data=(
                 json.dumps(
@@ -581,7 +696,7 @@ class DiscoveryEngine:
                             "phone": company.public_phone or None,
                             "email": company.public_email or None,
                             "source_url": company.contact_source_url or None,
-                            "confidence": "official_website",
+                            "confidence": "verified_public_source",
                         },
                     }
                 )
@@ -599,7 +714,7 @@ class DiscoveryEngine:
                 organization_id=org_id,
                 lead_id=lead.id,
                 event_type="ai_discovered",
-                description="Discovered by AI Prospect Discovery Engine. Awaiting approval before enrichment.",
+                description="Verified through Google Places. Awaiting approval before optional AI enrichment.",
                 metadata_json=json.dumps(
                     {
                         "opportunity_score": company.opportunity_score,
@@ -624,12 +739,19 @@ class DiscoveryEngine:
             try:
                 async with semaphore:
                     evidence = await collect_website_evidence(company.website)
-                company.website_evidence = evidence
+                google_evidence = company.website_evidence
+                company.website_evidence = {
+                    **google_evidence,
+                    "official_website": evidence,
+                }
                 phones = evidence.get("phones") or []
                 emails = evidence.get("emails") or []
-                company.public_phone = str(phones[0]).strip() if phones else ""
-                company.public_email = str(emails[0]).strip() if emails else ""
-                company.contact_source_url = str(evidence.get("source_url") or company.website)
+                if phones:
+                    company.public_phone = str(phones[0]).strip()
+                if emails:
+                    company.public_email = str(emails[0]).strip()
+                if phones or emails:
+                    company.contact_source_url = str(evidence.get("source_url") or company.website)
             except Exception as exc:
                 logger.info("Public contact lookup skipped for %s: %s", company.name, exc)
 

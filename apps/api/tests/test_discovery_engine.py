@@ -10,6 +10,7 @@ from app.application.sales.discovery_engine import (
     DiscoveryCriteria,
     DiscoveryEngine,
     DiscoveryUnavailableError,
+    GooglePlacesDiscoveryProvider,
     LLMDiscoveryProvider,
 )
 
@@ -90,4 +91,53 @@ def test_discovery_collects_attributable_public_business_contact():
     assert company.public_phone == "+16045550123"
     assert company.public_email == "service@example.com"
     assert company.contact_source_url == "https://example.com/"
-    assert company.website_evidence == evidence
+    assert company.website_evidence == {"official_website": evidence}
+
+
+def test_google_places_discovers_verified_company_and_phone():
+    response = Mock()
+    response.raise_for_status.return_value = None
+    response.json.return_value = {
+        "places": [
+            {
+                "id": "place-123",
+                "displayName": {"text": "Example Heating Ltd."},
+                "formattedAddress": "123 Main St, Vancouver, BC, Canada",
+                "addressComponents": [
+                    {"longText": "Vancouver", "types": ["locality"]},
+                    {"shortText": "BC", "types": ["administrative_area_level_1"]},
+                    {"longText": "Canada", "types": ["country"]},
+                ],
+                "internationalPhoneNumber": "+1 604-555-0123",
+                "websiteUri": "https://example-heating.test",
+                "googleMapsUri": "https://maps.google.com/example",
+                "primaryTypeDisplayName": {"text": "HVAC contractor"},
+                "businessStatus": "OPERATIONAL",
+            }
+        ]
+    }
+
+    class FakeClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def post(self, *_args, **_kwargs):
+            return response
+
+    provider = GooglePlacesDiscoveryProvider(api_key="configured")
+    with patch(
+        "app.application.sales.discovery_engine.httpx.AsyncClient",
+        return_value=FakeClient(),
+    ):
+        companies = asyncio.run(
+            provider.discover(DiscoveryCriteria(industry="HVAC", city="Vancouver", count=10))
+        )
+
+    assert len(companies) == 1
+    assert companies[0].name == "Example Heating Ltd."
+    assert companies[0].public_phone == "+1 604-555-0123"
+    assert companies[0].city == "Vancouver"
+    assert companies[0].website_evidence["provider"] == "google_places"
