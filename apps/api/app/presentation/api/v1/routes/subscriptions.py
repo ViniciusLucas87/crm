@@ -14,7 +14,7 @@ from datetime import UTC, datetime, timedelta
 import httpx
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import case, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -348,7 +348,10 @@ def request_management_link(payload: ManagementLinkInput, session: Session = Dep
     subscription = session.execute(
         select(ProductSubscription)
         .where(ProductSubscription.customer_email == payload.email.strip().lower())
-        .order_by(ProductSubscription.created_at.desc())
+        .order_by(
+            case((ProductSubscription.status == "active", 0), (ProductSubscription.status == "paid", 1), else_=2),
+            ProductSubscription.created_at.desc(),
+        )
     ).scalars().first()
     if subscription:
         token = _issue_management_token(subscription)
