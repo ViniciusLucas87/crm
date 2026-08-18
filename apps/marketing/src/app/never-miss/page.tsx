@@ -60,15 +60,17 @@ export default function ProductsPage() {
   return (
     <main>
       <section className="relative min-h-[680px] overflow-hidden bg-[#071729] text-white">
-        <Image
-          src="/images/never-miss-contractor-hero.gif"
-          alt="A service contractor checking a customer message while working"
-          fill
-          priority
-          sizes="100vw"
-          unoptimized
-          className="object-cover object-[58%_center] lg:left-[48%] lg:right-0 lg:w-[52%] lg:object-[center_35%]"
-        />
+        <div className="absolute inset-0 lg:left-[48%] lg:w-[52%]">
+          <Image
+            src="/images/never-miss-contractor-hero.gif"
+            alt="A service contractor checking a customer message while working"
+            fill
+            priority
+            sizes="(min-width: 1024px) 52vw, 100vw"
+            unoptimized
+            className="object-cover object-[58%_center] lg:object-[center_35%]"
+          />
+        </div>
         <div className="absolute inset-0 bg-[#071729]/40 lg:bg-gradient-to-r lg:from-[#071729] lg:from-[0%] lg:via-[#071729] lg:via-[44%] lg:to-transparent lg:to-[52%]" />
         <Container className="relative flex min-h-[680px] items-center py-20">
           <div className="max-w-2xl lg:max-w-[38%]">
