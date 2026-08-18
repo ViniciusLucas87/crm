@@ -109,8 +109,8 @@ jobs:
       - name: Wait for readiness
         run: |
           for i in $(seq 1 30); do
-            STATUS=$(curl -s http://localhost:8000/api/v1/health/ready | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
-            if [ "$STATUS" = "ready" ]; then
+            PHASE=$(curl -s http://localhost:8000/api/v1/health/ready | python3 -c "import sys,json; print(json.load(sys.stdin)['phase'])")
+            if [ "$PHASE" = "ready" ]; then
               echo "✓ API ready after ${i}s"
               break
             fi
@@ -120,7 +120,7 @@ jobs:
         run: |
           curl -s http://localhost:8000/api/v1/health | python3 -m json.tool
           curl -s http://localhost:8000/api/v1/health/live | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status']=='alive'"
-          curl -s http://localhost:8000/api/v1/health/ready | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['status']=='ready'"
+          curl -s http://localhost:8000/api/v1/health/ready | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['phase']=='ready'; assert d['checks']['database']['status']=='ok'; assert d['checks']['redis']['status']=='ok'"
           echo "✓ Health endpoints verified"
       - name: Run migrations
         run: docker compose exec -T api alembic upgrade head
