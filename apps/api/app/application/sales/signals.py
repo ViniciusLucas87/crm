@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from pydantic import BaseModel
 from sqlalchemy import func, or_, select

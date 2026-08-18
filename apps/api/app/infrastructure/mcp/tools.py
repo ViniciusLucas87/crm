@@ -9,6 +9,7 @@ Registered at import time into the global ToolRegistry.
 
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy import func, select, or_
 from sqlalchemy.orm import Session

@@ -7,10 +7,14 @@ implements this interface. CRM code never calls a provider directly.
 Pattern follows IntelligenceProvider for consistency.
 """
 
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
+
+logger = logging.getLogger(__name__)
+DEFAULT_ORG_ID = 1
 
 
 class CallState(StrEnum):

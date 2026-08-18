@@ -30,7 +30,7 @@ from app.application.llm.provider import LLMConfig
 from app.infrastructure.auth.clerk import AuthContext, require_permission
 from app.infrastructure.db.session import get_db_session
 from app.infrastructure.mcp import register_all_tools
-from app.infrastructure.mcp.tool_registry import ToolRegistry
+from app.infrastructure.mcp.tool_registry import ToolRegistry, get_registry
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
