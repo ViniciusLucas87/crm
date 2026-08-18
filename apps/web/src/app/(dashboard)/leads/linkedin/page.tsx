@@ -91,6 +91,17 @@ export default function LinkedInLeadsPage() {
     } catch (reason) { setError(reason instanceof Error ? reason.message : "The connection notes could not be approved."); }
     finally { setSaving(false); }
   }
+  async function rewriteAllUnsent() {
+    const unsent = items.filter(item => item.public_reply_draft && !item.contacted_at && !item.human_approved_at);
+    if (unsent.length === 0) { setSuccess("There are no unsent notes to rewrite."); return; }
+    setSaving(true); setError(""); setSuccess("");
+    try {
+      const responses = await Promise.all(unsent.map(item => fetch(`/api/linkedin/opportunities/${item.id}/draft`, { method: "POST" })));
+      if (responses.some(response => !response.ok)) throw new Error("At least one unsent note could not be rewritten.");
+      await load(); setSuccess(`${unsent.length} unsent ${unsent.length === 1 ? "note was" : "notes were"} rewritten for review. Nothing was sent.`);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "The unsent notes could not be rewritten."); }
+    finally { setSaving(false); }
+  }
   async function contacted(id: number) {
     setSaving(true); setError(""); setSuccess("");
     try {
@@ -121,7 +132,7 @@ export default function LinkedInLeadsPage() {
       <input className="rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white md:col-span-2" placeholder="LinkedIn profile URL" value={form.source_url} onChange={e => setForm({ ...form, source_url: e.target.value })} />
       <textarea className="min-h-20 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white md:col-span-2" placeholder="Why Never Miss may help" value={form.relevance_reason} onChange={e => setForm({ ...form, relevance_reason: e.target.value })} />
     </div><div className="mt-4 flex justify-end"><Button variant="primary" onClick={() => void add()} disabled={saving}>Save for review</Button></div></Card>}
-    <Card><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-semibold text-white">Owner queue</h2><span className="text-xs text-slate-500">{items.length} owners</span></div><Button variant="secondary" size="sm" disabled={saving || !items.some(item => item.public_reply_draft && !item.human_approved_at)} onClick={() => void approveAll()}>{saving ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="mr-1 h-3.5 w-3.5" />}Approve all prepared notes</Button></div>
+    <Card><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-semibold text-white">Owner queue</h2><span className="text-xs text-slate-500">{items.length} owners</span></div><div className="flex flex-wrap gap-2"><Button variant="secondary" size="sm" disabled={saving || !items.some(item => item.public_reply_draft && !item.contacted_at && !item.human_approved_at)} onClick={() => void rewriteAllUnsent()}><Sparkles className="mr-1 h-3.5 w-3.5" />Rewrite all unsent notes</Button><Button variant="secondary" size="sm" disabled={saving || !items.some(item => item.public_reply_draft && !item.human_approved_at)} onClick={() => void approveAll()}>{saving ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="mr-1 h-3.5 w-3.5" />}Approve all prepared notes</Button></div></div>
       {loading ? <div className="py-12 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-cyan-400" /></div> : items.length === 0 ? <div className="py-12 text-center"><Linkedin className="mx-auto h-8 w-8 text-slate-600" /><p className="mt-3 text-sm text-white">No LinkedIn owners researched yet</p></div> : <div className="mt-4 space-y-3">{items.map(item => <div key={item.id} className="rounded-xl border border-white/10 bg-slate-950/40 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex flex-wrap gap-2"><Badge>{item.community}</Badge><Badge variant={item.relevance_score >= 75 ? "success" : "warning"}>{item.relevance_score}% fit</Badge><Badge>{labels[item.status] || item.status}</Badge></div><h3 className="mt-2 font-medium text-white">{item.author_handle}</h3><p className="text-sm text-cyan-200">{item.post_title}</p><p className="mt-2 text-sm text-slate-400">{item.post_excerpt}</p><p className="mt-2 text-xs text-cyan-200">Why it matters: {item.relevance_reason}</p></div><a href={item.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-cyan-400">Open profile <ExternalLink className="h-3 w-3" /></a></div>
         {item.public_reply_draft && <div className="mt-3 rounded-lg border border-cyan-400/10 bg-cyan-400/5 p-3"><p className="text-xs font-semibold text-cyan-300">Connection note</p><p className="mt-1 text-sm text-slate-300">{item.public_reply_draft}</p></div>}
