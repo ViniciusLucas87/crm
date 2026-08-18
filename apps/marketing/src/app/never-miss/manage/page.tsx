@@ -30,15 +30,28 @@ function Loading() {
 
 function Manager() {
   const params = useSearchParams();
-  const token = params.get("token") || "";
+  const [token, setToken] = useState(params.get("token") || "");
   const [account, setAccount] = useState<Account | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(Boolean(token));
 
   useEffect(() => {
+    if (!token && typeof window !== "undefined") {
+      const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const fragmentToken = fragment.get("token") || "";
+      if (fragmentToken) {
+        setToken(fragmentToken);
+        window.history.replaceState({}, "", "/never-miss/manage");
+      }
+      return;
+    }
     if (!token) return;
-    fetch(`/api/v1/subscriptions/manage/${encodeURIComponent(token)}`, { cache: "no-store" })
+    fetch("/api/v1/subscriptions/manage/session", {
+      method: "POST",
+      headers: { "X-Never-Miss-Token": token },
+      cache: "no-store",
+    })
       .then(async response => {
         const body = await response.json();
         if (!response.ok) throw new Error(body.detail || "Your secure link could not be opened.");
@@ -71,9 +84,9 @@ function Manager() {
     setMessage("");
     const values = new FormData(event.currentTarget);
     try {
-      const response = await fetch(`/api/v1/subscriptions/manage/${encodeURIComponent(token)}`, {
+      const response = await fetch("/api/v1/subscriptions/manage/settings", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Never-Miss-Token": token },
         body: JSON.stringify({
           notification_phone: values.get("notification_phone"),
           existing_business_phone: values.get("existing_business_phone"),
@@ -101,10 +114,10 @@ function Manager() {
         {error ? <div className="mt-7 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-800">{error}</div> : null}
         {message ? <div className="mt-7 flex gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-800"><CheckCircle2 className="h-5 w-5" />{message}</div> : null}
         {busy && !account ? <Loading /> : null}
-        {!token ? (
+        {(!token || (error && !account)) ? (
           <form onSubmit={requestLink} className="mt-10 rounded-3xl bg-white p-7 shadow-xl">
-            <h2 className="text-2xl font-semibold">Email me a secure account link</h2>
-            <p className="mt-2 text-slate-600">Use the email address from your Never Miss purchase.</p>
+            <h2 className="text-2xl font-semibold">{error ? "Get a fresh account link" : "Email me a secure account link"}</h2>
+            <p className="mt-2 text-slate-600">Use the email address from your Never Miss purchase. Only paid customer emails can receive a link.</p>
             <input name="email" type="email" required placeholder="you@yourbusiness.ca" className="mt-6 min-h-12 w-full rounded-xl border border-slate-300 px-4 py-3" />
             <button disabled={busy} className="mt-4 min-h-12 w-full rounded-xl bg-[#071729] px-5 font-semibold text-white disabled:opacity-60">{busy ? "Sending..." : "Send my private link"}</button>
           </form>

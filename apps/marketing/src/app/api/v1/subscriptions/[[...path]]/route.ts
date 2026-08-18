@@ -21,7 +21,10 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path?: s
 
   const response = await fetch(url, {
     method: request.method,
-    headers: { "Content-Type": request.headers.get("content-type") || "application/json" },
+    headers: {
+      "Content-Type": request.headers.get("content-type") || "application/json",
+      ...(request.headers.get("x-never-miss-token") ? { "X-Never-Miss-Token": request.headers.get("x-never-miss-token")! } : {}),
+    },
     body: request.method === "GET" ? undefined : await request.text(),
     cache: "no-store",
   });

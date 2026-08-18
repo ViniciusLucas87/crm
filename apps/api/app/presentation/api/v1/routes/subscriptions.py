@@ -215,7 +215,8 @@ def _email_management_link(subscription: ProductSubscription, token: str) -> Non
     if not api_key:
         return
     site_url = os.getenv("MARKETING_SITE_URL", "https://www.pacificnorthsystems.com").rstrip("/")
-    link = f"{site_url}/never-miss/manage?token={token}"
+    # A URL fragment is handled only by the browser and is never sent to web access logs.
+    link = f"{site_url}/never-miss/manage#token={token}"
     httpx.post(
         "https://api.resend.com/emails",
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
@@ -389,13 +390,22 @@ def request_management_link(payload: ManagementLinkInput, session: Session = Dep
     return {"message": "If that email has a Never Miss account, a secure link is on its way."}
 
 
-@router.get("/manage/{token}")
-def management_status(token: str, session: Session = Depends(get_db_session)):
+@router.post("/manage/session")
+def management_status(
+    x_never_miss_token: str = Header(min_length=20, max_length=255),
+    session: Session = Depends(get_db_session),
+):
+    token = x_never_miss_token
     return _management_payload(session, _management_subscription(session, token))
 
 
-@router.patch("/manage/{token}")
-def update_management(token: str, payload: ManagementUpdateInput, session: Session = Depends(get_db_session)):
+@router.patch("/manage/settings")
+def update_management(
+    payload: ManagementUpdateInput,
+    x_never_miss_token: str = Header(min_length=20, max_length=255),
+    session: Session = Depends(get_db_session),
+):
+    token = x_never_miss_token
     subscription = _management_subscription(session, token)
     if not subscription.organization_id:
         raise HTTPException(409, "Finish activation before changing service settings")

@@ -124,11 +124,13 @@ def test_customer_can_manage_settings_and_pause_service(client, monkeypatch):
         },
     )
     management_token = activation.json()["management_token"]
-    status = client.get(f"/api/v1/subscriptions/manage/{management_token}")
+    headers = {"X-Never-Miss-Token": management_token}
+    status = client.post("/api/v1/subscriptions/manage/session", headers=headers)
     assert status.status_code == 200
     assert status.json()["enabled"] is True
     updated = client.patch(
-        f"/api/v1/subscriptions/manage/{management_token}",
+        "/api/v1/subscriptions/manage/settings",
+        headers=headers,
         json={
             "notification_phone": "+16045550103",
             "recovery_message": "Hi, Taylor Plumbing missed your call. Tell us what you need. Reply STOP to opt out.",
@@ -180,7 +182,9 @@ def test_cancellation_webhook_disables_service_but_keeps_customer_record(client,
         headers={"Content-Type": "application/json", "Stripe-Signature": f"t={timestamp},v1={signature}"},
     )
     assert response.status_code == 200
-    status = client.get(f"/api/v1/subscriptions/manage/{management_token}")
+    status = client.post(
+        "/api/v1/subscriptions/manage/session", headers={"X-Never-Miss-Token": management_token}
+    )
     assert status.status_code == 200
     assert status.json()["status"] == "cancelled"
     assert status.json()["enabled"] is False

@@ -165,7 +165,7 @@ function ActivationForm() {
                 <p className="font-semibold text-cyan-200">What to expect during the test</p>
                 <p className="mt-2 text-sm leading-6 text-white/75">Let the call ring until it forwards, then hang up. The text normally arrives within about 10 to 25 seconds. Carrier and mobile network conditions can sometimes add a little more time.</p>
               </div>
-              {activated.management_token ? <Link href={`/never-miss/manage?token=${encodeURIComponent(activated.management_token)}`} className="mt-6 flex min-h-14 items-center justify-center rounded-xl bg-cyan-300 px-6 py-3 text-lg font-semibold text-[#071729] hover:bg-cyan-200">Manage my Never Miss service</Link> : null}
+              {activated.management_token ? <Link href={`/never-miss/manage#token=${encodeURIComponent(activated.management_token)}`} className="mt-6 flex min-h-14 items-center justify-center rounded-xl bg-cyan-300 px-6 py-3 text-lg font-semibold text-[#071729] hover:bg-cyan-200">Manage my Never Miss service</Link> : null}
             </section>
           ) : setup ? (
             <form onSubmit={activate} className="mt-10 space-y-6 rounded-3xl bg-white p-7 shadow-xl sm:p-9">
