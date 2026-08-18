@@ -1,4 +1,6 @@
 import asyncio
+import base64
+import json
 from types import SimpleNamespace
 
 from app.presentation.api.v1.routes import telephony
@@ -75,3 +77,17 @@ def test_inbound_transfer_is_disabled_by_default(monkeypatch):
         )
     )
     assert transferred is False
+
+
+def test_transfer_leg_state_recovers_organization_without_using_destination_number():
+    state = base64.b64encode(
+        json.dumps({"kind": "never_miss_transfer", "organization_id": 7}).encode()
+    ).decode()
+    decoded = telephony._decode_never_miss_transfer_state({"client_state": state})
+    assert decoded == {"kind": "never_miss_transfer", "organization_id": 7}
+
+
+def test_unrelated_or_invalid_client_state_is_ignored():
+    unrelated = base64.b64encode(json.dumps({"kind": "other", "organization_id": 7}).encode()).decode()
+    assert telephony._decode_never_miss_transfer_state({"client_state": unrelated}) == {}
+    assert telephony._decode_never_miss_transfer_state({"client_state": "not-base64"}) == {}

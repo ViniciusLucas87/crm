@@ -11,6 +11,7 @@ import os
 import re
 import uuid
 import base64
+import binascii
 from datetime import UTC, datetime
 from functools import lru_cache
 
@@ -431,6 +432,20 @@ def communication_history(
 REDACT = "***REDACTED***"
 
 
+def _decode_never_miss_transfer_state(payload: dict) -> dict:
+    """Return trusted routing metadata attached to a transfer leg."""
+    raw = payload.get("client_state", "")
+    if not raw:
+        return {}
+    try:
+        decoded = json.loads(base64.b64decode(raw).decode())
+    except (ValueError, TypeError, UnicodeDecodeError, json.JSONDecodeError, binascii.Error):
+        return {}
+    if decoded.get("kind") != "never_miss_transfer":
+        return {}
+    return decoded
+
+
 async def _transfer_inbound_call(payload: dict, session: Session) -> bool:
     """Ring the configured mobile for an inbound Never Miss number.
 
@@ -558,6 +573,7 @@ async def telnyx_webhook(request: Request, session: Session = Depends(get_db_ses
     payload = data.get("payload", {})
     provider_call_id = payload.get("call_control_id", "")
     provider_leg_id = payload.get("call_leg_id", "")
+    transfer_state = _decode_never_miss_transfer_state(payload)
 
     if not provider_event_id:
         return {"error": "Missing provider event id"}
@@ -597,13 +613,13 @@ async def telnyx_webhook(request: Request, session: Session = Depends(get_db_ses
     if not call:
         caller_number = normalize_phone(payload.get("from", ""))
         dest_number = normalize_phone(payload.get("to", ""))
-        org_id = _resolve_tenant(session, dest_number)
+        org_id = int(transfer_state["organization_id"]) if transfer_state.get("organization_id") else _resolve_tenant(session, dest_number)
         entities = lifecycle.resolve_entities(
             caller_number or payload.get("from", ""),
             organization_id=org_id,
         )
         call = lifecycle.create_call(
-            direction="inbound",
+            direction="inbound" if payload.get("direction") in {"incoming", "inbound"} else "outbound",
             phone_number=payload.get("from", ""),
             caller_id=payload.get("from", ""),
             company_id=entities.get("company_id"),
@@ -653,7 +669,7 @@ async def telnyx_webhook(request: Request, session: Session = Depends(get_db_ses
     # Deferred reconciliation: emit call.reconciliation.requested for hangup events
     # with ALLOW spam tier. The worker checks the event ledger after a grace period
     # and creates task + activity + SMS only if the call was truly missed.
-    if event_type == "call.hangup" and _should_reconcile(session, call):
+    if event_type == "call.hangup" and not transfer_state and _should_reconcile(session, call):
         rec_idem_key = f"reconciliation_{call.public_uuid}"
         reconciliation_event = OutboxEvent(
             event_type="call.reconciliation.requested",
