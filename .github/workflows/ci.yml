@@ -92,7 +92,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Prepare test environment
-        run: cp .env.example .env
+        run: |
+          cp .env.example .env
+          echo 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_Y2ktdGVzdC5jbGVyay5hY2NvdW50cy5kZXYk' >> .env
+          echo 'CLERK_SECRET_KEY=sk_test_ci_only_not_a_real_secret' >> .env
       - name: Build images
         run: docker compose build
       - name: Verify OCI labels
