@@ -25,8 +25,10 @@ def test_linkedin_human_reviewed_outreach_flow(client: TestClient) -> None:
     item_id = created.json()["id"]
     drafted = client.post(f"/api/v1/linkedin/opportunities/{item_id}/draft", headers=headers)
     assert drafted.status_code == 200
-    assert "I am Vini. I run Pacific North Systems" in drafted.json()["public_reply_draft"]
-    assert "do people normally wait for your callback" in drafted.json()["public_reply_draft"]
+    assert "I found Example Electric" in drafted.json()["public_reply_draft"]
+    assert "Happy to connect." in drafted.json()["public_reply_draft"]
+    assert "Owner at" not in drafted.json()["public_reply_draft"]
+    assert len(drafted.json()["public_reply_draft"]) <= 300
     blocked = client.post(f"/api/v1/linkedin/opportunities/{item_id}/mark-contacted", headers=headers)
     assert blocked.status_code == 409
     approved = client.post(
@@ -37,6 +39,32 @@ def test_linkedin_human_reviewed_outreach_flow(client: TestClient) -> None:
     assert approved.status_code == 200
     contacted = client.post(f"/api/v1/linkedin/opportunities/{item_id}/mark-contacted", headers=headers)
     assert contacted.status_code == 200
+
+
+def test_linkedin_draft_does_not_confuse_a_role_with_a_company(client: TestClient) -> None:
+    headers = auth_headers("org1-admin")
+    campaign = client.get("/api/v1/linkedin/campaigns", headers=headers).json()["items"][0]
+    created = client.post(
+        "/api/v1/linkedin/opportunities",
+        headers=headers,
+        json={
+            "campaign_id": campaign["id"],
+            "community": "Ontario",
+            "author_handle": "Seán Tobin",
+            "post_title": "President and co-founder, TCA Electric",
+            "post_excerpt": "Small Canadian electrical contractor.",
+            "source_url": "https://www.linkedin.com/in/sean-tobin",
+            "relevance_score": 80,
+            "relevance_reason": "Owner-operated Canadian service company.",
+            "detected_signals": ["small field team"],
+        },
+    )
+    assert created.status_code == 200
+    drafted = client.post(f"/api/v1/linkedin/opportunities/{created.json()['id']}/draft", headers=headers)
+    assert drafted.status_code == 200
+    note = drafted.json()["public_reply_draft"]
+    assert "I found TCA Electric" in note
+    assert "I found President" not in note
 
 
 def test_social_channels_are_isolated(client: TestClient) -> None:

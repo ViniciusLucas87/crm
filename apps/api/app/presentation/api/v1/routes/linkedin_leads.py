@@ -23,6 +23,19 @@ from app.presentation.api.v1.routes.reddit_leads import (
 router = APIRouter(prefix="/linkedin", tags=["linkedin-leads"])
 
 
+def _company_from_role(role: str) -> str | None:
+    """Return a company only when the saved role uses an unambiguous separator."""
+    normalized = " ".join(role.split())
+    lowered = normalized.lower()
+    if " at " in lowered:
+        company = normalized[lowered.rfind(" at ") + 4 :].strip(" ,|-–—")
+        return company or None
+    if "," in normalized:
+        company = normalized.rsplit(",", 1)[1].strip(" ,|-–—")
+        return company or None
+    return None
+
+
 def _campaign(session: Session, organization_id: int) -> SocialLeadCampaign:
     campaign = session.execute(
         select(SocialLeadCampaign).where(
@@ -139,17 +152,21 @@ def create(body: OpportunityCreate, ctx: AuthContext = Depends(require_permissio
 @router.post("/opportunities/{opportunity_id}/draft")
 def draft(opportunity_id: int, ctx: AuthContext = Depends(require_permission("companies:write")), session: Session = Depends(get_db_session)):
     item = _get(session, ctx.organization_id, opportunity_id)
+    company = _company_from_role(item.post_title)
+    introduction = (
+        f"I found {company} while looking at small service businesses in Canada."
+        if company
+        else "I found your profile while looking at small service businesses in Canada."
+    )
     item.public_reply_draft = (
-        f"Hey {item.author_handle}, I am Vini. I run Pacific North Systems here in Vancouver. "
-        "I have been talking to contractors about missed calls. When you are on a job and cannot pick up, "
-        "do people normally wait for your callback or just call someone else? "
-        "I built something simple for this and thought it would be good to connect."
+        f"Hi {item.author_handle}, I’m Vini. {introduction} "
+        "I’m building a simple way to text customers back after a missed call without changing the business number. "
+        "Thought it might be useful. Happy to connect."
     )
     item.dm_draft = (
-        f"Hi {item.author_handle}, thanks for connecting. I am Vini from Pacific North Systems. "
-        "I asked because I built Never Miss for owner-operated contractors who cannot always answer while working. "
-        "It keeps your current business number, texts missed callers, and organizes the callbacks. "
-        "Would you like me to show you how it would work with your current phone setup?"
+        f"Thanks for connecting, {item.author_handle}. I reached out because I’ve seen how easily a job can be lost "
+        "when nobody can answer the phone. The system sends the caller a text and puts the callback in one place. "
+        "If missed calls are a problem for you, I can show you the setup."
     )
     item.status = "public_reply_ready"
     session.commit()
