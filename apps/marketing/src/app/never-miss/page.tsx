@@ -67,9 +67,9 @@ export default function ProductsPage() {
           priority
           sizes="100vw"
           unoptimized
-          className="object-cover object-[58%_center] lg:left-[42%] lg:right-0 lg:w-[58%] lg:object-center"
+          className="object-cover object-[58%_center] lg:left-[48%] lg:right-0 lg:w-[52%] lg:object-[center_35%]"
         />
-        <div className="absolute inset-0 bg-[#071729]/40 lg:bg-gradient-to-r lg:from-[#071729] lg:from-[0%] lg:via-[#071729] lg:via-[38%] lg:to-transparent lg:to-[48%]" />
+        <div className="absolute inset-0 bg-[#071729]/40 lg:bg-gradient-to-r lg:from-[#071729] lg:from-[0%] lg:via-[#071729] lg:via-[44%] lg:to-transparent lg:to-[52%]" />
         <Container className="relative flex min-h-[680px] items-center py-20">
           <div className="max-w-2xl lg:max-w-[38%]">
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-300">For busy contractors and service owners</p>
