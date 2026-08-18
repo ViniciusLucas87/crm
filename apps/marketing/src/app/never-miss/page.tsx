@@ -59,8 +59,22 @@ const packages = [
 export default function ProductsPage() {
   return (
     <main>
-      <section className="relative min-h-[680px] overflow-hidden bg-[#071729] text-white">
-        <div className="absolute inset-0 lg:left-[48%] lg:w-[52%]">
+      <section className="relative overflow-hidden bg-[#071729] text-white lg:min-h-[680px]">
+        <div className="pointer-events-none absolute inset-0 z-[1] hidden bg-gradient-to-r from-[#071729] from-[0%] via-[#071729] via-[44%] to-transparent to-[52%] lg:block" />
+        <Container className="relative z-10 flex items-center py-14 sm:py-16 lg:min-h-[680px] lg:py-20">
+          <div className="max-w-2xl lg:max-w-[38%]">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-300">For busy contractors and service owners</p>
+            <h1 className="mt-5 text-[clamp(2.75rem,12vw,5.2rem)] font-semibold leading-[0.95] tracking-[-0.045em] lg:text-[clamp(3rem,5vw,5.2rem)]">Can&apos;t answer? We text them back.</h1>
+            <p className="mt-7 max-w-xl text-xl leading-8 text-white/85">You keep working. We let the caller know you will get back to them and put the job on your callback list.</p>
+            <p className="mt-4 text-base font-semibold text-white">No new phone number. No complicated setup. No lost lead.</p>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <Button href="/never-miss/checkout?plan=never-miss" size="lg" className="w-full bg-cyan-300 !text-[#071729] hover:bg-cyan-200 sm:w-auto">Start Never Miss for $39/month <ArrowRight className="h-4 w-4" /></Button>
+              <Button href="#how-it-works" variant="outline" size="lg" className="w-full border-white/40 !text-white hover:bg-white/10 sm:w-auto">See what happens</Button>
+            </div>
+            <p className="mt-4 text-sm text-white/65">We set it up with you. Cancel anytime.</p>
+          </div>
+        </Container>
+        <div className="relative h-[420px] w-full sm:h-[500px] lg:absolute lg:inset-y-0 lg:left-[48%] lg:h-auto lg:w-[52%]">
           <Image
             src="/images/never-miss-contractor-hero.gif"
             alt="A service contractor checking a customer message while working"
@@ -71,20 +85,6 @@ export default function ProductsPage() {
             className="object-cover object-[58%_center] lg:object-[center_35%]"
           />
         </div>
-        <div className="absolute inset-0 bg-[#071729]/40 lg:bg-gradient-to-r lg:from-[#071729] lg:from-[0%] lg:via-[#071729] lg:via-[44%] lg:to-transparent lg:to-[52%]" />
-        <Container className="relative flex min-h-[680px] items-center py-20">
-          <div className="max-w-2xl lg:max-w-[38%]">
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-300">For busy contractors and service owners</p>
-            <h1 className="mt-5 text-[clamp(3rem,5vw,5.2rem)] font-semibold leading-[0.95] tracking-[-0.045em]">Can&apos;t answer? We text them back.</h1>
-            <p className="mt-7 max-w-xl text-xl leading-8 text-white/85">You keep working. We let the caller know you will get back to them and put the job on your callback list.</p>
-            <p className="mt-4 text-base font-semibold text-white">No new phone number. No complicated setup. No lost lead.</p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Button href="/never-miss/checkout?plan=never-miss" size="lg" className="bg-cyan-300 !text-[#071729] hover:bg-cyan-200">Start Never Miss for $39/month <ArrowRight className="h-4 w-4" /></Button>
-              <Button href="#how-it-works" variant="outline" size="lg" className="border-white/40 !text-white hover:bg-white/10">See what happens</Button>
-            </div>
-            <p className="mt-4 text-sm text-white/65">We set it up with you. Cancel anytime.</p>
-          </div>
-        </Container>
       </section>
 
       <section className="bg-[#f4f7f7] py-20 lg:py-24">
