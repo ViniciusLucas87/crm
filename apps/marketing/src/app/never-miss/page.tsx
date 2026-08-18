@@ -67,13 +67,13 @@ export default function ProductsPage() {
           priority
           sizes="100vw"
           unoptimized
-          className="object-cover object-[58%_center] lg:left-auto lg:right-0 lg:w-[68%] lg:object-center"
+          className="object-cover object-[58%_center] lg:left-[42%] lg:right-0 lg:w-[58%] lg:object-center"
         />
-        <div className="absolute inset-0 bg-[#071729]/40 lg:bg-gradient-to-r lg:from-[#071729] lg:from-[0%] lg:via-[#071729]/72 lg:via-[24%] lg:to-transparent lg:to-[48%]" />
+        <div className="absolute inset-0 bg-[#071729]/40 lg:bg-gradient-to-r lg:from-[#071729] lg:from-[0%] lg:via-[#071729] lg:via-[38%] lg:to-transparent lg:to-[48%]" />
         <Container className="relative flex min-h-[680px] items-center py-20">
-          <div className="max-w-2xl lg:max-w-[46%]">
+          <div className="max-w-2xl lg:max-w-[38%]">
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-300">For busy contractors and service owners</p>
-            <h1 className="mt-5 text-[clamp(3rem,7vw,5.6rem)] font-semibold leading-[0.95] tracking-[-0.045em]">Can&apos;t answer? We text them back.</h1>
+            <h1 className="mt-5 text-[clamp(3rem,5vw,5.2rem)] font-semibold leading-[0.95] tracking-[-0.045em]">Can&apos;t answer? We text them back.</h1>
             <p className="mt-7 max-w-xl text-xl leading-8 text-white/85">You keep working. We let the caller know you will get back to them and put the job on your callback list.</p>
             <p className="mt-4 text-base font-semibold text-white">No new phone number. No complicated setup. No lost lead.</p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
