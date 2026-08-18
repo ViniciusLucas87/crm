@@ -140,14 +140,15 @@ def create(body: OpportunityCreate, ctx: AuthContext = Depends(require_permissio
 def draft(opportunity_id: int, ctx: AuthContext = Depends(require_permission("companies:write")), session: Session = Depends(get_db_session)):
     item = _get(session, ctx.organization_id, opportunity_id)
     item.public_reply_draft = (
-        f"Hi {item.author_handle}, I came across {item.post_title} while researching Canadian service businesses. "
-        "I build a simple system that texts callers when a business cannot answer and organizes the callback while keeping the existing number. "
-        "Would you be open to connecting?"
+        f"Hi {item.author_handle}, I am Vini, founder of Pacific North Systems in Vancouver. "
+        "Quick question: when you are on a job and cannot answer, do customers sometimes call the next contractor? "
+        "I built a simple way to text missed callers immediately while keeping your current number. Open to connecting?"
     )
     item.dm_draft = (
         f"Hi {item.author_handle}, thanks for connecting. I am Vini from Pacific North Systems. "
-        "We built Never Miss for contractors who cannot always answer while working. It keeps the current business number, texts the caller, and creates a callback list. "
-        "Would a short explanation based on your current phone setup be useful?"
+        "I asked because I built Never Miss for owner-operated contractors who cannot always answer while working. "
+        "It keeps your current business number, texts missed callers, and organizes the callbacks. "
+        "Would you like me to show you how it would work with your current phone setup?"
     )
     item.status = "public_reply_ready"
     session.commit()
