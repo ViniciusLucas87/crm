@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ExternalLink, Loader2, MessageCircle, Plus, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+import { CheckCircle2, ExternalLink, Loader2, MessageCircle, Plus, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,8 @@ type Opportunity = {
   public_reply_draft?: string | null;
   dm_draft?: string | null;
   permission_basis?: string | null;
+  human_approved_at?: string | null;
+  contacted_at?: string | null;
 };
 
 type RedditStatus = {
@@ -59,6 +61,7 @@ export default function RedditLeadsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [permissionNotes, setPermissionNotes] = useState<Record<number, string>>({});
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({
     community: "Contractor",
@@ -124,6 +127,49 @@ export default function RedditLeadsPage() {
     if (!response.ok) setError("A response could not be prepared right now.");
     await load();
     setSaving(false);
+  }
+
+  async function approvePrivateMessage(id: number) {
+    const permissionBasis = permissionNotes[id]?.trim();
+    if (!permissionBasis || permissionBasis.length < 5) {
+      setError("Explain how this person invited or agreed to a private message.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/reddit/opportunities/${id}/approve-dm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ human_approved: true, permission_basis: permissionBasis }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.detail || "The private message could not be approved.");
+      }
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "The private message could not be approved.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function markContacted(id: number) {
+    setSaving(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/reddit/opportunities/${id}/mark-contacted`, { method: "POST" });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.detail || "The conversation could not be marked as contacted.");
+      }
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "The conversation could not be marked as contacted.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -194,7 +240,30 @@ export default function RedditLeadsPage() {
                   <a href={item.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300">Open conversation <ExternalLink className="h-3 w-3" /></a>
                 </div>
                 {item.public_reply_draft && <div className="mt-3 rounded-lg border border-cyan-400/10 bg-cyan-400/5 p-3"><p className="text-xs font-semibold text-cyan-300">Suggested public reply</p><p className="mt-1 whitespace-pre-wrap text-sm text-slate-300">{item.public_reply_draft}</p></div>}
-                <div className="mt-3 flex justify-end">{!item.public_reply_draft && <Button variant="secondary" size="sm" onClick={() => void draft(item.id)} disabled={saving}><Sparkles className="mr-1 h-3.5 w-3.5" />Prepare helpful reply</Button>}</div>
+                {!item.public_reply_draft ? (
+                  <div className="mt-3 flex justify-end"><Button variant="secondary" size="sm" onClick={() => void draft(item.id)} disabled={saving}><Sparkles className="mr-1 h-3.5 w-3.5" />Prepare helpful reply</Button></div>
+                ) : !item.human_approved_at ? (
+                  <div className="mt-3 rounded-lg border border-amber-400/15 bg-amber-400/5 p-3">
+                    <p className="text-xs font-semibold text-amber-200">Before a private message</p>
+                    <p className="mt-1 text-xs text-slate-400">Reply publicly first. Continue here only if the person asks for details or clearly agrees to a private message.</p>
+                    <textarea
+                      className="mt-3 min-h-20 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white"
+                      placeholder="What did the person say that gives us permission?"
+                      value={permissionNotes[item.id] ?? item.permission_basis ?? ""}
+                      onChange={event => setPermissionNotes(current => ({ ...current, [item.id]: event.target.value }))}
+                    />
+                    <div className="mt-3 flex justify-end"><Button variant="secondary" size="sm" onClick={() => void approvePrivateMessage(item.id)} disabled={saving}>Approve private message</Button></div>
+                  </div>
+                ) : (
+                  <div className="mt-3 rounded-lg border border-emerald-400/15 bg-emerald-400/5 p-3">
+                    <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400" /><p className="text-xs font-semibold text-emerald-200">Permission recorded</p></div>
+                    <p className="mt-1 text-xs text-slate-400">{item.permission_basis}</p>
+                    {item.dm_draft && <div className="mt-3 rounded-lg border border-white/10 bg-slate-950/50 p-3"><p className="text-xs font-semibold text-cyan-300">Approved private message</p><p className="mt-1 whitespace-pre-wrap text-sm text-slate-300">{item.dm_draft}</p></div>}
+                    <div className="mt-3 flex justify-end">
+                      {item.contacted_at ? <Badge variant="success">Contact recorded</Badge> : <Button variant="primary" size="sm" onClick={() => void markContacted(item.id)} disabled={saving}>I sent this message</Button>}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
