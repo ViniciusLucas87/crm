@@ -181,7 +181,10 @@ def list_campaigns(
     campaigns = (
         session.execute(
             select(SocialLeadCampaign)
-            .where(SocialLeadCampaign.organization_id == ctx.organization_id)
+            .where(
+                SocialLeadCampaign.organization_id == ctx.organization_id,
+                SocialLeadCampaign.channel == "reddit",
+            )
             .order_by(SocialLeadCampaign.created_at.desc())
         )
         .scalars()
@@ -198,7 +201,8 @@ def list_opportunities(
     session: Session = Depends(get_db_session),
 ):
     stmt = select(SocialLeadOpportunity).where(
-        SocialLeadOpportunity.organization_id == ctx.organization_id
+        SocialLeadOpportunity.organization_id == ctx.organization_id,
+        SocialLeadOpportunity.channel == "reddit",
     )
     if status:
         stmt = stmt.where(SocialLeadOpportunity.status == status)
@@ -235,6 +239,7 @@ def create_opportunity(
     item = SocialLeadOpportunity(
         organization_id=ctx.organization_id,
         campaign_id=campaign.id,
+        channel="reddit",
         community=body.community.removeprefix("r/"),
         author_handle=body.author_handle.removeprefix("u/"),
         post_title=body.post_title.strip(),

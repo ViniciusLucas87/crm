@@ -22,6 +22,7 @@ from app.presentation.api.v1.routes import (
     intelligence,
     knowledge,
     leads,
+    linkedin_leads,
     mcp,
     operations,
     products,
@@ -66,6 +67,7 @@ api_router.include_router(decision_maker.router, tags=["decision-maker"])
 api_router.include_router(documents.router, tags=["documents"])
 api_router.include_router(leads.router, tags=["leads"])
 api_router.include_router(reddit_leads.router, tags=["reddit-leads"])
+api_router.include_router(linkedin_leads.router, tags=["linkedin-leads"])
 api_router.include_router(conversations.router, tags=["conversations"])
 api_router.include_router(copilot.router, tags=["copilot"])
 api_router.include_router(transcription.router, prefix="/transcription", tags=["transcription"])

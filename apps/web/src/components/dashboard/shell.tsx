@@ -5,7 +5,7 @@ import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
-import { Building2, CircleUserRound, LayoutDashboard, LogOut, Menu, Sparkles, X, Users, Target, ClipboardList, FolderKanban, FileText, FileCheck, BarChart3, Settings, Sun, Search, CalendarCheck2, Mail, Lightbulb, BookOpen, Phone, PhoneCall, Radar, FlaskConical, Signal, Bookmark, Send, Download, TrendingUp, Brain, Shield, Activity, PackageCheck, MessageCircle } from "lucide-react";
+import { Building2, CircleUserRound, LayoutDashboard, LogOut, Menu, Sparkles, X, Users, Target, ClipboardList, FolderKanban, FileText, FileCheck, BarChart3, Settings, Sun, Search, CalendarCheck2, Mail, Lightbulb, BookOpen, Phone, PhoneCall, Radar, FlaskConical, Signal, Bookmark, Send, Download, TrendingUp, Brain, Shield, Activity, PackageCheck, MessageCircle, Linkedin } from "lucide-react";
 import { DashboardErrorBoundary } from "@/components/dashboard/error-boundary";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,7 @@ const navigation: NavGroup[] = [
       { label: "Overview", icon: Radar, href: "/leads" as Route, active: true },
       { label: "Discover Companies", icon: Search, href: "/leads/discover" as Route, active: true },
       { label: "Reddit Opportunities", icon: MessageCircle, href: "/leads/reddit" as Route, active: true },
+      { label: "LinkedIn Opportunities", icon: Linkedin, href: "/leads/linkedin" as Route, active: true },
       { label: "Lead Workspace", icon: Building2, href: "/leads/workspace" as Route, active: true },
       { label: "Research Queue", icon: FlaskConical, href: "/leads/research-queue" as Route, active: true },
       { label: "Decision Makers", icon: Users, href: "/leads/decision-makers" as Route, active: true },
