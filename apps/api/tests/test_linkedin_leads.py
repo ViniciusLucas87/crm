@@ -25,8 +25,8 @@ def test_linkedin_human_reviewed_outreach_flow(client: TestClient) -> None:
     item_id = created.json()["id"]
     drafted = client.post(f"/api/v1/linkedin/opportunities/{item_id}/draft", headers=headers)
     assert drafted.status_code == 200
-    assert "I am Vini, founder of Pacific North Systems" in drafted.json()["public_reply_draft"]
-    assert "Open to connecting?" in drafted.json()["public_reply_draft"]
+    assert "I am Vini. I run Pacific North Systems" in drafted.json()["public_reply_draft"]
+    assert "do people normally wait for your callback" in drafted.json()["public_reply_draft"]
     blocked = client.post(f"/api/v1/linkedin/opportunities/{item_id}/mark-contacted", headers=headers)
     assert blocked.status_code == 409
     approved = client.post(

@@ -140,9 +140,10 @@ def create(body: OpportunityCreate, ctx: AuthContext = Depends(require_permissio
 def draft(opportunity_id: int, ctx: AuthContext = Depends(require_permission("companies:write")), session: Session = Depends(get_db_session)):
     item = _get(session, ctx.organization_id, opportunity_id)
     item.public_reply_draft = (
-        f"Hi {item.author_handle}, I am Vini, founder of Pacific North Systems in Vancouver. "
-        "Quick question: when you are on a job and cannot answer, do customers sometimes call the next contractor? "
-        "I built a simple way to text missed callers immediately while keeping your current number. Open to connecting?"
+        f"Hey {item.author_handle}, I am Vini. I run Pacific North Systems here in Vancouver. "
+        "I have been talking to contractors about missed calls. When you are on a job and cannot pick up, "
+        "do people normally wait for your callback or just call someone else? "
+        "I built something simple for this and thought it would be good to connect."
     )
     item.dm_draft = (
         f"Hi {item.author_handle}, thanks for connecting. I am Vini from Pacific North Systems. "
