@@ -16,6 +16,8 @@ type DailyBrief = {
   upcomingMeetings: BriefItem[]; overdueTasks: BriefItem[];
   topOpportunities: BriefItem[]; researchQueue: BriefItem[];
   actions: BriefItem[];
+  outreach: { channel: string; total: number; contacted: number; ready: number; replies: number; needs_review: number }[];
+  dataWarnings: BriefItem[];
 };
 
 function Section({ title, icon: Icon, items }: { title: string; icon: typeof Sparkles; items: BriefItem[]; empty?: string; color?: string }) {
@@ -66,6 +68,8 @@ export default function DailyBriefPage() {
       topOpportunities: (d.top_opportunities as Record<string, unknown>[] || []).map(b => ({ type: b.type as string, title: b.title as string, description: b.description as string, companyName: b.company_name as string, companyId: b.company_id as number })),
       researchQueue: (d.research_queue as Record<string, unknown>[] || []).map(b => ({ type: b.type as string, title: b.title as string, description: b.description as string, companyName: b.company_name as string, companyId: b.company_id as number })),
       actions: (d.actions as Record<string, unknown>[] || []).map(b => ({ type: b.type as string, title: b.title as string, description: b.description as string, reason: b.reason as string })),
+      outreach: (d.outreach as DailyBrief["outreach"]) || [],
+      dataWarnings: (d.data_warnings as Record<string, unknown>[] || []).map(b => ({ type: b.type as string, title: b.title as string, description: b.description as string, reason: b.reason as string })),
       }; setBrief(b);
     }).catch(e => setError(String(e))).finally(() => setLoading(false));
   }, []);
@@ -143,6 +147,23 @@ export default function DailyBriefPage() {
       )}
 
       {/* Priorities */}
+      <Card>
+        <div className="mb-3 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-slate-400">
+          <Target className="h-3.5 w-3.5" />Outreach tracked in CRM
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {brief.outreach.map(channel => (
+            <div key={channel.channel} className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
+              <p className="font-medium capitalize text-white">{channel.channel}</p>
+              <p className="mt-2 text-sm text-slate-300">{channel.contacted} contacted · {channel.ready} ready · {channel.replies} replies recorded</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-slate-500">Upwork requires a separate inbox check until an approved integration is connected.</p>
+      </Card>
+
+      <Section title="Data Checks" icon={AlertTriangle} items={brief.dataWarnings} />
+
       <Section title="Today's Priorities" icon={Target} items={brief.priorities} empty="No urgent priorities today." />
 
       {/* Signals + Follow-ups */}

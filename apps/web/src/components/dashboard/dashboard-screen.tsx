@@ -11,6 +11,7 @@ import { KpiSkeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { ApiError, fetchDashboardSummary } from "@/lib/api";
 import type { DashboardSummary } from "@/lib/types";
+import { MorningBriefModal } from "@/components/dashboard/morning-brief-modal";
 
 const signInRoute = "/sign-in" as Route;
 
@@ -119,6 +120,7 @@ export function DashboardScreen() {
 
   return (
     <div className="space-y-8">
+      <MorningBriefModal />
       {/* Hero */}
       <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/80 via-slate-900/60 to-cyan-950/40 p-6 md:p-8">
         <div className="relative z-10">

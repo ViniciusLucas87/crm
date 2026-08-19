@@ -6,13 +6,13 @@ Every recommendation references actual database records.
 """
 
 from datetime import date, datetime, timedelta, timezone
-from typing import Any
 
-from pydantic import BaseModel
-from sqlalchemy import func, select, or_
+from pydantic import BaseModel, Field
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.infrastructure.db.models import Activity, Company, Contact, Opportunity, Task
+from app.infrastructure.db.models import Activity, Company, Opportunity, Task
+from app.infrastructure.db.social_leads import SocialLeadOpportunity
 
 
 # ── Output Models ──
@@ -27,6 +27,15 @@ class BriefItem(BaseModel):
     reason: str | None = None
 
 
+class OutreachSnapshot(BaseModel):
+    channel: str
+    total: int
+    contacted: int
+    ready: int
+    replies: int
+    needs_review: int
+
+
 class DailyBrief(BaseModel):
     greeting: str
     date: str
@@ -39,6 +48,8 @@ class DailyBrief(BaseModel):
     top_opportunities: list[BriefItem]
     research_queue: list[BriefItem]
     actions: list[BriefItem]
+    outreach: list[OutreachSnapshot] = Field(default_factory=list)
+    data_warnings: list[BriefItem] = Field(default_factory=list)
 
 
 # ── Engine ──
@@ -60,7 +71,8 @@ class DailyBriefEngine:
         overdue = self._build_overdue_tasks(now)
         top_opps = self._build_top_opportunities()
         research = self._build_research_queue()
-        actions = self._build_suggested_actions(priorities, follow_ups, signals)
+        outreach, data_warnings = self._build_outreach_snapshot()
+        actions = self._build_suggested_actions(priorities, follow_ups, signals, outreach)
 
         priority_count = len(priorities)
         signal_count = len(signals)
@@ -84,7 +96,44 @@ class DailyBriefEngine:
             top_opportunities=top_opps,
             research_queue=research,
             actions=actions,
+            outreach=outreach,
+            data_warnings=data_warnings,
         )
+
+    def _build_outreach_snapshot(self) -> tuple[list[OutreachSnapshot], list[BriefItem]]:
+        opportunities = self._session.execute(
+            select(SocialLeadOpportunity).where(
+                SocialLeadOpportunity.organization_id == self._org_id,
+                SocialLeadOpportunity.channel.in_(["linkedin", "reddit"]),
+            )
+        ).scalars().all()
+
+        snapshots: list[OutreachSnapshot] = []
+        warnings: list[BriefItem] = []
+        for channel in ("linkedin", "reddit"):
+            records = [item for item in opportunities if item.channel == channel]
+            internal_tests = [
+                item for item in records
+                if "internal_test" in item.author_handle.lower()
+                or "internal test" in item.post_title.lower()
+            ]
+            real_records = [item for item in records if item not in internal_tests]
+            snapshots.append(OutreachSnapshot(
+                channel=channel,
+                total=len(real_records),
+                contacted=sum(item.status == "contacted" for item in real_records),
+                ready=sum(item.status in {"note_ready", "reply_ready"} for item in real_records),
+                replies=sum(bool(item.response_summary) for item in real_records),
+                needs_review=sum(item.status in {"watch", "new"} for item in real_records),
+            ))
+            if internal_tests:
+                warnings.append(BriefItem(
+                    type="warning",
+                    title=f"{len(internal_tests)} {channel.title()} test record excluded",
+                    description="Test activity is not included in your sales totals.",
+                    reason="Keeps the morning report accurate",
+                ))
+        return snapshots, warnings
 
     def _build_greeting(self, first_name: str) -> str:
         hour = datetime.now().hour
@@ -258,8 +307,38 @@ class DailyBriefEngine:
             for c in companies
         ]
 
-    def _build_suggested_actions(self, priorities: list[BriefItem], follow_ups: list[BriefItem], signals: list[BriefItem]) -> list[BriefItem]:
+    def _build_suggested_actions(
+        self,
+        priorities: list[BriefItem],
+        follow_ups: list[BriefItem],
+        signals: list[BriefItem],
+        outreach: list[OutreachSnapshot],
+    ) -> list[BriefItem]:
         actions: list[BriefItem] = []
+        by_channel = {item.channel: item for item in outreach}
+        linkedin = by_channel.get("linkedin")
+        reddit = by_channel.get("reddit")
+        if linkedin and linkedin.ready:
+            actions.append(BriefItem(
+                type="action",
+                title="Send the approved LinkedIn invitations",
+                description=f"{linkedin.ready} messages are ready for your review and approval.",
+                reason="Start with warm, relevant owner conversations",
+            ))
+        if reddit and reddit.ready:
+            actions.append(BriefItem(
+                type="action",
+                title="Publish the helpful Reddit replies",
+                description=f"{reddit.ready} replies are ready for your review and approval.",
+                reason="Help first and only discuss the product when it fits",
+            ))
+        if any(item.contacted for item in outreach):
+            actions.append(BriefItem(
+                type="action",
+                title="Check replies before new outreach",
+                description="Review LinkedIn, Reddit, and Upwork inboxes for active conversations.",
+                reason="A live reply is more valuable than another cold message",
+            ))
         if signals:
             actions.append(BriefItem(type="action", title="Review buying signals", description=f"{len(signals)} companies showing purchase intent", reason="Engage while intent is high"))
         if follow_ups:
@@ -267,4 +346,4 @@ class DailyBriefEngine:
         if not priorities and not signals:
             actions.append(BriefItem(type="action", title="Prospect for new opportunities", description="Use the Opportunity Explorer to find new leads", reason="Pipeline growth"))
         actions.append(BriefItem(type="action", title="Review your research queue", description="Complete company research to improve opportunity scoring", reason="Data quality improves AI accuracy"))
-        return actions
+        return actions[:6]
