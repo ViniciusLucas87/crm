@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 export function BackgroundVideo() {
   const [enabled, setEnabled] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const media = window.matchMedia(
@@ -20,13 +21,16 @@ export function BackgroundVideo() {
 
   return (
     <video
-      className="absolute inset-0 h-full w-full object-cover object-[22%_center]"
+      className={`absolute inset-0 h-full w-full object-cover object-[22%_center] transition-opacity duration-500 ${
+        ready ? "opacity-100" : "opacity-0"
+      }`}
       autoPlay
       muted
       loop
       playsInline
-      preload="metadata"
-      poster="/images/vancouver-cover.png"
+      preload="auto"
+      onLoadedData={() => setReady(true)}
+      onCanPlay={() => setReady(true)}
       aria-hidden="true"
       tabIndex={-1}
     >
