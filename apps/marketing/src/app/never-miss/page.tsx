@@ -87,6 +87,23 @@ export default function ProductsPage() {
         </div>
       </section>
 
+      <section className="bg-[#071729] py-20 text-white lg:py-24">
+        <Container>
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-300">See Never Miss in action</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight lg:text-5xl">One missed call. One automatic reply. One clear callback.</h2>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/75">Watch how Never Miss protects the next job while you keep working.</p>
+          </div>
+          <div className="mx-auto mt-10 max-w-5xl overflow-hidden rounded-3xl border border-white/15 bg-black shadow-2xl">
+            <video className="aspect-video w-full" controls playsInline preload="metadata">
+              <source src="/videos/never-miss-product-demo.mp4" type="video/mp4" />
+              <track src="/videos/never-miss-product-demo.en.vtt" kind="captions" srcLang="en" label="English" default />
+              Your browser does not support video playback.
+            </video>
+          </div>
+        </Container>
+      </section>
+
       <section className="bg-[#f4f7f7] py-20 lg:py-24">
         <Container>
           <div className="mx-auto max-w-3xl text-center"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#0b6575]">Choose what fits today</p><h2 className="mt-3 text-3xl font-semibold tracking-tight text-pns-text-primary lg:text-5xl">One product. Two simple packages.</h2><p className="mt-5 text-lg leading-8 text-pns-text-muted">Start with the missed call reply. Move to Plus when you want calls, texts, and website inquiries together.</p></div>
