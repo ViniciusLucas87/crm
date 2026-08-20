@@ -19,11 +19,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.infrastructure.db.models import (
-    Organization,
     Call,
+    Organization,
     ProductConfiguration,
     ProductSubscription,
     StripeWebhookEvent,
+    Task,
 )
 from app.infrastructure.db.session import get_db_session
 
@@ -60,6 +61,46 @@ class ManagementUpdateInput(BaseModel):
     timezone: str | None = Field(default=None, max_length=80)
     website_url: str | None = Field(default=None, max_length=500)
     enabled: bool | None = None
+
+
+class RecoveryVerificationInput(BaseModel):
+    call_public_uuid: str = Field(min_length=8, max_length=64)
+    confirmed_recovery_text_received: bool
+    confirmed_callback_task_visible: bool
+
+
+def _stripe_timestamp(value: object) -> datetime | None:
+    try:
+        return datetime.fromtimestamp(int(value), UTC) if value else None
+    except (TypeError, ValueError, OSError):
+        return None
+
+
+def _apply_subscription_lifecycle(subscription: ProductSubscription, stripe_subscription: dict) -> None:
+    """Mirror the billing lifecycle while keeping service enabled during a trial."""
+    stripe_status = str(stripe_subscription.get("status") or "")
+    subscription.status = {
+        "active": "active",
+        "trialing": "trialing",
+        "past_due": "past_due",
+        "unpaid": "past_due",
+        "canceled": "cancelled",
+        "paused": "cancelled",
+    }.get(stripe_status, subscription.status)
+    subscription.trial_ends_at = _stripe_timestamp(stripe_subscription.get("trial_end"))
+    subscription.current_period_ends_at = _stripe_timestamp(stripe_subscription.get("current_period_end"))
+    subscription.cancel_at_period_end = bool(stripe_subscription.get("cancel_at_period_end"))
+
+
+def _set_service_enabled(session: Session, subscription: ProductSubscription) -> None:
+    if not subscription.organization_id:
+        return
+    config = session.execute(select(ProductConfiguration).where(
+        ProductConfiguration.organization_id == subscription.organization_id,
+        ProductConfiguration.product_code == "never_miss",
+    )).scalar_one_or_none()
+    if config:
+        config.enabled = subscription.status in {"active", "trialing"}
 
 
 def _sha256(value: str) -> str:
@@ -168,7 +209,10 @@ def _fulfill_checkout(session: Session, checkout: dict) -> tuple[ProductSubscrip
         stripe_subscription_id=checkout.get("subscription"),
         stripe_payment_link_id=payment_link_id,
         plan=plan,
-        status="paid",
+        # Stripe reports a zero-dollar trial checkout as no_payment_required.
+        # Treat it as a usable trial until the subscription lifecycle event
+        # supplies the canonical Stripe timestamps.
+        status="trialing" if checkout.get("payment_status") == "no_payment_required" else "paid",
         customer_email=email.lower(),
         customer_name=details.get("name"),
         notification_phone=details.get("phone"),
@@ -201,7 +245,7 @@ def _email_activation_link(subscription: ProductSubscription, token: str) -> Non
             "to": [subscription.customer_email],
             "subject": "Activate your Never Miss service",
             "html": (
-                "<h1>Your payment is confirmed</h1>"
+                "<h1>Your Never Miss trial is confirmed</h1>"
                 "<p>Complete the short setup to activate your Never Miss phone workflow.</p>"
                 f'<p><a href="{link}">Activate Never Miss</a></p>'
                 "<p>This private link expires in 24 hours.</p>"
@@ -262,6 +306,7 @@ def _management_payload(session: Session, subscription: ProductSubscription) -> 
     calls_this_month = 0
     messages_this_month = 0
     last_call_at = None
+    recent_recovery_tests: list[dict] = []
     if subscription.organization_id:
         calls = session.execute(
             select(Call).where(
@@ -273,6 +318,19 @@ def _management_payload(session: Session, subscription: ProductSubscription) -> 
         calls_this_month = len(calls)
         messages_this_month = sum(1 for call in calls if call.sms_sent_at is not None)
         last_call_at = calls[0].created_at.isoformat() if calls else None
+        recovered_calls = [call for call in calls if call.sms_sent_at is not None][:5]
+        for call in recovered_calls:
+            callback_exists = session.execute(select(Task.id).where(
+                Task.organization_id == subscription.organization_id,
+                Task.recovery_key == f"missed_call_{call.public_uuid}",
+            )).scalar_one_or_none() is not None
+            recent_recovery_tests.append({
+                "call_public_uuid": call.public_uuid,
+                "detected_at": call.created_at.isoformat(),
+                "sms_sent_at": call.sms_sent_at.isoformat() if call.sms_sent_at else None,
+                "callback_task_created": callback_exists,
+            })
+    recovery_test = settings.get("recovery_test") if isinstance(settings.get("recovery_test"), dict) else None
     return {
         "plan": subscription.plan,
         "status": subscription.status,
@@ -285,7 +343,7 @@ def _management_payload(session: Session, subscription: ProductSubscription) -> 
         "enabled": bool(config.enabled) if config else False,
         "timezone": settings.get("timezone"),
         "website_url": settings.get("website_url"),
-        "billing_portal_url": os.getenv("STRIPE_CUSTOMER_PORTAL_URL", ""),
+        "billing_portal_available": bool(subscription.stripe_customer_id and os.getenv("STRIPE_SECRET_KEY")),
         "support_email": os.getenv("SUPPORT_EMAIL", "hello@pacificnorthsystems.com"),
         "calls_this_month": calls_this_month,
         "messages_this_month": messages_this_month,
@@ -293,6 +351,11 @@ def _management_payload(session: Session, subscription: ProductSubscription) -> 
         "monthly_message_limit": config.monthly_message_limit if config else 0,
         "last_call_at": last_call_at,
         "setup_ready": bool(subscription.assigned_phone and subscription.existing_phone and config and config.enabled),
+        "recovery_test": recovery_test,
+        "recent_recovery_tests": recent_recovery_tests,
+        "trial_ends_at": subscription.trial_ends_at.isoformat() if subscription.trial_ends_at else None,
+        "current_period_ends_at": subscription.current_period_ends_at.isoformat() if subscription.current_period_ends_at else None,
+        "cancel_at_period_end": subscription.cancel_at_period_end,
     }
 
 
@@ -360,27 +423,13 @@ async def stripe_webhook(
                 )).scalar_one_or_none()
                 if config:
                     config.enabled = False
-    elif event_type == "customer.subscription.updated":
+    elif event_type in {"customer.subscription.created", "customer.subscription.updated"}:
         subscription = session.execute(
             select(ProductSubscription).where(ProductSubscription.stripe_subscription_id == obj.get("id"))
         ).scalar_one_or_none()
         if subscription:
-            stripe_status = str(obj.get("status") or "")
-            subscription.status = {
-                "active": "active",
-                "trialing": "active",
-                "past_due": "past_due",
-                "unpaid": "past_due",
-                "canceled": "cancelled",
-                "paused": "cancelled",
-            }.get(stripe_status, subscription.status)
-            if subscription.organization_id:
-                config = session.execute(select(ProductConfiguration).where(
-                    ProductConfiguration.organization_id == subscription.organization_id,
-                    ProductConfiguration.product_code == "never_miss",
-                )).scalar_one_or_none()
-                if config:
-                    config.enabled = subscription.status == "active"
+            _apply_subscription_lifecycle(subscription, obj)
+            _set_service_enabled(session, subscription)
     elif event_type == "invoice.paid":
         stripe_subscription_id = obj.get("subscription")
         subscription = session.execute(
@@ -388,13 +437,7 @@ async def stripe_webhook(
         ).scalar_one_or_none()
         if subscription and subscription.activated_at:
             subscription.status = "active"
-            if subscription.organization_id:
-                config = session.execute(select(ProductConfiguration).where(
-                    ProductConfiguration.organization_id == subscription.organization_id,
-                    ProductConfiguration.product_code == "never_miss",
-                )).scalar_one_or_none()
-                if config:
-                    config.enabled = True
+            _set_service_enabled(session, subscription)
 
     session.add(StripeWebhookEvent(
         stripe_event_id=event_id,
@@ -431,8 +474,18 @@ def exchange_checkout_session(
     ).scalar_one_or_none()
     if subscription is None:
         raise HTTPException(409, "Payment confirmation is still arriving. Please try again in a few seconds.")
-    if subscription.status == "active":
-        return {"status": "active", "token": None}
+    if subscription.status in {"active", "trialing"} and subscription.assigned_phone:
+        management_token = _issue_management_token(subscription)
+        session.commit()
+        return {
+            # This value describes completed setup, not the billing status.
+            "status": "active",
+            "token": None,
+            "plan": subscription.plan,
+            "assigned_phone": subscription.assigned_phone,
+            "forward_from": subscription.existing_phone,
+            "management_token": management_token,
+        }
     token = _issue_token(subscription, channel="redirect")
     session.commit()
     return {"status": subscription.status, "token": token}
@@ -471,6 +524,36 @@ def management_status(
     return _management_payload(session, _management_subscription(session, token))
 
 
+@router.post("/manage/billing-portal")
+def create_billing_portal_session(
+    x_never_miss_token: str = Header(min_length=20, max_length=255),
+    session: Session = Depends(get_db_session),
+):
+    """Create a short-lived, customer-scoped Stripe portal session."""
+    subscription = _management_subscription(session, x_never_miss_token)
+    stripe_key = os.getenv("STRIPE_SECRET_KEY", "")
+    if not stripe_key or not subscription.stripe_customer_id:
+        raise HTTPException(503, "Billing self-service is not available yet. Contact support for help.")
+    site_url = os.getenv("MARKETING_SITE_URL", "https://www.pacificnorthsystems.com").rstrip("/")
+    try:
+        response = httpx.post(
+            "https://api.stripe.com/v1/billing_portal/sessions",
+            headers={"Authorization": f"Bearer {stripe_key}"},
+            data={
+                "customer": subscription.stripe_customer_id,
+                "return_url": f"{site_url}/never-miss/manage",
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+        url = response.json().get("url")
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, "Could not open billing self-service. Please try again shortly.") from exc
+    if not isinstance(url, str) or not url.startswith("https://"):
+        raise HTTPException(502, "Billing self-service returned an invalid URL")
+    return {"url": url}
+
+
 @router.patch("/manage/settings")
 def update_management(
     payload: ManagementUpdateInput,
@@ -487,7 +570,7 @@ def update_management(
     )).scalar_one_or_none()
     if not config:
         raise HTTPException(404, "Never Miss configuration was not found")
-    if payload.enabled is True and subscription.status != "active":
+    if payload.enabled is True and subscription.status not in {"active", "trialing"}:
         raise HTTPException(409, "Billing must be active before automatic replies can be enabled")
     if payload.notification_phone is not None:
         value = _normalize_phone(payload.notification_phone)
@@ -514,6 +597,46 @@ def update_management(
     return _management_payload(session, subscription)
 
 
+@router.post("/manage/verify-recovery")
+def verify_recovery_test(
+    payload: RecoveryVerificationInput,
+    x_never_miss_token: str = Header(min_length=20, max_length=255),
+    session: Session = Depends(get_db_session),
+):
+    """Record a customer-confirmed, end-to-end missed-call recovery test."""
+    if not payload.confirmed_recovery_text_received or not payload.confirmed_callback_task_visible:
+        raise HTTPException(422, "Confirm both the recovery text and callback task before completing the test")
+    subscription = _management_subscription(session, x_never_miss_token)
+    if not subscription.organization_id:
+        raise HTTPException(409, "Finish activation before running a recovery test")
+    config = session.execute(select(ProductConfiguration).where(
+        ProductConfiguration.organization_id == subscription.organization_id,
+        ProductConfiguration.product_code == "never_miss",
+    )).scalar_one_or_none()
+    call = session.execute(select(Call).where(
+        Call.organization_id == subscription.organization_id,
+        Call.public_uuid == payload.call_public_uuid,
+        Call.sms_sent_at.is_not(None),
+        Call.sms_status == "sent",
+    )).scalar_one_or_none()
+    if not config or not call:
+        raise HTTPException(409, "That call is not a completed recovery test yet. Refresh after the text arrives.")
+    callback_exists = session.execute(select(Task.id).where(
+        Task.organization_id == subscription.organization_id,
+        Task.recovery_key == f"missed_call_{call.public_uuid}",
+    )).scalar_one_or_none()
+    if not callback_exists:
+        raise HTTPException(409, "The callback task is not ready yet. Refresh in a moment.")
+    settings = dict(config.business_hours_json or {})
+    settings["recovery_test"] = {
+        "verified_at": datetime.now(UTC).isoformat(),
+        "call_public_uuid": call.public_uuid,
+    }
+    config.business_hours_json = settings
+    session.commit()
+    return _management_payload(session, subscription)
+
+
 def _subscription_for_token(session: Session, token: str) -> ProductSubscription:
     token_hash = _sha256(token)
     subscription = session.execute(
@@ -533,7 +656,7 @@ def _subscription_for_token(session: Session, token: str) -> ProductSubscription
         raise HTTPException(404, "This activation link is invalid")
     if expires.tzinfo is None:
         expires = expires.replace(tzinfo=UTC)
-    if expires < datetime.now(UTC) and subscription.status != "active":
+    if expires < datetime.now(UTC) and subscription.status not in {"active", "trialing"}:
         raise HTTPException(410, "This activation link has expired")
     return subscription
 
@@ -608,13 +731,14 @@ def _provision_telnyx_number(area_code: str, reference: str) -> tuple[str, str]:
 @router.post("/onboarding/{token}/activate")
 def activate_subscription(token: str, payload: ActivationInput, session: Session = Depends(get_db_session)):
     subscription = _subscription_for_token(session, token)
-    if subscription.status == "active":
+    if subscription.status in {"active", "trialing"} and subscription.assigned_phone:
         return {"status": "active", "assigned_phone": subscription.assigned_phone, "plan": subscription.plan}
     if not payload.accept_terms or not payload.consent_to_text_callers:
         raise HTTPException(422, "Consent and service terms are required")
     notification_phone = _normalize_phone(payload.notification_phone)
     existing_phone = _normalize_phone(payload.existing_business_phone)
 
+    billing_status = subscription.status
     subscription.status = "provisioning"
     subscription.business_name = payload.business_name.strip()
     subscription.customer_name = payload.contact_name.strip()
@@ -654,7 +778,7 @@ def activate_subscription(token: str, payload: ActivationInput, session: Session
         )
         session.add(config)
         subscription.organization_id = organization.id
-        subscription.status = "active"
+        subscription.status = "trialing" if billing_status == "trialing" else "active"
         subscription.activated_at = datetime.now(UTC)
         management_token = _issue_management_token(subscription)
         session.commit()

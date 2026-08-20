@@ -10,7 +10,7 @@ is unavailable.
 
 import json as _json
 import os
-from datetime import datetime, UTC, timedelta
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -18,12 +18,13 @@ from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
 from app.infrastructure.auth.clerk import AuthContext, require_permission
+from app.infrastructure.db.models import OutboxEvent, ProviderWebhookEvent, StripeWebhookEvent
 from app.infrastructure.db.session import get_db_session
-from app.infrastructure.db.models import OutboxEvent
 
 router = APIRouter()
 
 STATUS_THRESHOLD_FAILED_OUTBOX = 100
+OUTBOX_LAG_WARNING_SECONDS = 300
 BACKUP_STALE_HOURS = 25  # backups older than this are stale
 BACKUP_CHECK_TIMEOUT = 3  # seconds for S3/R2 fetch
 
@@ -38,6 +39,9 @@ class StatusResponse(BaseModel):
     redis_status: str
     outbox_pending: int
     outbox_failed: int
+    oldest_pending_outbox_seconds: int | None = None
+    stripe_payment_failures_24h: int = 0
+    telnyx_unprocessed_webhooks_24h: int = 0
     backups_ok: bool | None = None
     backup_last_ts: str | None = None
     worker_status: str = "unknown"
@@ -145,6 +149,25 @@ def operational_status(
     outbox_failed = db.query(func.count(OutboxEvent.id)).filter(
         OutboxEvent.status == "failed"
     ).scalar() or 0
+    oldest_pending = db.query(func.min(OutboxEvent.created_at)).filter(
+        OutboxEvent.status == "pending"
+    ).scalar()
+    if oldest_pending:
+        if oldest_pending.tzinfo is None:
+            oldest_pending = oldest_pending.replace(tzinfo=UTC)
+        oldest_pending_outbox_seconds = max(0, int((now - oldest_pending).total_seconds()))
+    else:
+        oldest_pending_outbox_seconds = None
+
+    since = now - timedelta(hours=24)
+    stripe_payment_failures_24h = db.query(func.count(StripeWebhookEvent.id)).filter(
+        StripeWebhookEvent.event_type == "invoice.payment_failed",
+        StripeWebhookEvent.processed_at >= since,
+    ).scalar() or 0
+    telnyx_unprocessed_webhooks_24h = db.query(func.count(ProviderWebhookEvent.id)).filter(
+        ProviderWebhookEvent.received_at >= since,
+        ProviderWebhookEvent.processing_status != "processed",
+    ).scalar() or 0
 
     worker_status, worker_heartbeat_ms = _ping_worker()
     backups_ok, backup_last_ts = _check_backup_freshness()
@@ -172,6 +195,10 @@ def operational_status(
         issues += 1
     if outbox_failed >= STATUS_THRESHOLD_FAILED_OUTBOX:
         issues += 1
+    if oldest_pending_outbox_seconds and oldest_pending_outbox_seconds >= OUTBOX_LAG_WARNING_SECONDS:
+        issues += 1
+    if telnyx_unprocessed_webhooks_24h:
+        issues += 1
     if backups_ok is False:
         issues += 1
     # Unknown backup status is not healthy because it cannot be verified.
@@ -198,6 +225,9 @@ def operational_status(
         redis_status="connected" if redis_ok else "disconnected",
         outbox_pending=outbox_pending,
         outbox_failed=outbox_failed,
+        oldest_pending_outbox_seconds=oldest_pending_outbox_seconds,
+        stripe_payment_failures_24h=stripe_payment_failures_24h,
+        telnyx_unprocessed_webhooks_24h=telnyx_unprocessed_webhooks_24h,
         backups_ok=backups_ok,
         backup_last_ts=backup_last_ts,
         worker_status=worker_status,

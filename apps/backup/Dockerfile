@@ -51,11 +51,14 @@ ARG IMAGE_VERSION=unknown
 RUN echo "{\"git_commit\":\"${GIT_COMMIT}\",\"build_time\":\"${BUILD_TIME}\",\"image_version\":\"${IMAGE_VERSION}\"}" > /app/version.json
 
 # --- Scripts ---
-COPY scripts/backup.sh /app/backup.sh
-RUN sed -i 's/\r$//' /app/backup.sh && chmod +x /app/backup.sh
+COPY scripts/backup.sh scripts/restore-drill.sh /app/
+RUN sed -i 's/\r$//' /app/backup.sh /app/restore-drill.sh \
+    && chmod +x /app/backup.sh /app/restore-drill.sh
 
 # Verify required tools are available
-RUN pg_dump --version && age --version && aws --version && bash -n /app/backup.sh
+RUN pg_dump --version && age --version && aws --version \
+    && bash -n /app/backup.sh \
+    && bash -n /app/restore-drill.sh
 
 # No volumes, no plaintext persistence.  All data flows through pipes.
 # Default command: run backup once.  Override for cron scheduling via Railway Cron.

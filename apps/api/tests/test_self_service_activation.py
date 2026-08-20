@@ -5,7 +5,6 @@ import hmac
 import json
 import time
 
-
 CHECKOUT = {
     "id": "cs_test_never_miss_001",
     "payment_status": "paid",
@@ -30,6 +29,23 @@ def _post_checkout_webhook(client, monkeypatch, checkout=CHECKOUT, event_id="evt
         "type": "checkout.session.completed",
         "livemode": False,
         "data": {"object": checkout},
+    }).encode()
+    timestamp = int(time.time())
+    signature = hmac.new(secret.encode(), f"{timestamp}.".encode() + body, hashlib.sha256).hexdigest()
+    return client.post(
+        "/api/v1/subscriptions/stripe/webhook",
+        content=body,
+        headers={"Content-Type": "application/json", "Stripe-Signature": f"t={timestamp},v1={signature}"},
+    )
+
+
+def _post_stripe_event(client, event_type, obj, event_id):
+    secret = "whsec_test"
+    body = json.dumps({
+        "id": event_id,
+        "type": event_type,
+        "livemode": False,
+        "data": {"object": obj},
     }).encode()
     timestamp = int(time.time())
     signature = hmac.new(secret.encode(), f"{timestamp}.".encode() + body, hashlib.sha256).hexdigest()
@@ -214,6 +230,118 @@ def test_subscription_update_reconciles_billing_state(client, monkeypatch):
     session = SessionLocal()
     subscription = session.query(ProductSubscription).filter_by(stripe_subscription_id=CHECKOUT["subscription"]).one()
     assert subscription.status == "past_due"
+    session.close()
+
+
+def test_trial_lifecycle_keeps_service_available_and_opens_scoped_billing_portal(client, monkeypatch):
+    trial_checkout = {
+        **CHECKOUT,
+        "id": "cs_test_trial_001",
+        "subscription": "sub_trial_001",
+        "payment_status": "no_payment_required",
+    }
+    assert _post_checkout_webhook(client, monkeypatch, trial_checkout, "evt_checkout_trial_001").status_code == 200
+    assert _post_stripe_event(
+        client,
+        "customer.subscription.updated",
+        {
+            "id": trial_checkout["subscription"],
+            "status": "trialing",
+            "trial_end": 1_800_000_000,
+            "current_period_end": 1_800_000_000,
+            "cancel_at_period_end": False,
+        },
+        "evt_subscription_trialing_001",
+    ).status_code == 200
+    monkeypatch.setattr(
+        "app.presentation.api.v1.routes.subscriptions._provision_telnyx_number",
+        lambda area_code, reference: ("+16045550998", "order_trial_001"),
+    )
+    token = client.post(
+        "/api/v1/subscriptions/onboarding/exchange", json={"checkout_session_id": trial_checkout["id"]}
+    ).json()["token"]
+    activation = client.post(
+        f"/api/v1/subscriptions/onboarding/{token}/activate",
+        json={
+            "business_name": "Trial Plumbing",
+            "contact_name": "Taylor Owner",
+            "notification_phone": "+16045550101",
+            "existing_business_phone": "+16045550102",
+            "preferred_area_code": "604",
+            "recovery_message": "Hi, Trial Plumbing missed your call. Tell us what you need. Reply STOP to opt out.",
+            "timezone": "America/Vancouver",
+            "website_url": None,
+            "consent_to_text_callers": True,
+            "accept_terms": True,
+        },
+    )
+    assert activation.status_code == 200, activation.text
+    assert activation.json()["status"] == "active"  # setup completion, not billing state
+    headers = {"X-Never-Miss-Token": activation.json()["management_token"]}
+    account = client.post("/api/v1/subscriptions/manage/session", headers=headers)
+    assert account.status_code == 200
+    assert account.json()["status"] == "trialing"
+    assert account.json()["enabled"] is True
+    assert account.json()["trial_ends_at"].startswith("2027-")
+
+    class FakePortalResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"url": "https://billing.stripe.com/session/test"}
+
+    monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_test_example")
+    monkeypatch.setattr(
+        "app.presentation.api.v1.routes.subscriptions.httpx.post",
+        lambda *args, **kwargs: FakePortalResponse(),
+    )
+    portal = client.post("/api/v1/subscriptions/manage/billing-portal", headers=headers)
+    assert portal.status_code == 200
+    assert portal.json()["url"] == "https://billing.stripe.com/session/test"
+
+
+def test_renewal_failure_and_period_end_cancellation_are_reconciled(client, monkeypatch):
+    """Exercise the three billing events that a live trial must survive."""
+    assert _post_checkout_webhook(client, monkeypatch).status_code == 200
+
+    paid = _post_stripe_event(
+        client,
+        "invoice.paid",
+        {"id": "in_renewal_001", "subscription": CHECKOUT["subscription"]},
+        "evt_invoice_paid_001",
+    )
+    assert paid.status_code == 200
+
+    cancellation_scheduled = _post_stripe_event(
+        client,
+        "customer.subscription.updated",
+        {
+            "id": CHECKOUT["subscription"],
+            "status": "active",
+            "current_period_end": 1_800_000_000,
+            "cancel_at_period_end": True,
+        },
+        "evt_cancel_at_period_end_001",
+    )
+    assert cancellation_scheduled.status_code == 200
+
+    failed = _post_stripe_event(
+        client,
+        "invoice.payment_failed",
+        {"id": "in_failed_001", "subscription": CHECKOUT["subscription"]},
+        "evt_invoice_failed_001",
+    )
+    assert failed.status_code == 200
+
+    from app.infrastructure.db.models import ProductSubscription
+    from app.infrastructure.db.session import SessionLocal
+
+    session = SessionLocal()
+    subscription = session.query(ProductSubscription).filter_by(stripe_subscription_id=CHECKOUT["subscription"]).one()
+    assert subscription.status == "past_due"
+    assert subscription.cancel_at_period_end is True
+    assert subscription.current_period_ends_at.year == 2027
     session.close()
 
 

@@ -38,7 +38,7 @@ function ActivationForm() {
   const [activated, setActivated] = useState<Activated | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(true);
-  const [confirmationMessage, setConfirmationMessage] = useState("Payment received. Preparing your secure setup…");
+  const [confirmationMessage, setConfirmationMessage] = useState("Trial confirmed. Preparing your secure setup…");
 
   useEffect(() => {
     let cancelled = false;
@@ -56,7 +56,7 @@ function ActivationForm() {
             });
             if (exchanged.status !== 409) break;
             if (!cancelled && attempt >= 3) {
-              setConfirmationMessage("Payment confirmed. Stripe is securely connecting your setup. This usually takes less than a minute…");
+              setConfirmationMessage("Stripe confirmed your trial. It is securely connecting your setup. This usually takes less than a minute…");
             }
             await new Promise((resolve) => setTimeout(resolve, 1500));
           }
@@ -127,7 +127,7 @@ function ActivationForm() {
         <div className="mx-auto max-w-3xl">
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#0b6575]">Never Miss setup</p>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight text-[#071729] lg:text-5xl">Connect your phone in a few minutes.</h1>
-          <p className="mt-4 text-lg text-slate-600">Your payment is confirmed. Tell us how your business should answer missed calls and we will prepare the service automatically.</p>
+          <p className="mt-4 text-lg text-slate-600">Your trial is confirmed. Tell us how your business should answer missed calls and we will prepare the service automatically.</p>
 
           {busy && !setup && !activated ? <div className="mt-10 flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white p-6 text-[#071729] shadow"><LoaderCircle className="h-5 w-5 animate-spin text-emerald-600" /><div><p className="font-semibold">{confirmationMessage}</p><p className="mt-1 text-sm text-slate-500">Please keep this page open. You will not be charged again.</p></div></div> : null}
           {error ? <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-800">{error}</div> : null}

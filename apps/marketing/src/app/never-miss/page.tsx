@@ -45,16 +45,13 @@ const packages = [
   {
     name: "Never Miss",
     price: "$39",
+    trial: "30 days free, then $39 CAD/month",
     description: "For an owner who needs every missed caller to hear back quickly.",
     features: ["Automatic text after a missed call", "Custom reply message", "Callback reminders", "Missed call history"],
   },
-  {
-    name: "Never Miss Plus",
-    price: "$89",
-    description: "For a team that wants every new inquiry organized in one place.",
-    features: ["Everything in Never Miss", "Replies collected in one inbox", "Website and form inquiries", "Contact status and next action", "Simple follow-up tracking"],
-  },
 ];
+
+const checkoutAvailable = Boolean(process.env.NEVER_MISS_FREE_TRIAL_URL);
 
 export default function ProductsPage() {
   return (
@@ -68,10 +65,10 @@ export default function ProductsPage() {
             <p className="mt-7 max-w-xl text-xl leading-8 text-white/85">You keep working. We let the caller know you will get back to them and put the job on your callback list.</p>
             <p className="mt-4 text-base font-semibold text-white">No new phone number. No complicated setup. No lost lead.</p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Button href="/never-miss/checkout?plan=never-miss" size="lg" className="w-full bg-cyan-300 !text-[#071729] hover:bg-cyan-200 sm:w-auto">Start Never Miss for $39/month <ArrowRight className="h-4 w-4" /></Button>
+              <Button href={checkoutAvailable ? "/never-miss/checkout?plan=never-miss" : "/contact"} size="lg" className="w-full bg-cyan-300 !text-[#071729] hover:bg-cyan-200 sm:w-auto">{checkoutAvailable ? "Start your 30-day free test" : "Talk to our team"} <ArrowRight className="h-4 w-4" /></Button>
               <Button href="#how-it-works" variant="outline" size="lg" className="w-full border-white/40 !text-white hover:bg-white/10 sm:w-auto">See what happens</Button>
             </div>
-            <p className="mt-4 text-sm text-white/65">We set it up with you. Cancel anytime.</p>
+            <p className="mt-4 text-sm text-white/65">{checkoutAvailable ? "No charge today. Your subscription continues monthly after 30 days unless you cancel beforehand." : "Online trial enrolment is temporarily unavailable. We will not take payment until the self-service checkout is ready."}</p>
           </div>
         </Container>
         <div className="relative h-[420px] w-full sm:h-[500px] lg:absolute lg:inset-y-0 lg:left-[48%] lg:h-auto lg:w-[52%]">
@@ -106,16 +103,16 @@ export default function ProductsPage() {
 
       <section className="bg-[#f4f7f7] py-20 lg:py-24">
         <Container>
-          <div className="mx-auto max-w-3xl text-center"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#0b6575]">Choose what fits today</p><h2 className="mt-3 text-3xl font-semibold tracking-tight text-pns-text-primary lg:text-5xl">One product. Two simple packages.</h2><p className="mt-5 text-lg leading-8 text-pns-text-muted">Start with the missed call reply. Move to Plus when you want calls, texts, and website inquiries together.</p></div>
-          <div className="mx-auto mt-12 grid max-w-5xl gap-6 lg:grid-cols-2">
+          <div className="mx-auto max-w-3xl text-center"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#0b6575]">Simple, focused service</p><h2 className="mt-3 text-3xl font-semibold tracking-tight text-pns-text-primary lg:text-5xl">One clear missed-call workflow.</h2><p className="mt-5 text-lg leading-8 text-pns-text-muted">Never Miss is focused on helping you acknowledge unanswered callers and organize the callback.</p></div>
+          <div className="mx-auto mt-12 grid max-w-2xl gap-6">
             {packages.map((item, index) => (
               <article key={item.name} className={`rounded-3xl p-8 ${index === 1 ? "bg-[#071729] text-white" : "border border-black/10 bg-white text-pns-text-primary"}`}>
                 <h3 className="text-3xl font-semibold">{item.name}</h3>
-                <div className="mt-5 flex items-end gap-2"><span className="text-5xl font-semibold tracking-tight">{item.price}</span><span className={index === 1 ? "pb-1 text-white/60" : "pb-1 text-pns-text-muted"}>CAD/month</span></div>
+                <div className="mt-5"><p className="text-2xl font-semibold tracking-tight">30 days free</p><p className={index === 1 ? "mt-1 text-white/60" : "mt-1 text-pns-text-muted"}>Then {item.price} CAD/month</p></div>
                 <p className={`mt-5 leading-7 ${index === 1 ? "text-white/72" : "text-pns-text-muted"}`}>{item.description}</p>
                 <ul className="mt-7 space-y-3">{item.features.map((feature) => <li key={feature} className="flex gap-3"><Check className={`mt-0.5 h-5 w-5 shrink-0 ${index === 1 ? "text-cyan-300" : "text-[#0b6575]"}`} />{feature}</li>)}</ul>
-                <div className="mt-8"><Button href={`/never-miss/checkout?plan=${index === 1 ? "never-miss-plus" : "never-miss"}`} size="lg" className={index === 1 ? "bg-cyan-300 !text-[#071729] hover:bg-cyan-200" : undefined}>Start {item.name} <ArrowRight className="h-4 w-4" /></Button></div>
-                <p className={`mt-3 text-sm ${index === 1 ? "text-white/55" : "text-pns-text-muted"}`}>Cancel anytime.</p>
+                <div className="mt-8"><Button href={checkoutAvailable ? "/never-miss/checkout?plan=never-miss" : "/contact"} size="lg">{checkoutAvailable ? "Start free test" : "Contact us"} <ArrowRight className="h-4 w-4" /></Button></div>
+                <p className="mt-3 text-sm text-pns-text-muted">{checkoutAvailable ? `${item.trial}. Cancel anytime.` : "Online trials are not open until checkout verification is complete."}</p>
               </article>
             ))}
           </div>
@@ -174,7 +171,7 @@ export default function ProductsPage() {
 
       <section className="bg-[#071729] py-20 text-white">
         <Container size="narrow">
-          <div className="text-center"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-300">Never Miss</p><h2 className="mt-4 text-4xl font-semibold tracking-tight lg:text-5xl">Keep your number. Start for CAD $39 per month.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/75">Customers keep calling the number they already know. We connect the unanswered calls, write your reply, and test the complete workflow.</p><div className="mt-8"><Button href="/never-miss/checkout?plan=never-miss" size="lg" className="bg-cyan-300 !text-[#071729] hover:bg-cyan-200">Start Never Miss <ArrowRight className="h-4 w-4" /></Button></div><p className="mt-4 text-sm text-white/55">Cancel anytime. No annual contract. No software training required.</p></div>
+          <div className="text-center"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-300">Never Miss</p><h2 className="mt-4 text-4xl font-semibold tracking-tight lg:text-5xl">Keep your number. Never lose track of the callback.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/75">Customers keep calling the number they already know. We connect unanswered calls, send your reply, and help you test the complete workflow.</p><div className="mt-8"><Button href={checkoutAvailable ? "/never-miss/checkout?plan=never-miss" : "/contact"} size="lg" className="bg-cyan-300 !text-[#071729] hover:bg-cyan-200">{checkoutAvailable ? "Start your free test" : "Contact us"} <ArrowRight className="h-4 w-4" /></Button></div><p className="mt-4 text-sm text-white/55">{checkoutAvailable ? "Cancel anytime. No annual contract. No software training required." : "We will open online trials only after checkout and phone delivery are verified."}</p></div>
         </Container>
       </section>
     </main>

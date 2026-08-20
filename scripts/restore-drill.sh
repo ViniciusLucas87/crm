@@ -7,7 +7,7 @@ set -euo pipefail
 
 : "${DISPOSABLE_DATABASE_URL:?DISPOSABLE_DATABASE_URL is required}"
 : "${RESTORE_SAFETY_TOKEN:?RESTORE_SAFETY_TOKEN must be 'restore-drill-allowed'}"
-: "${BACKUP_DECRYPT_KEY:?BACKUP_DECRYPT_KEY is required (age identity)}"
+: "${BACKUP_DECRYPT_KEY:?BACKUP_DECRYPT_KEY is required (age identity or identity-file path)}"
 : "${BACKUP_S3_BUCKET:?BACKUP_S3_BUCKET is required}"
 : "${BACKUP_S3_ENDPOINT:?BACKUP_S3_ENDPOINT is required}"
 : "${BACKUP_S3_REGION:?BACKUP_S3_REGION is required}"
@@ -29,6 +29,17 @@ TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
 WORKDIR=$(mktemp -d)
 trap 'rm -rf "$WORKDIR"' EXIT
 FAILURES=0
+
+# Railway stores the recovery identity as a secret value.  `age -i` expects a
+# filename, so materialize an inline age identity only in this short-lived,
+# owner-readable work directory.  A file path remains supported for manual
+# drills where the operator keeps the identity outside the repository.
+DECRYPT_IDENTITY_FILE="$BACKUP_DECRYPT_KEY"
+if echo "$BACKUP_DECRYPT_KEY" | grep -q '^AGE-SECRET-KEY-'; then
+  DECRYPT_IDENTITY_FILE="${WORKDIR}/age-identity.txt"
+  umask 077
+  printf '%s\n' "$BACKUP_DECRYPT_KEY" > "$DECRYPT_IDENTITY_FILE"
+fi
 
 echo "=== PNS CRM Restore Drill ${TIMESTAMP} ==="
 
@@ -64,7 +75,7 @@ else
 fi
 
 # --- 4. Decrypt ---
-age -d -i "$BACKUP_DECRYPT_KEY" -o "${WORKDIR}/backup.dump" "${WORKDIR}/backup.dump.age"
+age -d -i "$DECRYPT_IDENTITY_FILE" -o "${WORKDIR}/backup.dump" "${WORKDIR}/backup.dump.age"
 rm "${WORKDIR}/backup.dump.age"
 
 # --- 5. List and validate backup contents ---

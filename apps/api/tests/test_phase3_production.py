@@ -1,6 +1,5 @@
 """Phase 3 production acceptance tests — audit, operations, backup freshness."""
 
-from datetime import date, timedelta
 
 from app.infrastructure.db.models import FollowUpAction
 
@@ -82,6 +81,11 @@ class TestOperationsStatus:
         assert "build_id" in data
         assert "db_status" in data
         assert isinstance(data["outbox_pending"], int)
+        assert data["oldest_pending_outbox_seconds"] is None or isinstance(
+            data["oldest_pending_outbox_seconds"], int
+        )
+        assert isinstance(data["stripe_payment_failures_24h"], int)
+        assert isinstance(data["telnyx_unprocessed_webhooks_24h"], int)
         assert data["worker_status"] in ("running", "stale", "unknown")
         assert "worker_heartbeat_ms" in data
         # backup_last_ts may be None (no S3 in test) or a valid ISO timestamp
