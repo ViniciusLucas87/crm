@@ -86,7 +86,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             </Badge>
             <span className="flex items-center gap-1">
               <Calendar className="w-3 h-3" aria-hidden="true" />
-              {new Date(frontmatter.publishedAt).toLocaleDateString("en-CA", {
+              {new Date(`${frontmatter.publishedAt}T00:00:00`).toLocaleDateString("en-CA", {
                 year: "numeric",
                 month: "long",
                 day: "numeric",

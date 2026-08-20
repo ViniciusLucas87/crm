@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, Calendar } from "lucide-react";
 
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
+  const d = new Date(`${dateStr}T00:00:00`);
   if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString("en-CA", {
     year: "numeric",
