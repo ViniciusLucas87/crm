@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   alternates: { canonical: "/never-miss" },
 };
 
+// Payment Link variables are supplied by Railway at runtime.
+export const dynamic = "force-dynamic";
+
 const goodFit = [
   "You work with your hands and cannot always pick up",
   "New customers usually call before they book",
