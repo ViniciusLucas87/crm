@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { useParams, useRouter } from "next/navigation";
-import { Building2, Globe, Mail, Phone, MapPin, Users, Briefcase, Hash, Calendar, Clock, FileText, ClipboardList, FolderKanban, Target, Sparkles, ChevronLeft, PhoneCall, MessageSquare } from "lucide-react";
+import { Building2, Globe, Mail, Phone, MapPin, Users, Briefcase, Hash, Calendar, Clock, FileText, ClipboardList, FolderKanban, Target, Sparkles, ChevronLeft, MessageSquare } from "lucide-react";
 import { Shell } from "@/components/dashboard/shell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CompanyContactsTab } from "@/components/companies/company-contacts-tab";
 import { TimelineView } from "@/components/dashboard/timeline-view";
 import { CompanyIntelligenceTab } from "@/components/companies/company-intelligence-tab";
-import { ActivityTimeline } from "@/components/companies/activity-timeline";
 import { DocumentManager } from "@/components/companies/document-manager";
 import { CompanyTasksTab } from "@/components/companies/company-tasks-tab";
 import { CompanyOpportunitiesTab } from "@/components/companies/company-opportunities-tab";
@@ -32,12 +31,11 @@ import { ApiError, fetchCompany } from "@/lib/api";
 import type { Company } from "@/lib/types";
 
 
-type TabId = "overview" | "contacts" | "activities" | "tasks" | "opportunities" | "timeline" | "intelligence" | "documents" | "ai-summary" | "conversation";
+type TabId = "overview" | "contacts" | "tasks" | "opportunities" | "timeline" | "intelligence" | "documents" | "ai-summary" | "conversation";
 
 const tabs: { id: TabId; label: string; icon: typeof Building2 }[] = [
   { id: "overview", label: "Overview", icon: Building2 },
   { id: "contacts", label: "Contacts", icon: Users },
-  { id: "activities", label: "Activities", icon: PhoneCall },
   { id: "tasks", label: "Tasks", icon: ClipboardList },
   { id: "opportunities", label: "Opportunities", icon: Target },
   { id: "timeline", label: "Timeline", icon: Clock },
@@ -49,7 +47,6 @@ const tabs: { id: TabId; label: string; icon: typeof Building2 }[] = [
 
 const emptyMessages: Record<Exclude<TabId, "overview">, { title: string; description: string }> = {
   contacts: { title: "No contacts yet", description: "Add contacts to this company to track key decision-makers and relationships." },
-  activities: { title: "No activities yet", description: "Log calls, emails, and meetings to track your engagement with this company." },
   tasks: { title: "No tasks yet", description: "Create tasks to track follow-ups and action items for this company." },
   opportunities: { title: "No opportunities yet", description: "Create pipeline opportunities linked to this company." },
   timeline: { title: "No timeline entries", description: "Recent activity and updates for this company will appear here." },
@@ -189,8 +186,6 @@ export default function CompanyDetailPage() {
           </div>
         ) : activeTab === "contacts" ? (
           <CompanyContactsTab companyId={company.id} />
-        ) : activeTab === "activities" ? (
-          <ActivityTimeline companyId={company.id} />
         ) : activeTab === "documents" ? (
           <DocumentManager companyId={company.id} />
         ) : activeTab === "tasks" ? (

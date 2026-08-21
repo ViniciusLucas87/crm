@@ -150,7 +150,14 @@ function ActivityModal({
 // ACTIVITY TIMELINE
 // ═══════════════════════════════════════════════════════════
 
-export function ActivityTimeline({ companyId }: { companyId: number }) {
+type ActivityTimelineProps = {
+  companyId: number;
+  /** Use the canonical Conversation timeline for history, keeping only the log controls here. */
+  compact?: boolean;
+  onSaved?: () => void;
+};
+
+export function ActivityTimeline({ companyId, compact = false, onSaved }: ActivityTimelineProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -169,7 +176,18 @@ export function ActivityTimeline({ companyId }: { companyId: number }) {
     }
   }, [companyId]);
 
-  useEffect(() => { fetchActivities(); }, [fetchActivities]);
+  useEffect(() => {
+    if (compact) {
+      setLoading(false);
+      return;
+    }
+    void fetchActivities();
+  }, [compact, fetchActivities]);
+
+  const handleSaved = () => {
+    if (!compact) void fetchActivities();
+    onSaved?.();
+  };
 
   const openModal = (type: string) => {
     setDefaultType(type);
@@ -182,7 +200,9 @@ export function ActivityTimeline({ companyId }: { companyId: number }) {
     <div className="space-y-4">
       {/* Header + Buttons */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-[0.1em] text-slate-400">CRM Activity</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-[0.1em] text-slate-400">
+          {compact ? "Log interaction" : "CRM Activity"}
+        </h3>
         <div className="flex gap-1">
           {ACTIVITY_TYPES.map(t => (
             <Button key={t} variant="secondary" size="sm" onClick={() => openModal(t)}>
@@ -198,25 +218,25 @@ export function ActivityTimeline({ companyId }: { companyId: number }) {
         onClose={() => setModalOpen(false)}
         companyId={companyId}
         defaultType={defaultType}
-        onSaved={fetchActivities}
+        onSaved={handleSaved}
       />
 
       {/* Loading */}
-      {loading && (
+      {!compact && loading && (
         <div className="space-y-3">
           {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}
         </div>
       )}
 
       {/* Error */}
-      {error && !loading && (
+      {!compact && error && !loading && (
         <Card className="border-red-400/10 bg-red-400/5">
           <p className="text-sm text-red-400">{error}</p>
         </Card>
       )}
 
       {/* Empty */}
-      {!loading && !error && activities.length === 0 && (
+      {!compact && !loading && !error && activities.length === 0 && (
         <Card className="border-white/5 bg-slate-800/30 py-10 text-center">
           <p className="text-sm text-slate-400">No CRM activity has been logged yet.</p>
           <p className="text-xs text-slate-500 mt-1">Start by logging your first interaction.</p>
@@ -224,7 +244,7 @@ export function ActivityTimeline({ companyId }: { companyId: number }) {
       )}
 
       {/* Timeline */}
-      {!loading && activities.length > 0 && (
+      {!compact && !loading && activities.length > 0 && (
         <div className="space-y-2">
           {activities.map(a => (
             <Card key={a.id} className="border-white/5 bg-slate-800/20 hover:bg-slate-800/30 transition">

@@ -13,7 +13,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.infrastructure.auth.clerk import AuthContext, require_permission
-from app.infrastructure.db.models import Activity, Call, Conversation, EmailMessage, Task
+from app.infrastructure.db.models import Activity, Call, Contact, Conversation, EmailMessage, Task
 from app.infrastructure.db.session import get_db_session
 
 logger = logging.getLogger(__name__)
@@ -48,6 +48,18 @@ def _days_since(value: datetime | None) -> int:
     if value.tzinfo is None:
         value = value.replace(tzinfo=UTC)
     return max(0, (datetime.now(UTC) - value).days)
+
+
+def _canonical_phone(value: str | None) -> str | None:
+    """Normalize a North American contact number for legacy call matching."""
+    if not value:
+        return None
+    digits = "".join(character for character in value if character.isdigit())
+    if len(digits) == 10:
+        return f"+1{digits}"
+    if len(digits) == 11 and digits.startswith("1"):
+        return f"+{digits}"
+    return f"+{digits}" if digits else None
 
 
 def _conversation_to_dict(c: Conversation) -> dict:
@@ -103,6 +115,16 @@ def create_conversation(
     session: Session = Depends(get_db_session),
 ):
     """Open a new conversation with a company."""
+    existing = session.execute(
+        select(Conversation).where(
+            Conversation.organization_id == ctx.organization_id,
+            Conversation.company_id == company_id,
+            Conversation.status == "active",
+        ).order_by(Conversation.updated_at.desc())
+    ).scalars().first()
+    if existing:
+        return _conversation_to_dict(existing)
+
     now = datetime.now(UTC)
     conv = Conversation(
         organization_id=ctx.organization_id,
@@ -116,6 +138,76 @@ def create_conversation(
         last_activity_at=now,
     )
     session.add(conv)
+    session.flush()
+
+    # A company page may be opened after a call or activity was recorded. Attach
+    # unlinked company events so Conversation remains the single history view.
+    for activity in session.execute(
+        select(Activity).where(
+            Activity.organization_id == ctx.organization_id,
+            Activity.company_id == company_id,
+            Activity.conversation_id.is_(None),
+        )
+    ).scalars():
+        activity.conversation_id = conv.id
+    for task in session.execute(
+        select(Task).where(
+            Task.organization_id == ctx.organization_id,
+            Task.company_id == company_id,
+            Task.conversation_id.is_(None),
+        )
+    ).scalars():
+        task.conversation_id = conv.id
+    for call in session.execute(
+        select(Call).where(
+            Call.organization_id == ctx.organization_id,
+            Call.company_id == company_id,
+            Call.conversation_id.is_(None),
+        )
+    ).scalars():
+        call.conversation_id = conv.id
+
+    # Browser calls made before a contact was added had no company ID. If their
+    # normalized number now matches one contact at this company, backfill them.
+    contacts = session.execute(
+        select(Contact).where(
+            Contact.organization_id == ctx.organization_id,
+            Contact.company_id == company_id,
+        )
+    ).scalars().all()
+    phone_contacts: dict[str, list[Contact]] = {}
+    for contact in contacts:
+        for value in (contact.phone, contact.mobile):
+            phone = _canonical_phone(value)
+            if phone:
+                phone_contacts.setdefault(phone, []).append(contact)
+    for call in session.execute(
+        select(Call).where(
+            Call.organization_id == ctx.organization_id,
+            Call.company_id.is_(None),
+            Call.conversation_id.is_(None),
+        )
+    ).scalars():
+        match_values = {
+            _canonical_phone(value)
+            for value in (
+                call.phone_number,
+                call.normalized_destination_number,
+                call.normalized_caller_number,
+            )
+        }
+        matches = {
+            contact.id: contact
+            for phone in match_values
+            if phone
+            for contact in phone_contacts.get(phone, [])
+        }
+        if not matches:
+            continue
+        call.company_id = company_id
+        call.conversation_id = conv.id
+        if len(matches) == 1:
+            call.contact_id = next(iter(matches.values())).id
     session.commit()
     session.refresh(conv)
     logger.info("Conversation created: id=%s company=%s", conv.id, company_id)
@@ -201,7 +293,13 @@ def conversation_timeline(
 
     # Calls
     calls = session.execute(
-        select(Call).where(Call.conversation_id == conversation_id).order_by(Call.created_at.desc()).limit(50)
+        select(Call).where(
+            Call.organization_id == ctx.organization_id,
+            or_(
+                Call.conversation_id == conversation_id,
+                (Call.company_id == conv.company_id) & Call.conversation_id.is_(None),
+            ),
+        ).order_by(Call.created_at.desc()).limit(50)
     ).scalars().all()
     for c in calls:
         events.append({
@@ -218,7 +316,10 @@ def conversation_timeline(
     # Activities
     activities = session.execute(
         select(Activity).where(
-            Activity.conversation_id == conversation_id,
+            or_(
+                Activity.conversation_id == conversation_id,
+                (Activity.company_id == conv.company_id) & Activity.conversation_id.is_(None),
+            ),
             Activity.id.not_in(
                 select(EmailMessage.activity_id).where(
                     EmailMessage.organization_id == ctx.organization_id,
@@ -266,7 +367,13 @@ def conversation_timeline(
 
     # Tasks
     tasks = session.execute(
-        select(Task).where(Task.conversation_id == conversation_id).order_by(Task.created_at.desc()).limit(50)
+        select(Task).where(
+            Task.organization_id == ctx.organization_id,
+            or_(
+                Task.conversation_id == conversation_id,
+                (Task.company_id == conv.company_id) & Task.conversation_id.is_(None),
+            ),
+        ).order_by(Task.created_at.desc()).limit(50)
     ).scalars().all()
     for t in tasks:
         events.append({
@@ -306,15 +413,33 @@ def conversation_stats(
         return {"error": "Conversation not found"}
 
     call_count = session.execute(
-        select(func.count(Call.id)).where(Call.conversation_id == conversation_id)
+        select(func.count(Call.id)).where(
+            Call.organization_id == ctx.organization_id,
+            or_(
+                Call.conversation_id == conversation_id,
+                (Call.company_id == conv.company_id) & Call.conversation_id.is_(None),
+            ),
+        )
     ).scalar() or 0
 
     activity_count = session.execute(
-        select(func.count(Activity.id)).where(Activity.conversation_id == conversation_id)
+        select(func.count(Activity.id)).where(
+            Activity.organization_id == ctx.organization_id,
+            or_(
+                Activity.conversation_id == conversation_id,
+                (Activity.company_id == conv.company_id) & Activity.conversation_id.is_(None),
+            ),
+        )
     ).scalar() or 0
 
     task_count = session.execute(
-        select(func.count(Task.id)).where(Task.conversation_id == conversation_id)
+        select(func.count(Task.id)).where(
+            Task.organization_id == ctx.organization_id,
+            or_(
+                Task.conversation_id == conversation_id,
+                (Task.company_id == conv.company_id) & Task.conversation_id.is_(None),
+            ),
+        )
     ).scalar() or 0
 
     email_count = session.execute(
@@ -330,7 +455,11 @@ def conversation_stats(
 
     total_duration = session.execute(
         select(func.sum(Call.duration_seconds)).where(
-            Call.conversation_id == conversation_id,
+            Call.organization_id == ctx.organization_id,
+            or_(
+                Call.conversation_id == conversation_id,
+                (Call.company_id == conv.company_id) & Call.conversation_id.is_(None),
+            ),
             Call.duration_seconds > 0,
         )
     ).scalar() or 0

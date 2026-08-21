@@ -31,7 +31,7 @@ from app.application.telephony import (
     is_recording_enabled,
 )
 from app.infrastructure.auth.clerk import AuthContext, require_permission
-from app.infrastructure.db.models import Call, Task, Activity, Company, Contact
+from app.infrastructure.db.models import Activity, Call, Company, Contact, Conversation
 from app.infrastructure.db.session import get_db_session
 
 logger = logging.getLogger(__name__)
@@ -236,6 +236,102 @@ def _validate_crm_links(
     return None
 
 
+def _get_or_create_active_conversation(
+    session: Session,
+    organization_id: int,
+    company_id: int | None,
+    contact_id: int | None,
+    user_id: str,
+) -> int | None:
+    """Return the company's canonical active conversation when CRM context exists."""
+    if company_id is None:
+        return None
+
+    conversation = session.execute(
+        select(Conversation)
+        .where(
+            Conversation.organization_id == organization_id,
+            Conversation.company_id == company_id,
+            Conversation.status == "active",
+        )
+        .order_by(Conversation.updated_at.desc())
+    ).scalars().first()
+    if conversation is not None:
+        if conversation.primary_contact_id is None and contact_id is not None:
+            conversation.primary_contact_id = contact_id
+        return conversation.id
+
+    conversation = Conversation(
+        organization_id=organization_id,
+        company_id=company_id,
+        primary_contact_id=contact_id,
+        status="active",
+        relationship_stage="new",
+        opened_by=user_id,
+        last_activity_at=datetime.now(UTC),
+    )
+    session.add(conversation)
+    session.flush()
+    return conversation.id
+
+
+def _resolve_crm_context(
+    session: Session,
+    organization_id: int,
+    phone_number: str,
+    company_id: int | None,
+    contact_id: int | None,
+    user_id: str,
+) -> tuple[int | None, int | None, int | None]:
+    """Resolve a safe CRM context from explicitly supplied IDs or one phone match.
+
+    Browser calls start from a dialler rather than a company page. Matching only a
+    single normalized contact prevents a shared business number from being silently
+    assigned to the wrong person while still keeping the company history complete.
+    """
+    contact: Contact | None = None
+    if contact_id is not None:
+        contact = session.execute(
+            select(Contact).where(
+                Contact.id == contact_id,
+                Contact.organization_id == organization_id,
+            )
+        ).scalar_one_or_none()
+        if contact is not None and company_id is None:
+            company_id = contact.company_id
+    else:
+        contacts = session.execute(
+            select(Contact).where(Contact.organization_id == organization_id)
+        ).scalars().all()
+        matches = [
+            candidate
+            for candidate in contacts
+            if phone_number in {
+                _normalize_phone(value)
+                for value in (candidate.phone, candidate.mobile)
+                if value
+            }
+        ]
+        if company_id is not None:
+            matches = [candidate for candidate in matches if candidate.company_id == company_id]
+
+        company_matches = {candidate.company_id for candidate in matches}
+        if len(company_matches) == 1 and company_id is None:
+            company_id = company_matches.pop()
+        if len(matches) == 1:
+            contact = matches[0]
+            contact_id = contact.id
+
+    conversation_id = _get_or_create_active_conversation(
+        session,
+        organization_id,
+        company_id,
+        contact_id,
+        user_id,
+    )
+    return company_id, contact_id, conversation_id
+
+
 @router.post("/telephony/calls/browser")
 def create_browser_call(
     payload: BrowserCallCreate,
@@ -246,15 +342,24 @@ def create_browser_call(
     phone_number = _normalize_phone(payload.phone_number)
     if not _validate_phone(phone_number):
         return JSONResponse(content={"error": "Enter a valid phone number"}, status_code=422)
-    link_error = _validate_crm_links(session, ctx.organization_id, payload.company_id, payload.contact_id)
+    company_id, contact_id, conversation_id = _resolve_crm_context(
+        session,
+        ctx.organization_id,
+        phone_number,
+        payload.company_id,
+        payload.contact_id,
+        str(ctx.user_id),
+    )
+    link_error = _validate_crm_links(session, ctx.organization_id, company_id, contact_id)
     if link_error:
         return JSONResponse(content={"error": link_error}, status_code=404)
 
     call = Call(
         public_uuid=str(uuid.uuid4()),
         organization_id=ctx.organization_id,
-        company_id=payload.company_id,
-        contact_id=payload.contact_id,
+        company_id=company_id,
+        contact_id=contact_id,
+        conversation_id=conversation_id,
         provider="telnyx_webrtc",
         direction="outbound",
         status="dialing",
@@ -267,7 +372,14 @@ def create_browser_call(
     session.add(call)
     session.commit()
     session.refresh(call)
-    return {"id": call.id, "call_uuid": call.public_uuid, "status": call.status}
+    return {
+        "id": call.id,
+        "call_uuid": call.public_uuid,
+        "status": call.status,
+        "company_id": call.company_id,
+        "contact_id": call.contact_id,
+        "conversation_id": call.conversation_id,
+    }
 
 
 @router.patch("/telephony/calls/browser/{call_id}")
@@ -288,6 +400,12 @@ def update_browser_call(
     call.duration_seconds = payload.duration_seconds
     if payload.status == "connected" and not call.connected_at:
         call.connected_at = datetime.now(UTC)
+        if call.conversation_id is not None:
+            conversation = session.get(Conversation, call.conversation_id)
+            if conversation is not None:
+                conversation.last_activity_at = call.connected_at
+                if conversation.relationship_stage == "new":
+                    conversation.relationship_stage = "contacted"
     if payload.status in {"ended", "failed"}:
         call.ended_at = datetime.now(UTC)
     session.commit()
@@ -306,7 +424,15 @@ async def send_sms(
     phone_number = _normalize_phone(payload.phone_number)
     if not _validate_phone(phone_number):
         return JSONResponse(content={"error": "Enter a valid phone number"}, status_code=422)
-    link_error = _validate_crm_links(session, ctx.organization_id, payload.company_id, payload.contact_id)
+    company_id, contact_id, conversation_id = _resolve_crm_context(
+        session,
+        ctx.organization_id,
+        phone_number,
+        payload.company_id,
+        payload.contact_id,
+        str(ctx.user_id),
+    )
+    link_error = _validate_crm_links(session, ctx.organization_id, company_id, contact_id)
     if link_error:
         return JSONResponse(content={"error": link_error}, status_code=404)
 
@@ -345,12 +471,19 @@ async def send_sms(
     provider_message_id = response.json().get("data", {}).get("id", "")
     activity = Activity(
         organization_id=ctx.organization_id,
-        company_id=payload.company_id,
-        contact_id=payload.contact_id,
+        company_id=company_id,
+        contact_id=contact_id,
+        conversation_id=conversation_id,
         activity_type="sms_sent",
         subject=f"SMS to {phone_number}",
         body=payload.message.strip(),
     )
+    if conversation_id is not None:
+        conversation = session.get(Conversation, conversation_id)
+        if conversation is not None:
+            conversation.last_activity_at = datetime.now(UTC)
+            if conversation.relationship_stage == "new":
+                conversation.relationship_stage = "contacted"
     session.add(activity)
     session.commit()
     return {"status": "sent", "message_id": provider_message_id, "activity_id": activity.id}

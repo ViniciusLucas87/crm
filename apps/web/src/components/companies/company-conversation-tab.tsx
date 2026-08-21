@@ -5,6 +5,7 @@ import { MessageSquare, Phone, Calendar, CheckSquare, TrendingUp, Heart, User, C
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ActivityTimeline } from "@/components/companies/activity-timeline";
 
 type ConversationData = {
   id: number;
@@ -84,27 +85,11 @@ export function CompanyConversationTab({ companyId }: { companyId: number }) {
           setTimeline(tlData.events || []);
         }
 
-        // ── Sprint 48.1: Fetch real call data ──
-        let callStats = { call_count: 0, talk_time: 0, last_call_at: null as string | null };
-        try {
-          const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
-          const callsR = await fetch(`${apiBase}/api/v1/calls?company_id=${companyId}`);
-          if (callsR.ok) {
-            const callsData = await callsR.json();
-            const completed = callsData.filter((c: Record<string, unknown>) => c.status === "COMPLETED");
-            callStats = {
-              call_count: callsData.length,
-              talk_time: completed.reduce((sum: number, c: Record<string, unknown>) => sum + ((c.duration_seconds as number) || 0), 0),
-              last_call_at: callsData[0]?.ended_at || null,
-            };
-          }
-        } catch { /* calls not available — keep defaults */ }
-
-        // Merge with backend stats
+        // The Conversation API is the canonical, authenticated source for all
+        // interaction counts. It includes linked legacy company events too.
         const stR = await fetch(`/api/conversations/${conv.id}/stats`);
         if (stR.ok) {
-          const backendStats = await stR.json();
-          setStats({ ...backendStats, ...callStats, days_active: backendStats.days_active || 0 });
+          setStats(await stR.json());
         }
       }
     } catch (e) {
@@ -213,6 +198,8 @@ export function CompanyConversationTab({ companyId }: { companyId: number }) {
           </div>
         </Card>
       )}
+
+      <ActivityTimeline companyId={companyId} compact onSaved={() => { void load(); }} />
 
       {/* ── Timeline ── */}
       <Card>
