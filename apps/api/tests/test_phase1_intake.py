@@ -517,6 +517,57 @@ def test_delivery_receipt_updates_sms_status(client, _patch_webhook_verify):
         db.close()
 
 
+def test_delivery_receipt_updates_manual_sms_activity(client, _patch_webhook_verify):
+    """Manual CRM texts retain the provider ID so the receipt updates their history."""
+    from app.infrastructure.db.models import Activity
+    from app.infrastructure.db.session import SessionLocal
+
+    ts = str(int(datetime.now(UTC).timestamp()))
+    db = SessionLocal()
+    try:
+        activity = Activity(
+            organization_id=1,
+            activity_type="sms_sent",
+            subject="SMS to +16045551234",
+            body="Useful follow-up details.",
+            provider_message_id="msg_manual_dlr_001",
+            delivery_status="sent",
+        )
+        db.add(activity)
+        db.commit()
+        activity_id = activity.id
+    finally:
+        db.close()
+
+    payload = _make_sms_payload(
+        event_id="evt_manual_dlr_001",
+        event_type="message.finalized",
+        from_number="+16045559876",
+        to_number="+16045551234",
+    )
+    payload["data"]["payload"]["id"] = "msg_manual_dlr_001"
+    payload["data"]["payload"]["detail"] = {"status": "delivered"}
+    response = client.post(SMS_WEBHOOK_URL, json=payload, headers={"telnyx-timestamp": ts})
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "dlr_updated"
+    assert response.json()["activity_id"] == activity_id
+    assert response.json()["delivery_status"] == "delivered"
+
+    db = SessionLocal()
+    try:
+        activity = db.get(Activity, activity_id)
+        assert activity is not None
+        assert activity.delivery_status == "delivered"
+    finally:
+        db.close()
+
+    history = client.get("/api/v1/telephony/history", headers=auth_headers("org1-admin"))
+    assert history.status_code == 200
+    item = next(item for item in history.json()["items"] if item["id"] == f"activity-{activity_id}")
+    assert item["status"] == "delivered"
+
+
 def test_delivery_receipt_resolves_tenant_from_sender_in_production(
     client, _patch_webhook_verify, monkeypatch
 ):

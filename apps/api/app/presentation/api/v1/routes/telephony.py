@@ -477,6 +477,8 @@ async def send_sms(
         activity_type="sms_sent",
         subject=f"SMS to {phone_number}",
         body=payload.message.strip(),
+        provider_message_id=provider_message_id or None,
+        delivery_status="sent",
     )
     if conversation_id is not None:
         conversation = session.get(Conversation, conversation_id)
@@ -545,7 +547,7 @@ def communication_history(
             "id": f"activity-{activity.id}",
             "kind": "sms",
             "direction": "outbound" if activity.activity_type == "sms_sent" else "inbound",
-            "status": "received" if activity.activity_type == "sms_received" else "sent",
+            "status": "received" if activity.activity_type == "sms_received" else (activity.delivery_status or "sent"),
             "phone_number": phone_number,
             "timestamp": activity.created_at.isoformat(),
             "duration_seconds": 0,
@@ -1067,12 +1069,24 @@ async def sms_webhook(request: Request, session: Session = Depends(get_db_sessio
         dlr_status = payload.get("detail", {}).get("status", "")
         message_id = payload.get("id", "")
         if message_id:
+            delivery_status = dlr_status or "delivered"
             call = session.query(Call).filter(Call.sms_message_id == message_id).first()
+            activity = session.query(Activity).filter(
+                Activity.provider_message_id == message_id
+            ).first()
             if call:
-                call.sms_status = dlr_status or "delivered"
+                call.sms_status = delivery_status
+            if activity:
+                activity.delivery_status = delivery_status
+            if call or activity:
                 wh_event.processing_status = "processed"
                 session.commit()
-                return {"status": "dlr_updated", "call_uuid": call.public_uuid}
+                return {
+                    "status": "dlr_updated",
+                    "call_uuid": call.public_uuid if call else None,
+                    "activity_id": activity.id if activity else None,
+                    "delivery_status": delivery_status,
+                }
 
     # Normal inbound reply: find contact, create activity
     contact = None
