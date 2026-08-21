@@ -1659,6 +1659,8 @@ def imap_ingestion(self, **context):
 
                 # Extract normalized from address
                 from_email = _extract_email(from_addr) or from_addr
+                sender_domain = from_email.rsplit("@", 1)[-1].lower() if "@" in from_email else ""
+                is_upwork_notification = sender_domain == "upwork.com" or sender_domain.endswith(".upwork.com")
 
                 # ── Policy A: Detect system-generated PNS emails ──
                 is_system = (
@@ -1695,13 +1697,15 @@ def imap_ingestion(self, **context):
                     normalized_from=from_email[:255] if from_email else None,
                     to_address=raw.get("To", ""),
                     subject=subject[:500] if subject else None,
-                    provider="zoho",
+                    channel="upwork" if is_upwork_notification else "email",
+                    provider="upwork" if is_upwork_notification else "zoho",
                     provider_message_id=uid.decode(),
                     internet_message_id=message_id[:500] if message_id else None,
                     in_reply_to=in_reply_to[:500] if in_reply_to else None,
                     references=references[:1000] if references else None,
                     received_at=datetime.now(UTC),
                     correlation_id=pns_correlation_id or str(_uuid.uuid4()),
+                    provider_metadata={"ingested_via": "zoho_imap"} if is_upwork_notification else None,
                 )
                 db.add(email_record)
                 db.flush()
@@ -1720,6 +1724,8 @@ def imap_ingestion(self, **context):
                 processed += 1
                 if is_system:
                     logger.info("IMAP ingested internal: from=%s type=%s", from_email, raw.get("X-PNS-Message-Type", "unknown"))
+                elif is_upwork_notification:
+                    logger.info("IMAP ingested Upwork notification: subject=%s", subject)
                 else:
                     logger.info("IMAP ingested: from=%s subject=%s company=%s", from_email, subject, company_id)
 

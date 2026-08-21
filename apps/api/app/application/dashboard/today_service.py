@@ -168,7 +168,11 @@ class TodayService:
                     received_at=e.received_at or e.created_at,
                     company_id=e.company_id,
                     company_name=company_name,
-                    reason="New inbound reply — needs response",
+                    reason=(
+                        "New Upwork message notification — open Upwork to respond"
+                        if e.channel == "upwork"
+                        else "New inbound reply — needs response"
+                    ),
                 )
             )
         return items

@@ -83,7 +83,7 @@ export function MorningBriefModal() {
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-xs text-slate-500">Upwork still needs a quick inbox check because it is not connected to the CRM yet.</p>
+            <p className="mt-3 text-xs text-slate-500">Upwork notifications sent to the Zoho inbox appear in Today. Keep Upwork email alerts set to Immediate.</p>
           </section>
 
           <section>
