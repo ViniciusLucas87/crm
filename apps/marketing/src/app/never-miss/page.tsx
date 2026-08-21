@@ -94,7 +94,7 @@ export default function ProductsPage() {
           <div className="mx-auto mt-10 max-w-5xl overflow-hidden rounded-3xl border border-white/15 bg-black shadow-2xl">
             <video className="aspect-video w-full" controls playsInline preload="metadata">
               <source src="/videos/never-miss-product-demo.mp4" type="video/mp4" />
-              <track src="/videos/never-miss-product-demo.en.vtt" kind="captions" srcLang="en" label="English" default />
+              <track src="/videos/never-miss-product-demo.en.vtt" kind="captions" srcLang="en" label="English" />
               Your browser does not support video playback.
             </video>
           </div>
