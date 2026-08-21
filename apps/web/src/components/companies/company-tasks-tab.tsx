@@ -119,7 +119,7 @@ export function CompanyTasksTab({ companyId }: { companyId: number }) {
             <div className="flex items-center gap-2 mt-1">
               <Badge variant={PRIORITY_COLORS[t.priority] || "neutral"}>{t.priority}</Badge>
               {t.dueDate && (
-                <span className="text-xs text-slate-600">{new Date(t.dueDate).toLocaleDateString()}</span>
+                <span className="text-xs text-slate-600">{new Date(`${t.dueDate}T00:00:00`).toLocaleDateString()}</span>
               )}
             </div>
           </div>
