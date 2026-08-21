@@ -10,6 +10,7 @@ import re
 import secrets
 import time
 from datetime import UTC, datetime, timedelta
+from html import escape
 
 import httpx
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
@@ -292,6 +293,44 @@ def _email_management_link(subscription: ProductSubscription, token: str) -> Non
                 "<p>Use this private link to update your service, pause automatic replies, or manage billing.</p>"
                 f'<p><a href="{link}">Open my Never Miss account</a></p>'
                 "<p>This link expires in 30 minutes. If you did not request it, you can ignore this email.</p>"
+            ),
+        },
+        timeout=5,
+    ).raise_for_status()
+
+
+def _email_setup_guide(subscription: ProductSubscription, assigned_phone: str, management_token: str) -> None:
+    """Send the customer a usable forwarding guide after CRM provisioning succeeds."""
+    api_key = os.getenv("RESEND_API_KEY", "")
+    if not api_key:
+        return
+    site_url = os.getenv("MARKETING_SITE_URL", "https://www.pacificnorthsystems.com").rstrip("/")
+    management_link = f"{site_url}/never-miss/manage#token={management_token}"
+    safe_name = escape(subscription.customer_name or "there")
+    safe_phone = escape(assigned_phone)
+    httpx.post(
+        "https://api.resend.com/emails",
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        json={
+            "from": os.getenv("RESEND_FROM_EMAIL", "Pacific North Systems <hello@pacificnorthsystems.com>"),
+            "to": [subscription.customer_email],
+            "subject": "Your Never Miss forwarding guide",
+            "html": (
+                f"<h1>Your Never Miss routing line is ready, {safe_name}</h1>"
+                f"<p>Use this private routing line for <strong>unanswered calls only</strong>: "
+                f"<strong>{safe_phone}</strong></p>"
+                f'<p><img src="{site_url}/images/never-miss-setup/never-miss-unanswered-call-guide.png" '
+                'alt="Pacific North Systems guide: your business number rings first; only unanswered calls go to Never Miss for a text and callback" '
+                'width="680" style="display:block;max-width:100%;height:auto"></p>'
+                "<ol>"
+                "<li>Open your carrier's call-forwarding settings.</li>"
+                "<li>Select <strong>When unanswered</strong>, <strong>No answer</strong>, or <strong>No reply</strong> only.</li>"
+                f"<li>Enter <strong>{safe_phone}</strong> as the forwarding number.</li>"
+                "<li>Leave <strong>Always forward</strong>, <strong>Forward all calls</strong>, <strong>Busy</strong>, and <strong>Unreachable</strong> turned off.</li>"
+                "<li>From another phone, make one answered call and one unanswered call. Confirm the recovery text and callback task before relying on it with customers.</li>"
+                "</ol>"
+                f'<p><a href="{management_link}">Open my Never Miss account</a></p>'
+                "<p>Need help? Reply to this email. We aim to respond within one business day.</p>"
             ),
         },
         timeout=5,
@@ -802,7 +841,7 @@ def activate_subscription(token: str, payload: ActivationInput, session: Session
         management_token = _issue_management_token(subscription)
         session.commit()
         try:
-            _email_management_link(subscription, management_token)
+            _email_setup_guide(subscription, assigned_phone, management_token)
         except Exception:
             pass
         return {

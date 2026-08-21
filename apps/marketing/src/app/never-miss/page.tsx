@@ -63,7 +63,9 @@ const packages = [
   },
 ];
 
-const checkoutAvailable = Boolean(process.env.NEVER_MISS_FREE_TRIAL_URL);
+const checkoutAvailable = Boolean(
+  process.env.NEVER_MISS_FREE_TRIAL_URL || process.env.NEVER_MISS_CHECKOUT_URL,
+);
 
 export default function ProductsPage() {
   return (

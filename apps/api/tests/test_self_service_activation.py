@@ -45,6 +45,37 @@ def test_activation_email_explains_unanswered_only_forwarding(client, monkeypatc
     assert "unanswered-calls-only.svg" in sent["html"]
 
 
+def test_completed_setup_email_has_branded_forwarding_guide(client, monkeypatch):
+    """Once a customer submits setup, email the private line and safe forwarding instructions."""
+    sent: dict = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+    def fake_post(*args, **kwargs):
+        sent.update(kwargs["json"])
+        return FakeResponse()
+
+    monkeypatch.setenv("RESEND_API_KEY", "re_test")
+    monkeypatch.setenv("MARKETING_SITE_URL", "https://www.pacificnorthsystems.com")
+    monkeypatch.setattr("app.presentation.api.v1.routes.subscriptions.httpx.post", fake_post)
+
+    from app.presentation.api.v1.routes.subscriptions import _email_setup_guide
+
+    _email_setup_guide(
+        SimpleNamespace(customer_email="owner@example.ca", customer_name="Taylor"),
+        "+16045550999",
+        "safe-management-token",
+    )
+
+    assert sent["subject"] == "Your Never Miss forwarding guide"
+    assert "never-miss-unanswered-call-guide.png" in sent["html"]
+    assert "+16045550999" in sent["html"]
+    assert "Always forward" in sent["html"]
+    assert "#token=safe-management-token" in sent["html"]
+
+
 def _post_checkout_webhook(client, monkeypatch, checkout=CHECKOUT, event_id="evt_checkout_001"):
     secret = "whsec_test"
     monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", secret)

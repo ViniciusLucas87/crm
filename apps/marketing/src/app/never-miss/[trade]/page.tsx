@@ -11,7 +11,9 @@ type Props = {
   params: Promise<{ trade: string }>;
 };
 
-const checkoutAvailable = Boolean(process.env.NEVER_MISS_FREE_TRIAL_URL);
+const checkoutAvailable = Boolean(
+  process.env.NEVER_MISS_FREE_TRIAL_URL || process.env.NEVER_MISS_CHECKOUT_URL,
+);
 
 export async function generateStaticParams() {
   return neverMissTradeSlugs.map((trade) => ({ trade }));
