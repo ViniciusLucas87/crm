@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { ArrowRight, Check, PhoneMissed } from "lucide-react";
+import Link from "next/link";
+import { Check, PhoneMissed, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
+import { TrialCta } from "@/components/never-miss/trial-cta";
+import { siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "Never Miss | Automatic Missed Call Texts for Service Businesses",
@@ -43,11 +46,20 @@ const workflow = [
 
 const packages = [
   {
+    plan: "never-miss" as const,
     name: "Never Miss",
     price: "$39",
     trial: "30 days free, then $39 CAD/month",
     description: "For an owner who needs every missed caller to hear back quickly.",
-    features: ["Automatic text after a missed call", "Custom reply message", "Callback reminders", "Missed call history"],
+    features: ["Automatic text after an eligible unanswered call", "Custom reply message", "Callback reminders and missed-call history", "Up to 50 calls and 100 recovery messages each month"],
+  },
+  {
+    plan: "never-miss-plus" as const,
+    name: "Never Miss Plus",
+    price: "$89",
+    trial: "30 days free, then $89 CAD/month",
+    description: "For a team that needs higher capacity and one place to review more customer inquiries.",
+    features: ["Everything in Never Miss", "One inbox for calls, texts, forms, and website inquiries", "Simple follow-up tracking", "Up to 250 calls and 500 recovery messages each month"],
   },
 ];
 
@@ -65,7 +77,7 @@ export default function ProductsPage() {
             <p className="mt-7 max-w-xl text-xl leading-8 text-white/85">You keep working. We let the caller know you will get back to them and put the job on your callback list.</p>
             <p className="mt-4 text-base font-semibold text-white">No new phone number. No complicated setup. No lost lead.</p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Button href={checkoutAvailable ? "/never-miss/checkout?plan=never-miss" : "/contact"} size="lg" className="w-full bg-cyan-300 !text-[#071729] hover:bg-cyan-200 sm:w-auto">{checkoutAvailable ? "Start your 30-day free test" : "Talk to our team"} <ArrowRight className="h-4 w-4" /></Button>
+              <TrialCta available={checkoutAvailable} label={checkoutAvailable ? "Start your 30-day free test" : "Talk to our team"} className="w-full bg-cyan-300 !text-[#071729] hover:bg-cyan-200 sm:w-auto" />
               <Button href="#how-it-works" variant="outline" size="lg" className="w-full border-white/40 !text-white hover:bg-white/10 sm:w-auto">See what happens</Button>
             </div>
             <p className="mt-4 text-sm text-white/65">{checkoutAvailable ? "No charge today. Your subscription continues monthly after 30 days unless you cancel beforehand." : "Online trial enrolment is temporarily unavailable. We will not take payment until the self-service checkout is ready."}</p>
@@ -104,14 +116,14 @@ export default function ProductsPage() {
       <section className="bg-[#f4f7f7] py-20 lg:py-24">
         <Container>
           <div className="mx-auto max-w-3xl text-center"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#0b6575]">Simple, focused service</p><h2 className="mt-3 text-3xl font-semibold tracking-tight text-pns-text-primary lg:text-5xl">One clear missed-call workflow.</h2><p className="mt-5 text-lg leading-8 text-pns-text-muted">Never Miss is focused on helping you acknowledge unanswered callers and organize the callback.</p></div>
-          <div className="mx-auto mt-12 grid max-w-2xl gap-6">
+          <div className="mx-auto mt-12 grid max-w-5xl gap-6 lg:grid-cols-2">
             {packages.map((item, index) => (
               <article key={item.name} className={`rounded-3xl p-8 ${index === 1 ? "bg-[#071729] text-white" : "border border-black/10 bg-white text-pns-text-primary"}`}>
                 <h3 className="text-3xl font-semibold">{item.name}</h3>
                 <div className="mt-5"><p className="text-2xl font-semibold tracking-tight">30 days free</p><p className={index === 1 ? "mt-1 text-white/60" : "mt-1 text-pns-text-muted"}>Then {item.price} CAD/month</p></div>
                 <p className={`mt-5 leading-7 ${index === 1 ? "text-white/72" : "text-pns-text-muted"}`}>{item.description}</p>
                 <ul className="mt-7 space-y-3">{item.features.map((feature) => <li key={feature} className="flex gap-3"><Check className={`mt-0.5 h-5 w-5 shrink-0 ${index === 1 ? "text-cyan-300" : "text-[#0b6575]"}`} />{feature}</li>)}</ul>
-                <div className="mt-8"><Button href={checkoutAvailable ? "/never-miss/checkout?plan=never-miss" : "/contact"} size="lg">{checkoutAvailable ? "Start free test" : "Contact us"} <ArrowRight className="h-4 w-4" /></Button></div>
+                <div className="mt-8"><TrialCta plan={item.plan} available={checkoutAvailable} label={checkoutAvailable ? "Start free test" : "Contact us"} /></div>
                 <p className="mt-3 text-sm text-pns-text-muted">{checkoutAvailable ? `${item.trial}. Cancel anytime.` : "Online trials are not open until checkout verification is complete."}</p>
               </article>
             ))}
@@ -144,6 +156,24 @@ export default function ProductsPage() {
 
       <section className="bg-[#edf5f5] py-20 lg:py-24">
         <Container>
+          <div className="mx-auto max-w-3xl text-center"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#0b6575]">Only after you do not answer</p><h2 className="mt-3 text-3xl font-semibold tracking-tight text-pns-text-primary lg:text-5xl">Your team gets the first chance to answer.</h2><p className="mt-5 text-lg leading-8 text-pns-text-muted">Never Miss is not all-calls forwarding and does not replace your staff. Your carrier forwards an eligible call only when it goes unanswered. Answered calls continue through your normal business number.</p></div>
+          <div className="mx-auto mt-12 grid max-w-5xl gap-5 md:grid-cols-3">
+            {["A customer calls the number you already advertise.", "Your team answers as normal. Nothing changes.", "If the call is unanswered, your approved reply and callback workflow begin."].map((item, index) => <div key={item} className="rounded-2xl bg-white p-6 shadow-sm"><p className="text-sm font-semibold text-[#0b6575]">0{index + 1}</p><p className="mt-3 text-lg leading-7 text-pns-text-primary">{item}</p></div>)}
+          </div>
+        </Container>
+      </section>
+
+      <section className="bg-white py-20 lg:py-24">
+        <Container>
+          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+            <div><p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#0b6575]">A trial that is tested, not assumed</p><h2 className="mt-3 text-3xl font-semibold tracking-tight text-pns-text-primary lg:text-5xl">Set up unanswered-call forwarding, then test a real call.</h2><p className="mt-5 text-lg leading-8 text-pns-text-muted">After secure checkout, you choose the reply, confirm the business number and notification number, and receive a private routing line. Set your carrier to forward <strong>when unanswered only</strong>. Then test from another phone before relying on it with customers.</p></div>
+            <ol className="space-y-4">{["Start the 30-day free trial. A card is collected, but there is no charge today.", "Complete the short setup and confirm your customer reply includes clear opt-out wording.", "Use your carrier's no-answer or when-unanswered forwarding option only. Do not enable all-calls forwarding.", "Place one answered test call, then one unanswered test call. Confirm the text, customer response, callback task, and notification."].map((item, index) => <li key={item} className="flex gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-5"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#071729] text-sm font-semibold text-cyan-200">{index + 1}</span><span className="leading-7 text-pns-text-primary">{item}</span></li>)}</ol>
+          </div>
+        </Container>
+      </section>
+
+      <section className="bg-[#edf5f5] py-20 lg:py-24">
+        <Container>
           <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#0b6575]">A real example</p>
@@ -169,9 +199,15 @@ export default function ProductsPage() {
         </Container>
       </section>
 
+      <section className="bg-[#edf5f5] py-20 lg:py-24">
+        <Container size="narrow">
+          <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-10"><div className="flex items-center gap-3"><ShieldCheck className="h-7 w-7 text-[#0b6575]" /><p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#0b6575]">Clear terms and support</p></div><h2 className="mt-4 text-3xl font-semibold tracking-tight text-pns-text-primary">Know what happens before you start.</h2><div className="mt-6 grid gap-5 md:grid-cols-2"><p className="leading-7 text-pns-text-muted"><strong className="text-pns-text-primary">Billing:</strong> Never Miss is free for 30 days, then $39 CAD/month. Never Miss Plus is free for 30 days, then $89 CAD/month. Cancel before the trial ends to avoid the first monthly charge.</p><p className="leading-7 text-pns-text-muted"><strong className="text-pns-text-primary">Messages:</strong> You approve the reply during setup and confirm that it identifies your business, includes opt-out wording, and is used only after eligible unanswered calls.</p><p className="leading-7 text-pns-text-muted"><strong className="text-pns-text-primary">Cancellation:</strong> You can cancel anytime. If service ends, remove unanswered-call forwarding so callers return to your normal voicemail process.</p><p className="leading-7 text-pns-text-muted"><strong className="text-pns-text-primary">Support:</strong> Need help with setup or a payment question? Email <a className="text-[#0b6575] underline" href={`mailto:${siteConfig.contact.email}`}>{siteConfig.contact.email}</a>. We aim to respond within one business day.</p></div><div className="mt-8 flex flex-wrap gap-x-5 gap-y-3 text-sm font-semibold text-[#0b6575]"><Link href="/privacy" className="hover:underline">Privacy policy</Link><Link href="/terms" className="hover:underline">Terms of service</Link><Link href="/acceptable-use" className="hover:underline">Acceptable use</Link><Link href="/never-miss/manage" className="hover:underline">Manage an existing subscription</Link></div></div>
+        </Container>
+      </section>
+
       <section className="bg-[#071729] py-20 text-white">
         <Container size="narrow">
-          <div className="text-center"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-300">Never Miss</p><h2 className="mt-4 text-4xl font-semibold tracking-tight lg:text-5xl">Keep your number. Never lose track of the callback.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/75">Customers keep calling the number they already know. We connect unanswered calls, send your reply, and help you test the complete workflow.</p><div className="mt-8"><Button href={checkoutAvailable ? "/never-miss/checkout?plan=never-miss" : "/contact"} size="lg" className="bg-cyan-300 !text-[#071729] hover:bg-cyan-200">{checkoutAvailable ? "Start your free test" : "Contact us"} <ArrowRight className="h-4 w-4" /></Button></div><p className="mt-4 text-sm text-white/55">{checkoutAvailable ? "Cancel anytime. No annual contract. No software training required." : "We will open online trials only after checkout and phone delivery are verified."}</p></div>
+          <div className="text-center"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-300">Never Miss</p><h2 className="mt-4 text-4xl font-semibold tracking-tight lg:text-5xl">Keep your number. Never lose track of the callback.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/75">Customers keep calling the number they already know. We connect unanswered calls, send your reply, and help you test the complete workflow.</p><div className="mt-8"><TrialCta available={checkoutAvailable} label={checkoutAvailable ? "Start your free test" : "Contact us"} className="bg-cyan-300 !text-[#071729] hover:bg-cyan-200" /></div><p className="mt-4 text-sm text-white/55">{checkoutAvailable ? "Cancel anytime. No annual contract. No software training required." : "We will open online trials only after checkout and phone delivery are verified."}</p></div>
         </Container>
       </section>
     </main>

@@ -1,12 +1,14 @@
 import type { MetadataRoute } from "next";
 import { getAllArticles } from "@/lib/blog";
 import { guides } from "@/lib/guides-data";
+import { neverMissTradeSlugs } from "@/lib/never-miss-trades";
 
 const BASE_URL = "https://pacificnorthsystems.com";
 // Stable dates: update when content is materially revised
 const SITE_LAUNCH = new Date("2026-06-01");
 const TOOLS_ADDED = new Date("2026-08-03");
 const GUIDES_PUBLISHED = new Date("2026-08-03");
+const NEVER_MISS_TRADE_PAGES_PUBLISHED = new Date("2026-08-21");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const articles = await getAllArticles();
@@ -46,6 +48,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  const neverMissTradeRoutes: MetadataRoute.Sitemap = neverMissTradeSlugs.map((slug) => ({
+    url: `${BASE_URL}/never-miss/${slug}`,
+    lastModified: NEVER_MISS_TRADE_PAGES_PUBLISHED,
+    changeFrequency: "monthly" as const,
+    priority: 0.8,
+  }));
+
   const articleRoutes: MetadataRoute.Sitemap = articles.map((article) => ({
     url: `${BASE_URL}/blog/${article.slug}`,
     lastModified: articleDates.get(article.slug) ?? SITE_LAUNCH,
@@ -53,5 +62,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticRoutes, ...guideRoutes, ...articleRoutes];
+  return [...staticRoutes, ...neverMissTradeRoutes, ...guideRoutes, ...articleRoutes];
 }
