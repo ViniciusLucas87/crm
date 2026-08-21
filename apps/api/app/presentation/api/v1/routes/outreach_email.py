@@ -35,7 +35,12 @@ class OutreachEmailInput(BaseModel):
 def _sender_configured() -> bool:
     import os
 
-    return bool(os.getenv("SMTP_USER") and os.getenv("SMTP_PASS") and os.getenv("SMTP_FROM_EMAIL"))
+    # The worker owns Zoho SMTP credentials. The API receives only this
+    # non-secret readiness flag, so a web process never needs mail secrets.
+    enabled = os.getenv("OUTREACH_EMAIL_ENABLED", "").strip().lower()
+    return enabled in {"1", "true", "yes"} or bool(
+        os.getenv("SMTP_USER") and os.getenv("SMTP_PASS") and os.getenv("SMTP_FROM_EMAIL")
+    )
 
 
 @router.get("/sender-status")

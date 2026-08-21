@@ -30,6 +30,16 @@ def test_authorized_sender_status_and_queued_outreach(client, monkeypatch):
     assert queued.json()["status"] == "queued"
 
 
+def test_sender_status_accepts_non_secret_worker_readiness_flag(client, monkeypatch):
+    monkeypatch.setenv("OUTREACH_EMAIL_ENABLED", "true")
+    monkeypatch.delenv("SMTP_USER", raising=False)
+    monkeypatch.delenv("SMTP_PASS", raising=False)
+    monkeypatch.delenv("SMTP_FROM_EMAIL", raising=False)
+    response = client.get("/api/v1/outreach-email/sender-status", headers=_auth())
+    assert response.status_code == 200
+    assert response.json()["configured"] is True
+
+
 def test_outreach_requires_opt_out(client, monkeypatch):
     monkeypatch.setenv("SMTP_USER", "sender@pacificnorthsystems.com")
     monkeypatch.setenv("SMTP_PASS", "app-password")
