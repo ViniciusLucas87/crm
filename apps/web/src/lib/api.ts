@@ -380,7 +380,17 @@ export async function listTasks(companyId: number, params: { page?: number; page
 }
 
 export async function createTask(input: TaskCreateInput): Promise<Task> {
-  const r = await fetch(`${API_BASE_URL}/tasks`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
+  const { companyId, contactId, dueDate, ...task } = input;
+  const r = await fetch(`${API_BASE_URL}/tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...task,
+      company_id: companyId,
+      ...(contactId !== undefined ? { contact_id: contactId } : {}),
+      due_date: dueDate,
+    }),
+  });
   if (!r.ok) throw new ApiError(`Failed: ${r.status}`, r.status);
   const t = await r.json();
   return { id: t.id, companyId: t.company_id, contactId: t.contact_id, title: t.title, description: t.description, priority: t.priority, status: t.status, dueDate: t.due_date, isCompleted: t.is_completed, createdAt: t.created_at };
