@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { TranscriptionState, TranscriptSegment, ChannelHealth } from "@/lib/transcription";
 
-type Props = { state: TranscriptionState; onStop: () => void };
+type Props = { state: TranscriptionState; onStop: () => void; expanded?: boolean };
 
 function HealthBadge({ label, health }: { label: string; health: ChannelHealth }) {
   const config: Record<ChannelHealth, { icon: React.ReactNode; cls: string; text: string }> = {
@@ -29,7 +29,7 @@ function HealthBadge({ label, health }: { label: string; health: ChannelHealth }
   );
 }
 
-export function LiveTranscript({ state, onStop }: Props) {
+export function LiveTranscript({ state, onStop, expanded = false }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -64,7 +64,7 @@ export function LiveTranscript({ state, onStop }: Props) {
   };
 
   return (
-    <Card className="flex flex-col h-full bg-gray-900 border-gray-700">
+    <Card className={`flex flex-col bg-gray-900 border-gray-700 ${expanded ? "h-[min(72vh,760px)] min-h-[560px]" : "h-full"}`}>
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
         <div className="flex items-center gap-2">
           <Radio className={`w-4 h-4 ${state.isStreaming ? "text-emerald-400 animate-pulse" : "text-gray-500"}`} />
@@ -102,7 +102,7 @@ export function LiveTranscript({ state, onStop }: Props) {
         {state.error && <div className="flex items-center gap-1 text-red-400 text-xs"><AlertCircle className="w-3 h-3" />{state.error}</div>}
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-1.5 min-h-[200px] max-h-[500px]">
+      <div ref={scrollRef} className={`flex-1 overflow-y-auto p-3 space-y-1.5 min-h-[200px] ${expanded ? "max-h-none" : "max-h-[500px]"}`}>
         {filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-gray-500 text-sm gap-2">
             <Mic className="w-8 h-8 opacity-30" />

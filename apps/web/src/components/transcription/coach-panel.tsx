@@ -33,9 +33,10 @@ type Props = {
   callId: string | number | null;
   isCallActive: boolean;
   segments: TranscriptSegment[];
+  expanded?: boolean;
 };
 
-export function CoachPanel({ callId, isCallActive, segments }: Props) {
+export function CoachPanel({ callId, isCallActive, segments, expanded = false }: Props) {
   const [events, setEvents] = useState<CoachEvent[]>([]);
   const [health, setHealth] = useState<ConversationHealth | null>(null);
   const [connected, setConnected] = useState(false);
@@ -114,7 +115,7 @@ export function CoachPanel({ callId, isCallActive, segments }: Props) {
   };
 
   return (
-    <Card className="flex flex-col h-full bg-gray-900 border-gray-700">
+    <Card className={`flex flex-col bg-gray-900 border-gray-700 ${expanded ? "h-[min(72vh,760px)] min-h-[560px]" : "h-full"}`}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
         <div className="flex items-center gap-2">
@@ -146,7 +147,7 @@ export function CoachPanel({ callId, isCallActive, segments }: Props) {
       )}
 
       {/* Events */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-2 min-h-[200px] max-h-[400px]">
+      <div ref={scrollRef} className={`flex-1 overflow-y-auto p-3 space-y-2 min-h-[200px] ${expanded ? "max-h-none" : "max-h-[400px]"}`}>
         {events.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-gray-500 text-xs gap-2">
             <Lightbulb className="w-6 h-6 opacity-30" />

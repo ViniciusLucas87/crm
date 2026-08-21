@@ -280,7 +280,7 @@ export default function CallCenterScreen() {
 
         <div className="space-y-6">
           {(activeCall || transcriptId) && (
-            <section className="rounded-3xl border border-cyan-400/20 bg-slate-950/70 p-5 shadow-2xl shadow-black/20">
+            <section className="rounded-3xl border border-cyan-400/20 bg-slate-950/70 p-6 shadow-2xl shadow-black/20">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300">Live call tools</p>
@@ -288,9 +288,9 @@ export default function CallCenterScreen() {
                 </div>
                 <p className="text-xs text-slate-400">Confirm recording consent before discussing customer details.</p>
               </div>
-              <div className="grid gap-4 xl:grid-cols-2">
-                <LiveTranscript state={transcription} onStop={() => {}} />
-                <CoachPanel callId={call.callId} isCallActive={activeCall} segments={transcription.segments || []} />
+              <div className="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(380px,0.9fr)]">
+                <LiveTranscript state={transcription} onStop={() => {}} expanded />
+                <CoachPanel callId={call.callId} isCallActive={activeCall} segments={transcription.segments || []} expanded />
               </div>
             </section>
           )}
