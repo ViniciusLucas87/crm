@@ -125,7 +125,17 @@ def _plan_for_payment_link(payment_link_id: str | None) -> str | None:
     return mapping.get(payment_link_id or "")
 
 
-def _verify_stripe_signature(payload: bytes, header: str, secret: str) -> None:
+def _verify_stripe_signature(payload: bytes, header: str, secrets: str | tuple[str, ...]) -> None:
+    """Verify against the live secret and, when configured, the isolated test secret.
+
+    Stripe issues distinct signing secrets for live- and test-mode endpoints.
+    Accepting both lets production record sandbox lifecycle evidence without
+    weakening or replacing verification for live customer events.
+    """
+    allowed_secrets = (secrets,) if isinstance(secrets, str) else secrets
+    allowed_secrets = tuple(secret for secret in allowed_secrets if secret)
+    if not allowed_secrets:
+        raise HTTPException(503, "Stripe webhook is not configured")
     values: dict[str, list[str]] = {}
     for part in header.split(","):
         key, _, value = part.partition("=")
@@ -137,8 +147,13 @@ def _verify_stripe_signature(payload: bytes, header: str, secret: str) -> None:
     if abs(int(time.time()) - timestamp) > 300:
         raise HTTPException(400, "Expired Stripe signature")
     signed = f"{timestamp}.".encode() + payload
-    expected = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()
-    if not any(hmac.compare_digest(expected, candidate) for candidate in values.get("v1", [])):
+    if not any(
+        hmac.compare_digest(
+            hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest(), candidate
+        )
+        for secret in allowed_secrets
+        for candidate in values.get("v1", [])
+    ):
         raise HTTPException(400, "Invalid Stripe signature")
 
 
@@ -391,11 +406,12 @@ async def stripe_webhook(
     stripe_signature: str | None = Header(default=None),
     session: Session = Depends(get_db_session),
 ):
-    secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
-    if not secret or not stripe_signature:
-        raise HTTPException(503 if not secret else 400, "Stripe webhook is not configured")
+    live_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+    test_secret = os.getenv("STRIPE_WEBHOOK_TEST_SECRET", "")
+    if not (live_secret or test_secret) or not stripe_signature:
+        raise HTTPException(503 if not (live_secret or test_secret) else 400, "Stripe webhook is not configured")
     raw = await request.body()
-    _verify_stripe_signature(raw, stripe_signature, secret)
+    _verify_stripe_signature(raw, stripe_signature, (live_secret, test_secret))
     try:
         event = json.loads(raw)
     except json.JSONDecodeError as exc:

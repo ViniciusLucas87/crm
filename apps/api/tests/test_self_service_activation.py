@@ -407,6 +407,27 @@ def test_stripe_webhook_fails_closed_without_signature(client, monkeypatch):
     assert response.status_code == 400
 
 
+def test_stripe_webhook_accepts_the_isolated_test_secret(client, monkeypatch):
+    """Sandbox verification must not require replacing the live signing secret."""
+    monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "whsec_live")
+    monkeypatch.setenv("STRIPE_WEBHOOK_TEST_SECRET", "whsec_test")
+    body = json.dumps({
+        "id": "evt_test_secret_001",
+        "type": "customer.subscription.updated",
+        "data": {"object": {"id": "sub_missing", "status": "trialing"}},
+    }).encode()
+    timestamp = int(time.time())
+    signature = hmac.new(
+        b"whsec_test", f"{timestamp}.".encode() + body, hashlib.sha256
+    ).hexdigest()
+    response = client.post(
+        "/api/v1/subscriptions/stripe/webhook",
+        content=body,
+        headers={"Content-Type": "application/json", "Stripe-Signature": f"t={timestamp},v1={signature}"},
+    )
+    assert response.status_code == 200
+
+
 def test_management_link_request_does_not_reveal_customer_existence(client, monkeypatch):
     monkeypatch.setattr(
         "app.presentation.api.v1.routes.subscriptions._allow_management_link_request", lambda email: True
