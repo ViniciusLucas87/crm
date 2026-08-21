@@ -12,12 +12,13 @@ from app.infrastructure.auth.clerk import AuthContext, require_permission
 from app.infrastructure.db.session import get_db_session
 from app.infrastructure.db.social_leads import SocialLeadCampaign, SocialLeadOpportunity
 from app.presentation.api.v1.routes.reddit_leads import (
+    STAGES,
     ApprovalRequest,
     OpportunityCreate,
     OpportunityUpdate,
-    STAGES,
     _campaign_dict,
     _opportunity_dict,
+    _require_new_social_opportunity,
 )
 
 router = APIRouter(prefix="/linkedin", tags=["linkedin-leads"])
@@ -125,6 +126,13 @@ def opportunities(limit: int = Query(50, ge=1, le=100), ctx: AuthContext = Depen
 @router.post("/opportunities")
 def create(body: OpportunityCreate, ctx: AuthContext = Depends(require_permission("companies:write")), session: Session = Depends(get_db_session)):
     campaign = _campaign(session, ctx.organization_id)
+    _require_new_social_opportunity(
+        session,
+        ctx.organization_id,
+        "linkedin",
+        str(body.source_url),
+        body.author_handle.strip(),
+    )
     item = SocialLeadOpportunity(
         organization_id=ctx.organization_id,
         campaign_id=campaign.id,

@@ -27,6 +27,7 @@ from app.presentation.api.v1.routes import (
     mcp,
     never_forget,
     operations,
+    outreach_email,
     products,
     reddit_leads,
     reports,
@@ -36,6 +37,7 @@ from app.presentation.api.v1.routes import (
     search,
     subscriptions,
     telemetry,
+    tiktok_leads,
     telephony,
     timeline,
     transcription,
@@ -67,11 +69,13 @@ api_router.include_router(products.router, tags=["products"])
 api_router.include_router(subscriptions.router, tags=["subscriptions"])
 api_router.include_router(telemetry.router, tags=["telemetry"])
 api_router.include_router(operations.router, prefix="/operations", tags=["operations"])
+api_router.include_router(outreach_email.router, tags=["outreach-email"])
 api_router.include_router(decision_maker.router, tags=["decision-maker"])
 api_router.include_router(documents.router, tags=["documents"])
 api_router.include_router(leads.router, tags=["leads"])
 api_router.include_router(reddit_leads.router, tags=["reddit-leads"])
 api_router.include_router(linkedin_leads.router, tags=["linkedin-leads"])
+api_router.include_router(tiktok_leads.router, tags=["tiktok-leads"])
 api_router.include_router(conversations.router, tags=["conversations"])
 api_router.include_router(copilot.router, tags=["copilot"])
 api_router.include_router(transcription.router, prefix="/transcription", tags=["transcription"])

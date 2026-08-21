@@ -70,6 +70,31 @@ def test_reddit_status_disallows_automated_unsolicited_messages(
     assert "No automated unsolicited private messages" in payload["rules"]
 
 
+def test_reddit_opportunity_deduplicates_the_source_and_author_for_60_days(client: TestClient) -> None:
+    headers = auth_headers("org1-admin")
+    payload = {
+        "community": "Contractor",
+        "author_handle": "busy_builder",
+        "post_title": "Missing calls while I am on site",
+        "post_excerpt": "I cannot answer every customer call while I am working.",
+        "source_url": "https://www.reddit.com/r/Contractor/comments/duplicate",
+        "relevance_score": 88,
+        "relevance_reason": "The author describes the exact missed call problem.",
+        "detected_signals": ["missed calls"],
+    }
+    assert client.post("/api/v1/reddit/opportunities", headers=headers, json=payload).status_code == 200
+
+    duplicate_source = client.post("/api/v1/reddit/opportunities", headers=headers, json=payload)
+    assert duplicate_source.status_code == 409
+
+    duplicate_author = client.post(
+        "/api/v1/reddit/opportunities",
+        headers=headers,
+        json={**payload, "source_url": "https://www.reddit.com/r/Contractor/comments/another"},
+    )
+    assert duplicate_author.status_code == 409
+
+
 def test_reddit_status_reports_pending_commercial_approval(
     client: TestClient, monkeypatch,
 ) -> None:

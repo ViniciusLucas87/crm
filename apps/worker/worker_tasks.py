@@ -25,6 +25,7 @@ Workers:
 
 import logging
 import hashlib
+import math
 import os
 import smtplib
 import imaplib
@@ -946,8 +947,8 @@ celery_app.conf.task_queues = {
 
 # ═══════════════════════════════════════════════════════════
 # OUTBOX EMAIL WORKER — Sprint 47.7
-# Processes assessment.internal_notification.requested and
-# assessment.visitor_email.requested outbox events.
+# Processes assessment, Never Miss operational, and approved outreach email
+# outbox events.
 # Uses Zoho Mail SMTP. Idempotent — never double-sends.
 # ═══════════════════════════════════════════════════════════
 
@@ -973,6 +974,8 @@ def outbox_process_email(self, event_id: int | None = None, **context):
             OutboxEvent.event_type.in_([
                 "assessment.internal_notification.requested",
                 "assessment.visitor_email.requested",
+                "never_miss.usage_alert.requested",
+                "outreach.email.requested",
             ]),
             OutboxEvent.status == "processing",
             OutboxEvent.last_attempt_at < stale_cutoff,
@@ -993,6 +996,8 @@ def outbox_process_email(self, event_id: int | None = None, **context):
                 OutboxEvent.event_type.in_([
                     "assessment.internal_notification.requested",
                     "assessment.visitor_email.requested",
+                    "never_miss.usage_alert.requested",
+                    "outreach.email.requested",
                 ]),
                 OutboxEvent.status == "pending",
             ).order_by(OutboxEvent.created_at.asc()).limit(10).all()
@@ -1032,6 +1037,10 @@ def outbox_process_email(self, event_id: int | None = None, **context):
                     _send_visitor_email(smtp_config, payload, db)
                 elif event.event_type == "assessment.internal_notification.requested":
                     _send_internal_notification(smtp_config, payload, db)
+                elif event.event_type == "never_miss.usage_alert.requested":
+                    _send_never_miss_usage_alert(smtp_config, payload)
+                elif event.event_type == "outreach.email.requested":
+                    _send_outreach_email(smtp_config, payload)
 
                 event.status = "completed"
                 db.commit()
@@ -1424,6 +1433,16 @@ def _send_email(config: dict, msg):
         server.send_message(msg)
 
 
+def _send_never_miss_usage_alert(smtp_config: dict, payload: dict) -> None:
+    from email_delivery import make_usage_alert
+    _send_email(smtp_config, make_usage_alert(smtp_config, payload))
+
+
+def _send_outreach_email(smtp_config: dict, payload: dict) -> None:
+    from email_delivery import make_outreach_email
+    _send_email(smtp_config, make_outreach_email(smtp_config, payload))
+
+
 def _log_email_message(db, event_type: str, payload: dict, smtp_config: dict):
     """Sprint 48.2: Persist sent email as EmailMessage + emit projection outbox events."""
     import uuid as _uuid
@@ -1441,7 +1460,7 @@ def _log_email_message(db, event_type: str, payload: dict, smtp_config: dict):
 
         email = EmailMessage(
             public_uuid=str(_uuid.uuid4()),
-            organization_id=1,
+            organization_id=int(payload.get("organization_id") or 1),
             company_id=company.id if company else None,
             direction="outbound",
             status="sent",
@@ -1449,17 +1468,26 @@ def _log_email_message(db, event_type: str, payload: dict, smtp_config: dict):
             from_address=from_addr,
             normalized_from=from_addr.lower(),
             to_address=contact_email,
-            subject=f"Assessment notification for {company_name}",
+            subject=str(payload.get("subject") or f"Assessment notification for {company_name}"),
+            plain_text=payload.get("body_text"),
             provider="zoho",
             provider_message_id=f"pns-{_uuid.uuid4().hex[:16]}",
             sent_at=_dt.now(_UTC),
             correlation_id=payload.get("assessment_id", ""),
+            lead_id=payload.get("lead_id"),
+            owner_user_id=payload.get("owner_user_id"),
         )
         if event_type == "assessment.internal_notification.requested":
             email.subject = f"New Assessment Lead — {company_name}"
             email.to_address = smtp_config.get("internal_email", from_addr)
         elif event_type == "assessment.visitor_email.requested":
             email.subject = f"Your Operations Assessment Results — {company_name}"
+            email.to_address = contact_email
+        elif event_type == "never_miss.usage_alert.requested":
+            email.subject = f"Never Miss usage update for {payload.get('business_name', 'your business')}"
+            email.to_address = contact_email
+        elif event_type == "outreach.email.requested":
+            email.subject = str(payload.get("subject") or "Pacific North Systems")
             email.to_address = contact_email
 
         db.add(email)
@@ -2364,7 +2392,7 @@ def sms_missed_call_recovery(self, event_id: int | None = None, **context):
     """
     db = _get_db()
     try:
-        from app.infrastructure.db.models import Call, ProductConfiguration
+        from app.infrastructure.db.models import Call, OutboxEvent, ProductConfiguration, ProductSubscription
         from app.application.intake.sms import can_send_sms, MISSED_CALL_SMS_MESSAGE
 
         events = _fetch_outbox_events(db, SMS_RECOVERY_EVENT, event_id, lock=False)
@@ -2435,6 +2463,11 @@ def sms_missed_call_recovery(self, event_id: int | None = None, **context):
                         logger.warning("SMS skipped: monthly message limit reached for org=%s", org_id)
                         if call:
                             call.sms_status = "limit_reached"
+                        from never_miss_usage import queue_usage_alert
+                        queue_usage_alert(
+                            db_session_clean, ProductSubscription, OutboxEvent, product_config,
+                            org_id, product_config.monthly_message_limit, 100,
+                        )
                         _mark_event_completed(db_session_clean, event)
                         continue
 
@@ -2493,6 +2526,15 @@ def sms_missed_call_recovery(self, event_id: int | None = None, **context):
                     call.sms_status = "sent"
                     call.sms_sent_at = datetime.now(UTC)
                     call.sms_message_id = msg_id
+                    if product_config:
+                        from never_miss_usage import queue_usage_alert
+                        sent_after_this_recovery = messages_this_month + 1
+                        for threshold in (80, 100):
+                            if sent_after_this_recovery >= math.ceil(product_config.monthly_message_limit * threshold / 100):
+                                queue_usage_alert(
+                                    db_session_clean, ProductSubscription, OutboxEvent, product_config,
+                                    org_id, sent_after_this_recovery, threshold,
+                                )
 
                 _mark_event_completed(db_session_clean, event)
                 processed += 1

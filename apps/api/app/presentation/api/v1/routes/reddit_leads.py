@@ -2,7 +2,7 @@
 
 import json
 import os
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -47,6 +47,40 @@ DEFAULT_SIGNALS = [
     "need someone to answer",
     "follow up is difficult",
 ]
+
+
+def _require_new_social_opportunity(
+    session: Session,
+    organization_id: int,
+    channel: str,
+    source_url: str,
+    author_handle: str,
+) -> None:
+    """Keep scheduled research from repeatedly queuing the same public lead."""
+    recent_cutoff = datetime.now(UTC) - timedelta(days=60)
+    duplicate_source = session.execute(
+        select(SocialLeadOpportunity.id).where(
+            SocialLeadOpportunity.organization_id == organization_id,
+            SocialLeadOpportunity.channel == channel,
+            SocialLeadOpportunity.source_url == source_url,
+        )
+    ).scalar_one_or_none()
+    if duplicate_source:
+        raise HTTPException(status_code=409, detail="This public conversation is already in your workspace")
+
+    duplicate_author = session.execute(
+        select(SocialLeadOpportunity.id).where(
+            SocialLeadOpportunity.organization_id == organization_id,
+            SocialLeadOpportunity.channel == channel,
+            SocialLeadOpportunity.author_handle == author_handle,
+            SocialLeadOpportunity.created_at >= recent_cutoff,
+        )
+    ).scalar_one_or_none()
+    if duplicate_author:
+        raise HTTPException(
+            status_code=409,
+            detail="This author is already in the 60-day social research window",
+        )
 
 
 def _campaign_dict(campaign: SocialLeadCampaign) -> dict[str, Any]:
@@ -235,6 +269,14 @@ def create_opportunity(
         ).scalar_one_or_none()
         if not campaign:
             raise HTTPException(status_code=404, detail="Campaign not found")
+
+    _require_new_social_opportunity(
+        session,
+        ctx.organization_id,
+        "reddit",
+        str(body.source_url),
+        body.author_handle.removeprefix("u/").strip(),
+    )
 
     item = SocialLeadOpportunity(
         organization_id=ctx.organization_id,
