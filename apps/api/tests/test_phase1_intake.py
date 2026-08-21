@@ -599,6 +599,40 @@ def test_reconciliation_outbox_idempotent(client, _patch_webhook_verify):
 
 # ── 15. Event ledger integrity ───────────────────────────────
 
+def test_unassigned_production_destination_is_acknowledged_without_call_creation(client, monkeypatch):
+    """An unassigned Telnyx number is recorded and acknowledged, never retried as a 500."""
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    payload = _make_telnyx_payload(
+        event_id="evt_unassigned_destination",
+        call_control_id="ctrl_unassigned_destination",
+        to_number="+16045550000",
+    )
+
+    response = client.post(
+        WEBHOOK_URL,
+        json=payload,
+        headers={"telnyx-timestamp": str(int(datetime.now(UTC).timestamp()))},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "ignored_unassigned_destination"
+
+    from app.infrastructure.db.models import Call, ProviderWebhookEvent
+    from app.infrastructure.db.session import SessionLocal
+
+    db = SessionLocal()
+    try:
+        event = db.query(ProviderWebhookEvent).filter(
+            ProviderWebhookEvent.provider_event_id == "evt_unassigned_destination"
+        ).one()
+        assert event.processing_status == "processed"
+        assert event.error_message == "ignored: unassigned destination"
+        assert db.query(Call).filter(
+            Call.provider_call_id == "ctrl_unassigned_destination"
+        ).count() == 0
+    finally:
+        db.close()
+
 def test_event_ledger_immutable_records(client, _patch_webhook_verify):
     """Each unique webhook creates exactly one event ledger row."""
     ts = str(int(datetime.now(UTC).timestamp()))

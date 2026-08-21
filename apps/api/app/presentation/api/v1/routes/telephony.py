@@ -613,7 +613,29 @@ async def telnyx_webhook(request: Request, session: Session = Depends(get_db_ses
     if not call:
         caller_number = normalize_phone(payload.get("from", ""))
         dest_number = normalize_phone(payload.get("to", ""))
-        org_id = int(transfer_state["organization_id"]) if transfer_state.get("organization_id") else _resolve_tenant(session, dest_number)
+        try:
+            org_id = (
+                int(transfer_state["organization_id"])
+                if transfer_state.get("organization_id")
+                else _resolve_tenant(session, dest_number)
+            )
+        except ValueError:
+            # An idle or incorrectly assigned Telnyx number must not cause a
+            # provider retry storm. Preserve the signed event for operations,
+            # acknowledge it, and never create a call or recovery workflow
+            # without a tenant mapping.
+            wh_event.processing_status = "processed"
+            wh_event.error_message = "ignored: unassigned destination"
+            session.commit()
+            logger.warning(
+                "Telnyx webhook ignored: event=%s unassigned destination=%s",
+                event_type,
+                _redact_number(dest_number),
+            )
+            return {
+                "status": "ignored_unassigned_destination",
+                "provider_event_id": provider_event_id,
+            }
         entities = lifecycle.resolve_entities(
             caller_number or payload.get("from", ""),
             organization_id=org_id,
