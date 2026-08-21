@@ -1,0 +1,26 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Never Miss forwarding applies only when a call is unanswered</title>
+  <desc id="desc">A business phone rings first. Only when it is unanswered does the call go to the private Never Miss routing line. Always forward is marked do not use.</desc>
+  <rect width="1200" height="720" rx="48" fill="#EDF7F7"/>
+  <text x="600" y="88" text-anchor="middle" fill="#071729" font-family="Arial, sans-serif" font-size="42" font-weight="700">Forward unanswered calls only</text>
+  <text x="600" y="136" text-anchor="middle" fill="#48616B" font-family="Arial, sans-serif" font-size="25">Your normal business phone still receives every call first.</text>
+  <rect x="82" y="230" width="300" height="248" rx="28" fill="#071729"/>
+  <path d="M180 305C180 282 198 264 221 264H243C266 264 284 282 284 305V395C284 418 266 436 243 436H221C198 436 180 418 180 395V305Z" fill="#FFFFFF" opacity=".16"/>
+  <path d="M218 285H246" stroke="#C7F2F1" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="232" cy="398" r="12" fill="#C7F2F1"/>
+  <text x="232" y="528" text-anchor="middle" fill="#071729" font-family="Arial, sans-serif" font-size="26" font-weight="700">Business number</text>
+  <text x="232" y="564" text-anchor="middle" fill="#48616B" font-family="Arial, sans-serif" font-size="22">It rings as usual</text>
+  <path d="M410 354H616" stroke="#0B6575" stroke-width="12" stroke-linecap="round"/>
+  <path d="M604 330L636 354L604 378" stroke="#0B6575" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="433" y="284" width="170" height="58" rx="29" fill="#D4F4F2"/>
+  <text x="518" y="321" text-anchor="middle" fill="#075260" font-family="Arial, sans-serif" font-size="22" font-weight="700">Not answered</text>
+  <rect x="668" y="230" width="372" height="248" rx="28" fill="#0B6575"/>
+  <circle cx="738" cy="354" r="38" fill="#C7F2F1"/>
+  <path d="M721 354L735 368L760 337" stroke="#0B6575" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="860" y="337" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="29" font-weight="700">Private Never Miss</text>
+  <text x="860" y="378" text-anchor="middle" fill="#C7F2F1" font-family="Arial, sans-serif" font-size="23">Recovery text + callback task</text>
+  <rect x="176" y="622" width="848" height="60" rx="18" fill="#FFF3E8" stroke="#F3B66E" stroke-width="2"/>
+  <circle cx="217" cy="652" r="18" fill="#D85A00"/>
+  <path d="M209 644L225 660M225 644L209 660" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  <text x="252" y="660" fill="#7A2E00" font-family="Arial, sans-serif" font-size="23" font-weight="700">Do not choose “Always forward”, “Forward all calls”, “Busy”, or “Unreachable”.</text>
+</svg>

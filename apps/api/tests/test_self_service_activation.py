@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import json
 import time
+from types import SimpleNamespace
 
 CHECKOUT = {
     "id": "cs_test_never_miss_001",
@@ -17,6 +18,31 @@ CHECKOUT = {
         "phone": "+16045550101",
     },
 }
+
+
+def test_activation_email_explains_unanswered_only_forwarding(client, monkeypatch):
+    """The setup email must prevent accidental all-call forwarding."""
+    sent: dict = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+    def fake_post(*args, **kwargs):
+        sent.update(kwargs["json"])
+        return FakeResponse()
+
+    monkeypatch.setenv("RESEND_API_KEY", "re_test")
+    monkeypatch.setenv("MARKETING_SITE_URL", "https://www.pacificnorthsystems.com")
+    monkeypatch.setattr("app.presentation.api.v1.routes.subscriptions.httpx.post", fake_post)
+
+    from app.presentation.api.v1.routes.subscriptions import _email_activation_link
+
+    _email_activation_link(SimpleNamespace(customer_email="owner@example.ca"), "safe-token")
+
+    assert "unanswered calls only" in sent["html"]
+    assert "Always forward" in sent["html"]
+    assert "unanswered-calls-only.svg" in sent["html"]
 
 
 def _post_checkout_webhook(client, monkeypatch, checkout=CHECKOUT, event_id="evt_checkout_001"):

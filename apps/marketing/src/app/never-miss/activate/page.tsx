@@ -140,19 +140,22 @@ function ActivationForm() {
               <p className="mt-1 text-4xl font-semibold tracking-tight">{activated.assigned_phone}</p>
               <p className="mt-3 text-sm text-white/60">Do not advertise this number. Customers continue calling {activated.forward_from || "your existing business number"}.</p>
               <div className="mt-7 rounded-2xl bg-white/10 p-5">
-                <p className="font-semibold">Connect unanswered calls</p>
-                <ol className="mt-3 space-y-2 text-white/75"><li>1. Choose the instructions below that match your phone.</li><li>2. Forward unanswered calls only to the private routing line above.</li><li>3. Call your normal business number from another phone, do not answer, and wait for the automatic text.</li></ol>
-                <p className="mt-4 text-sm text-white/60">Answered calls continue working normally. Never Miss only handles calls you cannot take.</p>
+                <p className="font-semibold">Connect unanswered calls only</p>
+                <ol className="mt-3 space-y-2 text-white/75"><li>1. Choose the instructions below that match your phone.</li><li>2. Select only <strong>When unanswered</strong>, <strong>No answer</strong>, or <strong>No reply</strong>, then enter the private routing line above.</li><li>3. From another phone, first answer one call to confirm it stays on your normal number. Then place a second call, do not answer, and wait for the automatic text.</li></ol>
+                <p className="mt-4 text-sm text-white/60">Do not select Always forward, Forward all calls, Busy, or Unreachable. Answered calls must continue working normally.</p>
               </div>
 
               <div className="mt-8">
                 <p className="text-sm font-semibold uppercase tracking-[0.14em] text-cyan-300">Simple phone setup</p>
-                <h3 className="mt-2 text-2xl font-semibold">Choose the option that looks familiar.</h3>
-                <p className="mt-3 text-white/70">Phone menus vary. These are examples, so the wording on your phone may be slightly different.</p>
+                <h3 className="mt-2 text-2xl font-semibold">Choose “When unanswered”, not “Forward all calls”.</h3>
+                <p className="mt-3 text-white/70">Phone menus vary. The examples show the one setting Never Miss needs. If your carrier uses different words, ask for conditional forwarding when there is no answer.</p>
+                <div className="mt-6 overflow-hidden rounded-2xl bg-white p-3">
+                  <Image src="/images/never-miss-setup/unanswered-calls-only.svg" alt="A business phone rings first and only an unanswered call goes to the private Never Miss routing line. Always forward, busy, and unreachable forwarding are not selected." width={1200} height={720} sizes="(min-width: 768px) 720px, 100vw" className="h-auto w-full" />
+                </div>
                 <div className="mt-6 grid gap-5 md:grid-cols-3">
-                  <SetupOption image="/images/never-miss-setup/iphone-forwarding-example.png" title="iPhone" steps={["Open Settings, Apps, then Phone.", "Look for Call Forwarding or contact your carrier.", "Choose When Unanswered and enter the private routing line."]} />
-                  <SetupOption image="/images/never-miss-setup/android-forwarding-example.png" title="Android" steps={["Open the Phone app and its Settings menu.", "Open Calling accounts or Supplementary services.", "Choose Call forwarding, then When unanswered."]} />
-                  <SetupOption image="/images/never-miss-setup/dial-code-example.png" title="Carrier code" steps={[`A common code is *61*${activated.assigned_phone.replace(/\D/g, "")}#`, "Press Call and wait for confirmation.", "Codes vary, so confirm yours with your carrier if it is rejected."]} />
+                  <SetupOption image="/images/never-miss-setup/iphone-forwarding-example.png" title="iPhone" steps={["Open Settings, Apps, then Phone.", "Look for Call Forwarding or contact your carrier.", "Choose When Unanswered only, enter the private routing line, and leave every other forwarding condition off."]} />
+                  <SetupOption image="/images/never-miss-setup/android-forwarding-example.png" title="Android" steps={["Open the Phone app and its Settings menu.", "Open Calling accounts or Supplementary services.", "Choose Call forwarding, then When unanswered only. Do not enable Always forward, Busy, or Unreachable."]} />
+                  <SetupOption image="/images/never-miss-setup/dial-code-example.png" title="Carrier code" steps={[`A common unanswered-call code is *61*${activated.assigned_phone.replace(/\D/g, "")}#`, "Press Call and wait for confirmation.", "Do not use an all-calls code. Codes vary, so confirm the no-answer code with your carrier if this is rejected."]} />
                 </div>
               </div>
 

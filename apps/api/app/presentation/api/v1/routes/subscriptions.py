@@ -247,6 +247,9 @@ def _email_activation_link(subscription: ProductSubscription, token: str) -> Non
             "html": (
                 "<h1>Your Never Miss trial is confirmed</h1>"
                 "<p>Complete the short setup to activate your Never Miss phone workflow.</p>"
+                "<p><strong>Important:</strong> Never Miss uses conditional forwarding for unanswered calls only. "
+                "Do not turn on Always forward, Forward all calls, Busy, or Unreachable.</p>"
+                f'<p><img src="{site_url}/images/never-miss-setup/unanswered-calls-only.svg" alt="Your business phone rings first; only unanswered calls go to Never Miss" width="600"></p>'
                 f'<p><a href="{link}">Activate Never Miss</a></p>'
                 "<p>This private link expires in 24 hours.</p>"
             ),
