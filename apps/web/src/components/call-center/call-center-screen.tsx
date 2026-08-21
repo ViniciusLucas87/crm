@@ -15,6 +15,9 @@ import {
   Send,
 } from "lucide-react";
 import { useTelephony } from "@/lib/telephony-context";
+import { LiveTranscript } from "@/components/transcription/live-transcript";
+import { CoachPanel } from "@/components/transcription/coach-panel";
+import { PostCallPreview } from "@/components/transcription/postcall-preview";
 
 type HistoryItem = {
   id: string;
@@ -71,7 +74,7 @@ function formatDuration(seconds: number) {
 }
 
 export default function CallCenterScreen() {
-  const { call, startCall } = useTelephony();
+  const { call, startCall, transcription, transcriptId } = useTelephony();
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [history, setHistory] = useState<HistoryResponse>({ phone_number: "+16042251745", items: [], total: 0 });
@@ -146,7 +149,7 @@ export default function CallCenterScreen() {
       if (!response.ok) throw new Error(result.error || result.detail || "The call could not be prepared");
       browserCallId.current = result.id;
       lastRecordedState.current = "dialing";
-      await startCall(0, normalizePhone(phone), "", "");
+      await startCall(0, normalizePhone(phone), "", "", result.id);
       window.setTimeout(() => void loadHistory(), 1200);
     } catch (error) {
       setActionMessage(error instanceof Error ? error.message : "The call could not be started");
@@ -276,6 +279,26 @@ export default function CallCenterScreen() {
         </div>
 
         <div className="space-y-6">
+          {(activeCall || transcriptId) && (
+            <section className="rounded-3xl border border-cyan-400/20 bg-slate-950/70 p-5 shadow-2xl shadow-black/20">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300">Live call tools</p>
+                  <h2 className="mt-1 text-xl font-semibold text-white">Transcript and AI call guide</h2>
+                </div>
+                <p className="text-xs text-slate-400">Confirm recording consent before discussing customer details.</p>
+              </div>
+              <div className="grid gap-4 xl:grid-cols-2">
+                <LiveTranscript state={transcription} onStop={() => {}} />
+                <CoachPanel callId={call.callId} isCallActive={activeCall} segments={transcription.segments || []} />
+              </div>
+            </section>
+          )}
+
+          {(call.state === "ended" || call.state === "failed") && transcriptId && (
+            <PostCallPreview transcriptId={transcriptId} callId={call.callId} />
+          )}
+
           <section className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
             <button
               type="button"

@@ -53,7 +53,7 @@ export type ActiveCall = {
 type TelephonyContextValue = {
   call: ActiveCall;
   incomingCall: IncomingCallInfo | null;
-  startCall: (companyId: number, phoneNumber: string, companyName?: string, contactName?: string) => Promise<void>;
+  startCall: (companyId: number, phoneNumber: string, companyName?: string, contactName?: string, callRecordId?: number) => Promise<void>;
   endCall: () => Promise<void>;
   answerIncomingCall: () => Promise<void>;
   declineIncomingCall: () => Promise<void>;
@@ -251,10 +251,13 @@ export function TelephonyProvider({ children }: { children: ReactNode }) {
   // ── Actions ──
 
   const startCall = useCallback(async (
-    companyId: number, phoneNumber: string, companyName = "", contactName = "",
+    companyId: number, phoneNumber: string, companyName = "", contactName = "", callRecordId?: number,
   ) => {
     if (!phoneNumber.trim()) return;
-    setCall(c => ({ ...c, state: "dialing", companyId, companyName, contactName, phoneNumber, error: "", duration: 0 }));
+    // The browser call is created in the CRM before WebRTC starts. Keep that
+    // record ID on the active call so transcription, coaching and post-call
+    // work are connected to the same CRM activity.
+    setCall(c => ({ ...c, callId: callRecordId ?? null, state: "dialing", companyId: companyId || null, companyName, contactName, phoneNumber, error: "", duration: 0 }));
     setMinimized(false);
 
     try {

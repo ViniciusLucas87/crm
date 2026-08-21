@@ -11,6 +11,8 @@ vi.mock("@/lib/telephony-context", () => ({
   useTelephony: () => ({
     call: { state: "idle", duration: 0 },
     startCall,
+    transcription: { segments: [] },
+    transcriptId: null,
   }),
 }));
 
@@ -50,7 +52,7 @@ describe("CallCenterScreen", () => {
     await user.click(screen.getByRole("button", { name: "Call this number" }));
 
     await waitFor(() => {
-      expect(startCall).toHaveBeenCalledWith(0, "+16045550123", "", "");
+      expect(startCall).toHaveBeenCalledWith(0, "+16045550123", "", "", 91);
     });
   });
 });
