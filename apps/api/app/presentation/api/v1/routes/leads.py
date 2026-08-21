@@ -45,7 +45,6 @@ router = APIRouter(prefix="/leads", tags=["leads"])
 
 LEAD_STATUSES = ("new", "researching", "ready_for_review", "needs_more_research", "approved", "rejected", "archived", "imported")
 
-DEEPSEEK_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 GOOGLE_PLACES_KEY = os.getenv("GOOGLE_PLACES_API_KEY", "")
 
 
@@ -83,7 +82,7 @@ def _lead_dict(lead: Lead) -> dict[str, Any]:
 
 
 def _get_enrichment() -> EnrichmentService:
-    return EnrichmentService(api_key=DEEPSEEK_KEY)
+    return EnrichmentService()
 
 
 def _queue_approved_lead_enrichment(
@@ -550,7 +549,7 @@ def import_to_crm(
         if options.launch_enrichment:
             try:
                 from app.application.llm.enrichment import EnrichmentService
-                enrichment = EnrichmentService(api_key=os.getenv("DEEPSEEK_API_KEY", os.getenv("OPENAI_API_KEY", "")))
+                enrichment = EnrichmentService()
                 # Fire-and-forget: the worker handles the actual enrichment
                 enrichment_data = {
                     "company_name": company.name,

@@ -38,12 +38,9 @@ class EnrichmentService:
     """LLM enrichment for structured CRM data."""
 
     def __init__(self, api_key: str = "", provider: str = "deepseek", model: str = "deepseek-chat") -> None:
-        self._configured = bool(api_key)
-        self._config = LLMConfig(
-            provider=provider, model=model, api_key=api_key,
-            api_base="https://api.deepseek.com/v1" if provider == "deepseek" else None,
-            temperature=0.3, max_tokens=1024,
-        )
+        # Kept for backwards-compatible construction only.  Credentials are
+        # deliberately ignored: all requests must go through LLMGateway.
+        self._configured = True
 
     @property
     def available(self) -> bool:
@@ -242,7 +239,5 @@ _enrichment_service: EnrichmentService | None = None
 def get_enrichment_service() -> EnrichmentService:
     global _enrichment_service
     if _enrichment_service is None:
-        import os
-        api_key = os.getenv("DEEPSEEK_API_KEY", "")
-        _enrichment_service = EnrichmentService(api_key=api_key)
+        _enrichment_service = EnrichmentService()
     return _enrichment_service

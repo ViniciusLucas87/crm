@@ -13,7 +13,7 @@ import json
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -41,6 +41,26 @@ def _setup(session: Session, org_id: int) -> AgentOrchestrator:
     register_all_tools(lambda: Session(bind=session.get_bind()), org_id, tool_registry)
     register_all_agents()
     return AgentOrchestrator(tool_registry, get_agent_registry())
+
+
+def _governed_llm_config(body: dict[str, Any]) -> LLMConfig:
+    """Keep API clients from selecting providers or supplying credential material.
+
+    Agent execution is always routed through the server-side LLM gateway, where
+    Redis-backed cost, token, and request ceilings are enforced.  The executor
+    retains this config parameter for compatibility, but it must never become a
+    route around that gateway.
+    """
+    provider_cfg = body.get("provider") or {}
+    if not isinstance(provider_cfg, dict):
+        raise HTTPException(status_code=422, detail="provider must be an object when supplied")
+    if provider_cfg.get("api_key") or provider_cfg.get("api_base"):
+        raise HTTPException(
+            status_code=422,
+            detail="Client-supplied LLM credentials and provider endpoints are not accepted."
+                   " Agent requests use the governed server-side LLM gateway.",
+        )
+    return LLMConfig()
 
 
 # ── Agent Discovery ──
@@ -90,20 +110,13 @@ async def execute_agent(
     body = await request.json()
     goal = body.get("goal", "")
     context = body.get("context", {})
-    provider_cfg = body.get("provider", {})
 
     orchestrator = _setup(session, ctx.organization_id)
     agent = get_agent_registry().get(agent_name)
     if agent is None:
         return {"error": f"Agent '{agent_name}' not found."}
 
-    llm_config = LLMConfig(
-        provider=provider_cfg.get("provider", "openai"),
-        model=provider_cfg.get("model", "gpt-4o"),
-        api_key=provider_cfg.get("api_key", ""),
-        api_base=provider_cfg.get("api_base"),
-        temperature=provider_cfg.get("temperature", 0.3),
-    )
+    llm_config = _governed_llm_config(body)
 
     executor = AgentExecutor(agent, get_registry(), llm_config)
     result = await executor.execute(goal=goal, context=context)
@@ -122,16 +135,9 @@ async def orchestrate_agents(
     body = await request.json()
     goal = body.get("goal", "")
     context = body.get("context", {})
-    provider_cfg = body.get("provider", {})
 
     orchestrator = _setup(session, ctx.organization_id)
-    orchestrator._llm_config = LLMConfig(
-        provider=provider_cfg.get("provider", "openai"),
-        model=provider_cfg.get("model", "gpt-4o"),
-        api_key=provider_cfg.get("api_key", ""),
-        api_base=provider_cfg.get("api_base"),
-        temperature=provider_cfg.get("temperature", 0.3),
-    )
+    orchestrator._llm_config = _governed_llm_config(body)
 
     return await orchestrator.execute_goal(goal, context)
 
@@ -146,16 +152,9 @@ async def orchestrate_agents_stream(
     body = await request.json()
     goal = body.get("goal", "")
     context = body.get("context", {})
-    provider_cfg = body.get("provider", {})
 
     orchestrator = _setup(session, ctx.organization_id)
-    orchestrator._llm_config = LLMConfig(
-        provider=provider_cfg.get("provider", "openai"),
-        model=provider_cfg.get("model", "gpt-4o"),
-        api_key=provider_cfg.get("api_key", ""),
-        api_base=provider_cfg.get("api_base"),
-        temperature=provider_cfg.get("temperature", 0.3),
-    )
+    orchestrator._llm_config = _governed_llm_config(body)
 
     async def event_stream():
         async for event in orchestrator.execute_goal_stream(goal, context):

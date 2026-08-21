@@ -186,7 +186,8 @@ class DecisionEngine:
     """
 
     def __init__(self, llm_api_key: str | None = None):
-        self._api_key = llm_api_key
+        # Compatibility parameter only.  The gateway owns credentials and budget.
+        self._configured = True
 
     async def analyze(
         self,
@@ -197,9 +198,6 @@ class DecisionEngine:
     ) -> CoachRecommendation:
         """Analyze the current conversation state and return coaching recommendations."""
         from app.application.llm.gateway import get_llm_gateway, GatewayConfig
-
-        if not self._api_key:
-            return self._empty_recommendation(error="LLM not configured")
 
         context_parts = []
         if company_context:
@@ -330,7 +328,5 @@ _engine: DecisionEngine | None = None
 def get_decision_engine(api_key: str | None = None) -> DecisionEngine:
     global _engine
     if _engine is None:
-        import os
-        key = api_key or os.environ.get("DEEPSEEK_API_KEY", "")
-        _engine = DecisionEngine(llm_api_key=key)
+        _engine = DecisionEngine()
     return _engine

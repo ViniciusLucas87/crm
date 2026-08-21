@@ -33,6 +33,7 @@ from app.application.llm.gateway import (
     _truncate,
     _reserve_input,
     _reserve_output,
+    _log,
     _FEATURE_INPUT_FLOOR,
     FEATURE_CACHE_TTL,
     FEATURE_OUTPUT_TOKENS,
@@ -772,3 +773,21 @@ def test_health_llm_budget_requires_admin_role():
     source = inspect.getsource(health_llm_budget)
     assert "ctx.role" in source, "health_llm_budget must check ctx.role"
     assert "403" in source or "HTTPException" in source, "health_llm_budget must raise 403 for members"
+
+
+@pytest.mark.asyncio
+async def test_usage_log_is_awaited_before_request_returns():
+    """Short-lived worker event loops must not discard cost audit records."""
+    with patch("app.application.llm.gateway._write_log", new_callable=AsyncMock) as write_log:
+        await _log(1, "enrichment", "deepseek-v4-flash", 10, 5, 0, 0.001, 12, None, True, 0)
+        write_log.assert_awaited_once()
+
+
+def test_agent_route_rejects_client_supplied_llm_credentials():
+    """The API cannot be used as an ungoverned provider-key proxy."""
+    from fastapi import HTTPException
+    from app.presentation.api.v1.routes.agents import _governed_llm_config
+
+    with pytest.raises(HTTPException) as exc:
+        _governed_llm_config({"provider": {"api_key": "must-not-be-used"}})
+    assert exc.value.status_code == 422

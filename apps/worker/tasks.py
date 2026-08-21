@@ -29,25 +29,14 @@ celery_app = Celery(
 # API code is available because worker Dockerfile copies apps/api/ too.
 
 _db_session_factory = None
-_llm_config = None
 
 
 @worker_process_init.connect
 def init_worker(**kwargs):
     """Initialize DB session factory and LLM config once per worker process."""
-    global _db_session_factory, _llm_config
+    global _db_session_factory
     from app.infrastructure.db.session import SessionLocal
-    from app.application.llm.provider import LLMConfig
-    import os
     _db_session_factory = SessionLocal
-    _llm_config = LLMConfig(
-        provider="openai",
-        model="deepseek-chat",
-        api_key=os.environ.get("DEEPSEEK_API_KEY", ""),
-        api_base="https://api.deepseek.com/v1",
-        temperature=0.3,
-        max_tokens=1536,
-    )
 
 
 # ── Enrichment prompt (same as LLMDiscoveryProvider.enrich) ──
@@ -450,7 +439,7 @@ def google_maps_intel(self, lead_id: int, organization_id: int) -> dict:
 
         # ── Execute provider ──
         import asyncio
-        provider = GoogleMapsProvider(api_key=os.environ.get("DEEPSEEK_API_KEY", ""))
+        provider = GoogleMapsProvider()
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -736,7 +725,7 @@ def _run_intelligence_stage(
     """Generic runner for any IntelligenceProvider stage. Avoids boilerplate."""
     from app.infrastructure.db.models import Lead, EnrichmentJob, LeadTimelineEvent
     from sqlalchemy import update, select
-    import asyncio, os
+    import asyncio
 
     job_id = self.request.id
     db = _db_session_factory()
@@ -763,7 +752,7 @@ def _run_intelligence_stage(
         if extra_company_fields:
             company.update(extra_company_fields)
 
-        provider = provider_class(api_key=os.environ.get("DEEPSEEK_API_KEY", ""))
+        provider = provider_class()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:

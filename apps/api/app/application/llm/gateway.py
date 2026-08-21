@@ -675,11 +675,13 @@ def _cost(model: str, in_tok: int, out_tok: int, cache_tok: int) -> float:
 async def _log(org: int, feature: str, model: str, in_tok: int, out_tok: int, cache_tok: int,
                cost: float, latency_ms: float, job_id: str | None, ok: bool, retries: int,
                error: str | None = None) -> None:
-    try:
-        asyncio.create_task(_write_log(org, feature, model, in_tok, out_tok, cache_tok,
-                                        cost, latency_ms, job_id, ok, retries, error))
-    except Exception:
-        pass
+    # This must be awaited.  Celery's synchronous tasks create short-lived event
+    # loops, and a detached task can be discarded when that loop closes.  Missing
+    # audit records make a budget incident impossible to investigate accurately.
+    await _write_log(
+        org, feature, model, in_tok, out_tok, cache_tok,
+        cost, latency_ms, job_id, ok, retries, error,
+    )
 
 
 async def _write_log(org: int, feature: str, model: str, in_tok: int, out_tok: int, cache_tok: int,
