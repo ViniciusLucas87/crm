@@ -22,6 +22,21 @@ const emptyHistory = {
   total: 0,
 };
 
+const connectedCallHistory = {
+  phone_number: "+16042251745",
+  total: 1,
+  items: [{
+    id: "call-1",
+    kind: "call" as const,
+    direction: "outbound" as const,
+    status: "connected",
+    phone_number: "+16045550123",
+    timestamp: "2026-08-21T18:43:00Z",
+    duration_seconds: 45,
+    preview: "Outgoing call",
+  }],
+};
+
 describe("CallCenterScreen", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -53,6 +68,25 @@ describe("CallCenterScreen", () => {
 
     await waitFor(() => {
       expect(startCall).toHaveBeenCalledWith(0, "+16045550123", "", "", 91);
+    });
+  });
+
+  it("previews the Never Miss follow-up after selecting a connected outbound call", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/calls/browser")) return new Response(JSON.stringify({ id: 91 }), { status: 200 });
+      return new Response(JSON.stringify(connectedCallHistory), { status: 200 });
+    }));
+
+    render(<CallCenterScreen />);
+    await user.click(await screen.findByRole("button", { name: /Outgoing call outbound/i }));
+
+    expect(await screen.findByRole("heading", { name: "Send Never Miss details" })).toBeTruthy();
+    expect((screen.getByRole("textbox", { name: "Never Miss follow-up message" }) as HTMLTextAreaElement).value).toContain("30-day free trial");
+    await user.click(screen.getByRole("button", { name: "Send Never Miss details" }));
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith("/api/telephony/sms", expect.objectContaining({ method: "POST" }));
     });
   });
 });

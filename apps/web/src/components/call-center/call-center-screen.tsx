@@ -39,6 +39,7 @@ type HistoryResponse = {
 type HistoryFilter = "all" | "calls" | "texts" | "missed";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"];
+const NEVER_MISS_FOLLOW_UP = "Hi, it’s Vini from Pacific North Systems. Thanks for taking my call. Never Miss helps contractors follow up only when a customer call goes unanswered: the caller receives a quick text, their reply is captured, and you get a callback task in one place. You can see how it works and start a 30-day free trial here: https://www.pacificnorthsystems.com/never-miss\n\nIf you have questions, reply here and I’ll help.";
 
 function normalizePhone(value: string) {
   const trimmed = value.trim();
@@ -83,6 +84,8 @@ export default function CallCenterScreen() {
   const [historyError, setHistoryError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [followUpMessage, setFollowUpMessage] = useState(NEVER_MISS_FOLLOW_UP);
+  const [followUpSending, setFollowUpSending] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(true);
   const browserCallId = useRef<number | null>(null);
   const lastRecordedState = useRef("");
@@ -130,6 +133,12 @@ export default function CallCenterScreen() {
 
   const activeCall = ["dialing", "ringing", "connected", "muted", "on_hold", "recording"].includes(call.state);
   const validPhone = normalizePhone(phone).replace(/\D/g, "").length >= 10;
+  const connectedOutboundCall = useMemo(() => history.items.find((item) => (
+    item.kind === "call"
+    && item.direction === "outbound"
+    && item.status === "connected"
+    && normalizePhone(item.phone_number) === normalizePhone(phone)
+  )), [history.items, phone]);
 
   const addKey = (key: string) => {
     setActionMessage("");
@@ -175,6 +184,27 @@ export default function CallCenterScreen() {
       setActionMessage(error instanceof Error ? error.message : "The text message could not be sent");
     } finally {
       setSending(false);
+    }
+  };
+
+  const sendNeverMissFollowUp = async () => {
+    if (!connectedOutboundCall || !validPhone || !followUpMessage.trim() || followUpSending) return;
+    setFollowUpSending(true);
+    setActionMessage("Sending Never Miss details");
+    try {
+      const response = await fetch("/api/telephony/sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone_number: normalizePhone(phone), message: followUpMessage.trim() }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || result.detail || "The follow-up could not be sent");
+      setActionMessage("Never Miss details sent successfully");
+      await loadHistory();
+    } catch (error) {
+      setActionMessage(error instanceof Error ? error.message : "The follow-up could not be sent");
+    } finally {
+      setFollowUpSending(false);
     }
   };
 
@@ -270,6 +300,30 @@ export default function CallCenterScreen() {
               {sending ? "Sending" : "Send text"}
             </button>
           </section>
+
+          {connectedOutboundCall && (
+            <section className="rounded-3xl border border-emerald-400/20 bg-emerald-400/5 p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-300">Post-call follow-up</p>
+              <h2 className="mt-1 text-lg font-semibold text-white">Send Never Miss details</h2>
+              <p className="mt-2 text-sm text-slate-400">This call connected. Send only when the person asked to receive the details.</p>
+              <textarea
+                value={followUpMessage}
+                onChange={(event) => setFollowUpMessage(event.target.value.slice(0, 1000))}
+                aria-label="Never Miss follow-up message"
+                rows={7}
+                className="mt-4 w-full resize-y rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/20"
+              />
+              <button
+                type="button"
+                onClick={() => void sendNeverMissFollowUp()}
+                disabled={!followUpMessage.trim() || followUpSending}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Send className="h-4 w-4" />
+                {followUpSending ? "Sending" : "Send Never Miss details"}
+              </button>
+            </section>
+          )}
 
           {actionMessage && (
             <div role="status" className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
