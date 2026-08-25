@@ -8,6 +8,7 @@ export const siteConfig = {
     email: "hello@pacificnorthsystems.com",
     phone: "+1-604-225-1745",
     location: "Kitsilano - Vancouver, BC",
+    mailingAddress: "412, 2485 West Broadway, Vancouver, BC V6K 2E8, Canada",
     calendlyAudit: "https://calendly.com/vinidias-pacificnorthsystems-operations-audit/30min",
   },
   social: {

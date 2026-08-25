@@ -170,7 +170,7 @@ export default function PrivacyPage() {
                   </a>
                 </li>
                 <li>Phone: {siteConfig.contact.phone}</li>
-                <li>Location: {siteConfig.contact.location}</li>
+                <li>Mailing address: {siteConfig.contact.mailingAddress}</li>
               </ul>
             </Section>
 

@@ -39,6 +39,7 @@ type HistoryResponse = {
 type HistoryFilter = "all" | "calls" | "texts" | "missed";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"];
+const PNS_SMS_COMPLIANCE_FOOTER = "Pacific North Systems, 412, 2485 West Broadway, Vancouver, BC V6K 2E8, Canada. pacificnorthsystems.com. Reply STOP to opt out.";
 const NEVER_MISS_FOLLOW_UP = "Hi, it’s Vini from Pacific North Systems. Thanks for taking my call. Never Miss helps contractors follow up only when a customer call goes unanswered: the caller receives a quick text, their reply is captured, and you get a callback task in one place. You can see how it works and start a 30-day free trial here: https://www.pacificnorthsystems.com/never-miss\n\nIf you have questions, reply here and I’ll help.";
 
 function normalizePhone(value: string) {
@@ -72,6 +73,11 @@ function formatDuration(seconds: number) {
   const minutes = Math.floor(seconds / 60);
   const remainder = seconds % 60;
   return `${minutes}:${remainder.toString().padStart(2, "0")}`;
+}
+
+function withPnsSmsFooter(message: string) {
+  if (message.includes(PNS_SMS_COMPLIANCE_FOOTER)) return message.trim();
+  return `${message.trim()}\n\n${PNS_SMS_COMPLIANCE_FOOTER}`;
 }
 
 export default function CallCenterScreen() {
@@ -173,7 +179,7 @@ export default function CallCenterScreen() {
       const response = await fetch("/api/telephony/sms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone_number: normalizePhone(phone), message: message.trim() }),
+        body: JSON.stringify({ phone_number: normalizePhone(phone), message: withPnsSmsFooter(message) }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || result.detail || "The text message could not be sent");
@@ -195,7 +201,7 @@ export default function CallCenterScreen() {
       const response = await fetch("/api/telephony/sms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone_number: normalizePhone(phone), message: followUpMessage.trim() }),
+        body: JSON.stringify({ phone_number: normalizePhone(phone), message: withPnsSmsFooter(followUpMessage) }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || result.detail || "The follow-up could not be sent");

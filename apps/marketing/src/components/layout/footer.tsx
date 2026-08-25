@@ -87,7 +87,7 @@ export function Footer() {
               </h4>
               <ul className="space-y-2.5">
                 <li className="text-sm text-pns-text-footer-muted">
-                  {siteConfig.contact.location}
+                  {siteConfig.contact.mailingAddress}
                 </li>
                 <li>
                   <a

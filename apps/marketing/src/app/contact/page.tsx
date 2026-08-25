@@ -46,8 +46,8 @@ const contactItems = [
   },
   {
     icon: MapPin,
-    label: "Location",
-    description: "Based in Kitsilano, serving Metro Vancouver, Victoria, and across British Columbia.",
+    label: "Mailing address",
+    description: `${siteConfig.contact.mailingAddress}. Serving Metro Vancouver, Victoria, and across British Columbia.`,
   },
 ];
 
