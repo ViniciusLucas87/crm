@@ -39,7 +39,7 @@ type HistoryResponse = {
 type HistoryFilter = "all" | "calls" | "texts" | "missed";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"];
-const PNS_SMS_COMPLIANCE_FOOTER = "Pacific North Systems, 412, 2485 West Broadway, Vancouver, BC V6K 2E8, Canada. pacificnorthsystems.com. Reply STOP to opt out.";
+const PNS_SMS_COMPLIANCE_FOOTER = "Pacific North Systems, 2485 West Broadway, Vancouver, BC V6K 2E8, Canada. pacificnorthsystems.com. Reply STOP to opt out.";
 const NEVER_MISS_FOLLOW_UP = "Hi, it’s Vini from Pacific North Systems. Thanks for taking my call. Never Miss helps contractors follow up only when a customer call goes unanswered: the caller receives a quick text, their reply is captured, and you get a callback task in one place. You can see how it works and start a 30-day free trial here: https://www.pacificnorthsystems.com/never-miss\n\nIf you have questions, reply here and I’ll help.";
 
 function normalizePhone(value: string) {

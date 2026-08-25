@@ -60,7 +60,7 @@ export default function RootLayout({
         description: siteConfig.description,
         address: {
           "@type": "PostalAddress",
-          streetAddress: "412, 2485 West Broadway",
+          streetAddress: "2485 West Broadway",
           addressLocality: "Vancouver",
           addressRegion: "BC",
           postalCode: "V6K 2E8",
