@@ -39,6 +39,7 @@ export async function generateMetadata({
       frontmatter.metaDescription ||
       frontmatter.description ||
       frontmatter.excerpt,
+    alternates: { canonical: `/blog/${slug}` },
     openGraph: {
       type: "article",
       title: frontmatter.seoTitle || frontmatter.title,
@@ -63,9 +64,44 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     slug,
     frontmatter.relatedArticleSlugs || [],
   );
+  const articleUrl = `${siteConfig.url}/blog/${slug}`;
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    mainEntityOfPage: articleUrl,
+    headline: frontmatter.title,
+    description: frontmatter.metaDescription || frontmatter.excerpt,
+    datePublished: frontmatter.publishedAt,
+    dateModified: frontmatter.updatedAt || frontmatter.publishedAt,
+    author: {
+      "@type": "Person",
+      name: frontmatter.author,
+    },
+    publisher: { "@id": `${siteConfig.url}/#organization` },
+    ...(frontmatter.featuredImage
+      ? { image: new URL(frontmatter.featuredImage, siteConfig.url).toString() }
+      : {}),
+  };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: siteConfig.url },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${siteConfig.url}/blog` },
+      { "@type": "ListItem", position: 3, name: frontmatter.title, item: articleUrl },
+    ],
+  };
 
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       {/* Article header */}
       <section className="bg-pns-dark-hero pt-28 pb-16 lg:pt-32 lg:pb-20">
         <Container size="narrow">

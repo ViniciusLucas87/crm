@@ -15,7 +15,7 @@ describe("search and AI discovery assets", () => {
     for (const crawler of ["GPTBot", "Google-Extended", "ClaudeBot", "CCBot"]) {
       expect(robots).toContain(`User-agent: ${crawler}\nDisallow: /`);
     }
-    expect(robots).toContain("Sitemap: https://pacificnorthsystems.com/sitemap.xml");
+    expect(robots).toContain("Sitemap: https://www.pacificnorthsystems.com/sitemap.xml");
   });
 
   it("publishes transparent LLM guidance without unsupported benchmark claims", () => {
@@ -34,7 +34,7 @@ describe("search and AI discovery assets", () => {
       "/methodology",
       "/contact",
     ]) {
-      expect(urls).toContain(`https://pacificnorthsystems.com${path}`);
+      expect(urls).toContain(`https://www.pacificnorthsystems.com${path}`);
     }
   });
 

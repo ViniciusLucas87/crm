@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "Free Business Tools for Canadian SMBs | Pacific North Systems",
   description:
     "Calculate manual work costs, automation ROI, and CRM readiness. Free, with no signup required. Built for Canadian small and midsize businesses by Pacific North Systems.",
-  alternates: { canonical: "https://pacificnorthsystems.com/free-tools" },
+  alternates: { canonical: "https://www.pacificnorthsystems.com/free-tools" },
   openGraph: {
     title: "Free Business Tools for Canadian SMBs",
     description:

@@ -20,9 +20,9 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Business Software and Automation Solutions",
+  title: "Business Software & Workflow Automation in Vancouver",
   description:
-    "Explore workflow automation, custom software, inspection tools, dashboards, CRM development, integrations, AI document processing, and operational support from Pacific North Systems.",
+    "Explore workflow automation, custom software, inspection tools, dashboards, CRM development, integrations, and operational support for Vancouver and Canadian businesses.",
 };
 
 const solutionsData: SolutionSectionData[] = [

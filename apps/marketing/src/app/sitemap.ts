@@ -3,7 +3,7 @@ import { getAllArticles } from "@/lib/blog";
 import { guides } from "@/lib/guides-data";
 import { neverMissTradeSlugs } from "@/lib/never-miss-trades";
 
-const BASE_URL = "https://pacificnorthsystems.com";
+const BASE_URL = "https://www.pacificnorthsystems.com";
 // Stable dates: update when content is materially revised
 const SITE_LAUNCH = new Date("2026-06-01");
 const TOOLS_ADDED = new Date("2026-08-03");

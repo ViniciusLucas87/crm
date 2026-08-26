@@ -16,7 +16,7 @@ export default function PrivacyPage() {
             Privacy Policy
           </h1>
           <p className="mt-2 text-sm text-pns-text-muted">
-            Last updated: July 2026
+            Last updated: August 2026
           </p>
 
           <p className="mt-8 leading-relaxed text-pns-text-muted">
@@ -84,10 +84,13 @@ export default function PrivacyPage() {
 
             <Section title="Analytics and Cookies">
               <p>
-                We may use privacy-focused analytics to understand how visitors
-                interact with our website. Any analytics implementation will
-                respect Do Not Track signals and minimize data collection. We
-                will update this policy when analytics are configured.
+                We use Google Analytics to understand aggregated website use,
+                including pages viewed, referral source, device type, and
+                interactions such as phone, email, and consultation links. We
+                use this information to improve the website and measure whether
+                visitors can find the services they need. Google may process
+                this information under its own privacy policy. You can limit
+                analytics cookies through your browser settings.
               </p>
             </Section>
 
@@ -132,6 +135,10 @@ export default function PrivacyPage() {
                 <li>
                   <strong>Vercel</strong> , for website hosting. Subject to
                   Vercel&apos;s privacy policy.
+                </li>
+                <li>
+                  <strong>Google Analytics</strong> , for aggregated website
+                  analytics. Subject to Google&apos;s privacy policy.
                 </li>
               </ul>
             </Section>

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "Editorial Methodology & Standards | Pacific North Systems",
   description:
     "How we research, write, and maintain content on pacificnorthsystems.com. Sourcing hierarchy, corrections policy, calculator methodology, AI-assistance disclosure, and author credentials.",
-  alternates: { canonical: "https://pacificnorthsystems.com/methodology" },
+  alternates: { canonical: "https://www.pacificnorthsystems.com/methodology" },
 };
 
 const sections = [

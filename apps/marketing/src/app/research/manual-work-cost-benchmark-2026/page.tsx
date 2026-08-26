@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description:
     "A planning baseline for estimating manual work costs in Canadian SMBs using official Canadian data and assumptions supplied by business owners. Not a representative national survey.",
   alternates: {
-    canonical: "https://pacificnorthsystems.com/research/manual-work-cost-benchmark-2026",
+    canonical: "https://www.pacificnorthsystems.com/research/manual-work-cost-benchmark-2026",
   },
 };
 
@@ -95,7 +95,7 @@ export default function BenchmarkPage() {
     publisher: { "@type": "Organization", name: "Pacific North Systems" },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": "https://pacificnorthsystems.com/research/manual-work-cost-benchmark-2026",
+      "@id": "https://www.pacificnorthsystems.com/research/manual-work-cost-benchmark-2026",
     },
   };
 

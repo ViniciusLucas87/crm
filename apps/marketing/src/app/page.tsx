@@ -8,9 +8,9 @@ import { BackgroundVideo } from "@/components/home/background-video";
 import { siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = {
-  title: "Custom Software for Businesses with Complex Operations",
+  title: "Custom Software & Workflow Automation in Vancouver",
   description:
-    "Pacific North Systems designs and builds practical custom software, workflow automation, and connected operational systems for businesses worldwide.",
+    "Pacific North Systems designs custom software, workflow automation, and connected operational systems for Vancouver and Canadian businesses with complex operations.",
 };
 
 const services = [

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: "Business Guides for Canadian SMBs | Pacific North Systems",
   description:
     "Practical guides in plain English on automation, CRM, AI, and operations for Canadian small and midsize business owners. No jargon and no sales pitch.",
-  alternates: { canonical: "https://pacificnorthsystems.com/business-guides" },
+  alternates: { canonical: "https://www.pacificnorthsystems.com/business-guides" },
 };
 
 interface Guide {

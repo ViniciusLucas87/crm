@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${guide.title} | Pacific North Systems`,
     description: guide.description,
-    alternates: { canonical: `https://pacificnorthsystems.com/business-guides/${slug}` },
+    alternates: { canonical: `https://www.pacificnorthsystems.com/business-guides/${slug}` },
     openGraph: { title: guide.title, description: guide.description },
   };
 }

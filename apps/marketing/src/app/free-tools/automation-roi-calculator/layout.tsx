@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-const url = "https://pacificnorthsystems.com/free-tools/automation-roi-calculator";
+const url = "https://www.pacificnorthsystems.com/free-tools/automation-roi-calculator";
 const description = "Estimate automation benefits, ongoing costs, first-year ROI, and payback time using transparent business assumptions.";
 export const metadata: Metadata = { title: "Automation ROI Calculator | Pacific North Systems", description, alternates: { canonical: url }, openGraph: { title: "Automation ROI Calculator", description, url } };
 

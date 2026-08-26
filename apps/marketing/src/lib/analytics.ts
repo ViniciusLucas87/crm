@@ -1,9 +1,9 @@
 /**
  * Privacy-respecting first-party funnel event tracking.
  *
- * No-ops until a provider is configured. Never loads third-party cookies,
- * scripts, or pixels. Designed for future configuration via environment
- * variable (NEXT_PUBLIC_ANALYTICS_PROVIDER) without code changes.
+ * Uses GA4 when a public measurement ID is configured and continues to
+ * support the existing Plausible option. Event payloads must not contain
+ * names, email addresses, phone numbers, or other personal information.
  */
 
 type FunnelEvent =
@@ -23,14 +23,25 @@ interface EventPayload {
 const ANALYTICS_PROVIDER =
   typeof process !== "undefined" &&
   process.env?.NEXT_PUBLIC_ANALYTICS_PROVIDER;
+const GOOGLE_ANALYTICS_ID =
+  typeof process !== "undefined" &&
+  process.env?.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 let _queue: Array<{ event: FunnelEvent; payload: EventPayload; ts: number }> = [];
 const MAX_QUEUE = 100;
 
 function _flush() {
-  if (!ANALYTICS_PROVIDER || _queue.length === 0) return;
+  if (_queue.length === 0) return;
   const batch = _queue.splice(0);
   try {
+    if (GOOGLE_ANALYTICS_ID && typeof window !== "undefined") {
+      const gtag = (window as unknown as {
+        gtag?: (command: "event", event: string, payload: EventPayload) => void;
+      }).gtag;
+      for (const { event, payload } of batch) {
+        gtag?.("event", event, payload);
+      }
+    }
     if (ANALYTICS_PROVIDER === "plausible" && typeof window !== "undefined") {
       const plausible = (
         window as unknown as {
@@ -48,7 +59,7 @@ function _flush() {
 }
 
 export function track(event: FunnelEvent, payload: EventPayload = {}): void {
-  if (!ANALYTICS_PROVIDER) return;
+  if (!ANALYTICS_PROVIDER && !GOOGLE_ANALYTICS_ID) return;
 
   _queue.push({ event, payload, ts: Date.now() });
   if (_queue.length > MAX_QUEUE) _queue.shift();

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: "Research | Canadian SMB Operations Data | Pacific North Systems",
   description:
     "Transparent, citation-backed research on Canadian small business operations, automation costs, and workflow benchmarks. All data sourced from Statistics Canada and Government of Canada public data.",
-  alternates: { canonical: "https://pacificnorthsystems.com/research" },
+  alternates: { canonical: "https://www.pacificnorthsystems.com/research" },
 };
 
 export default function ResearchHub() {

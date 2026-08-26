@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-const url = "https://pacificnorthsystems.com/free-tools/crm-readiness-assessment";
+const url = "https://www.pacificnorthsystems.com/free-tools/crm-readiness-assessment";
 const description = "Check whether your business is ready for a CRM and receive practical next steps based on your current sales process.";
 export const metadata: Metadata = { title: "CRM Readiness Assessment | Pacific North Systems", description, alternates: { canonical: url }, openGraph: { title: "CRM Readiness Assessment", description, url } };
 
