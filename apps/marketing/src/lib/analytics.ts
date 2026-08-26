@@ -23,9 +23,6 @@ interface EventPayload {
 const ANALYTICS_PROVIDER =
   typeof process !== "undefined" &&
   process.env?.NEXT_PUBLIC_ANALYTICS_PROVIDER;
-const GOOGLE_ANALYTICS_ID =
-  typeof process !== "undefined" &&
-  process.env?.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 let _queue: Array<{ event: FunnelEvent; payload: EventPayload; ts: number }> = [];
 const MAX_QUEUE = 100;
@@ -34,12 +31,20 @@ function _flush() {
   if (_queue.length === 0) return;
   const batch = _queue.splice(0);
   try {
-    if (GOOGLE_ANALYTICS_ID && typeof window !== "undefined") {
+    if (typeof window !== "undefined") {
       const gtag = (window as unknown as {
         gtag?: (command: "event", event: string, payload: EventPayload) => void;
       }).gtag;
       for (const { event, payload } of batch) {
-        gtag?.("event", event, payload);
+        if (gtag) {
+          gtag("event", event, payload);
+        } else {
+          const analyticsWindow = window as Window & {
+            pnsAnalyticsQueue?: Array<{ event: FunnelEvent; payload: EventPayload }>;
+          };
+          analyticsWindow.pnsAnalyticsQueue = analyticsWindow.pnsAnalyticsQueue || [];
+          analyticsWindow.pnsAnalyticsQueue.push({ event, payload });
+        }
       }
     }
     if (ANALYTICS_PROVIDER === "plausible" && typeof window !== "undefined") {
@@ -59,7 +64,7 @@ function _flush() {
 }
 
 export function track(event: FunnelEvent, payload: EventPayload = {}): void {
-  if (!ANALYTICS_PROVIDER && !GOOGLE_ANALYTICS_ID) return;
+  if (!ANALYTICS_PROVIDER && typeof window === "undefined") return;
 
   _queue.push({ event, payload, ts: Date.now() });
   if (_queue.length > MAX_QUEUE) _queue.shift();

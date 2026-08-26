@@ -1,17 +1,9 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { GoogleAnalytics } from "@/components/layout/google-analytics";
 import { siteConfig } from "@/lib/site-config";
 import "./globals.css";
-
-const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim();
-const hasGoogleAdsId = Boolean(googleAdsId && /^AW-\d+$/.test(googleAdsId));
-const googleAnalyticsId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
-const hasGoogleAnalyticsId = Boolean(
-  googleAnalyticsId && /^G-[A-Z0-9]+$/.test(googleAnalyticsId),
-);
-const googleTagId = hasGoogleAnalyticsId ? googleAnalyticsId : googleAdsId;
 
 export const metadata: Metadata = {
   title: {
@@ -100,28 +92,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col overflow-x-clip antialiased">
-        {googleTagId ? (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${googleTagId}`}
-              strategy="afterInteractive"
-            />
-            <Script id="google-tag" strategy="afterInteractive">
-              {`window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-${hasGoogleAnalyticsId ? `gtag('config', '${googleAnalyticsId}');` : ""}
-${hasGoogleAdsId ? `gtag('config', '${googleAdsId}');` : ""}
-document.addEventListener('click', function(event) {
-  var element = event.target instanceof Element ? event.target.closest('a') : null;
-  if (!element) return;
-  var href = element.getAttribute('href') || '';
-  var eventName = href.indexOf('tel:') === 0 ? 'phone_click' : href.indexOf('mailto:') === 0 ? 'email_click' : href.indexOf('calendly.com') !== -1 ? 'consultation_booking_click' : '';
-  if (eventName) gtag('event', eventName, { link_url: href });
-});`}
-            </Script>
-          </>
-        ) : null}
+        <GoogleAnalytics />
         <Header />
         <main className="flex-1" id="main-content">
           {children}
