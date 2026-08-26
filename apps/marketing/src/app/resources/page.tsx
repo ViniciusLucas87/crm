@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Resources",
   description:
     "Practical tools, guides, research, and articles for Canadian businesses improving their operations and technology.",
+  alternates: { canonical: "/resources" },
 };
 
 const resources = [

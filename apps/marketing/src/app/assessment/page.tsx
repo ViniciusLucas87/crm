@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Operations Assessment | Pacific North Systems",
   description:
     "A fast, 2-minute business diagnostic. Identify your biggest operational time drains and estimate potential savings.",
+  alternates: { canonical: "/assessment" },
 };
 
 export default function AssessmentPage() {

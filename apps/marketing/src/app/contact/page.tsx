@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Contact",
   description:
     "Get in touch with Pacific North Systems. Book an Operations Audit, email us, or call to discuss custom software and automation for your Vancouver or Victoria business.",
+  alternates: { canonical: "/contact" },
   openGraph: {
     title: "Contact Pacific North Systems",
     description:

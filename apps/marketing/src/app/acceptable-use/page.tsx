@@ -5,6 +5,7 @@ import { Container } from "@/components/ui/container";
 export const metadata: Metadata = {
   title: "Never Miss Acceptable Use",
   description: "Simple rules that keep Never Miss calling and messaging safe and respectful.",
+  alternates: { canonical: "/acceptable-use" },
 };
 
 export default function AcceptableUsePage() {

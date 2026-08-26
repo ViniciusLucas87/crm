@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "About",
   description:
     "Learn about Pacific North Systems, a custom software company led by its founder, based in Vancouver and serving clients worldwide.",
+  alternates: { canonical: "/about" },
 };
 
 const values = [

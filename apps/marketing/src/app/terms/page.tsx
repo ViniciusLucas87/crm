@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Terms of Service",
   description:
     "Terms of service for Pacific North Systems custom software and automation consulting.",
+  alternates: { canonical: "/terms" },
 };
 
 export default function TermsPage() {

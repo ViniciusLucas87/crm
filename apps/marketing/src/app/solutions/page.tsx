@@ -23,6 +23,7 @@ export const metadata: Metadata = {
   title: "Business Software & Workflow Automation in Vancouver",
   description:
     "Explore workflow automation, custom software, inspection tools, dashboards, CRM development, integrations, and operational support for Vancouver and Canadian businesses.",
+  alternates: { canonical: "/solutions" },
 };
 
 const solutionsData: SolutionSectionData[] = [

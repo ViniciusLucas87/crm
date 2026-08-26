@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: "Custom Software & Workflow Automation in Vancouver",
   description:
     "Pacific North Systems designs custom software, workflow automation, and connected operational systems for Vancouver and Canadian businesses with complex operations.",
+  alternates: { canonical: "/" },
 };
 
 const services = [

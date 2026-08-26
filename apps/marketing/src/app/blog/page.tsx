@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Business Automation Blog",
   description:
     "Practical guidance on workflow automation, operational efficiency, AI, custom software, and internal tools for Canadian businesses.",
+  alternates: { canonical: "/blog" },
 };
 
 export default async function BlogPage() {

@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "How We Work",
   description:
     "A clear, practical process for designing, building, and supporting custom operational software.",
+  alternates: { canonical: "/process" },
 };
 
 const phases = [

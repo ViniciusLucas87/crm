@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Our Work",
   description:
     "Selected custom software work from Pacific North Systems, including an operations and booking allocation system for Yellow Cap Tours.",
+  alternates: { canonical: "/work" },
 };
 
 export default function WorkPage() {
