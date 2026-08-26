@@ -55,13 +55,43 @@ export default function RootLayout({
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": "Organization",
+        "@type": ["Organization", "ProfessionalService"],
         "@id": `${siteConfig.url}/#organization`,
         name: siteConfig.name,
         url: siteConfig.url,
         email: siteConfig.contact.email,
         telephone: siteConfig.contact.phone,
         description: siteConfig.description,
+        areaServed: [
+          { "@type": "City", name: "Vancouver" },
+          { "@type": "Country", name: "Canada" },
+        ],
+        makesOffer: [
+          {
+            "@type": "Offer",
+            itemOffered: {
+              "@type": "Service",
+              name: "Custom operational software",
+              description: "Custom web and mobile applications, internal tools, portals, field systems, and CRMs.",
+            },
+          },
+          {
+            "@type": "Offer",
+            itemOffered: {
+              "@type": "Service",
+              name: "Workflow automation",
+              description: "Operational workflow design, integrations, approvals, and reliable automation.",
+            },
+          },
+          {
+            "@type": "Offer",
+            itemOffered: {
+              "@type": "Service",
+              name: "Missed call lead recovery",
+              description: "Automatic missed-call text replies and callback tracking for service businesses.",
+            },
+          },
+        ],
         address: {
           "@type": "PostalAddress",
           streetAddress: "2485 West Broadway",
