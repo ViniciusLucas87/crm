@@ -44,16 +44,17 @@ export function GoogleAnalytics() {
       .then((config) => {
         if (disposed || !config?.measurementId) return;
 
+        const bootstrapScript = document.createElement("script");
+        bootstrapScript.text =
+          "window.dataLayer = window.dataLayer || []; window.gtag = function(){window.dataLayer.push(arguments);};";
+        document.head.appendChild(bootstrapScript);
+
         const gaWindow = googleWindow();
-        gaWindow.dataLayer = gaWindow.dataLayer || [];
-        gaWindow.gtag = function gtag(command, event, params) {
-          window.dataLayer?.push([command, event, params]);
-        };
-        gaWindow.gtag("js", new Date());
-        gaWindow.gtag("config", config.measurementId);
+        gaWindow.gtag?.("js", new Date());
+        gaWindow.gtag?.("config", config.measurementId);
 
         for (const queued of gaWindow.pnsAnalyticsQueue || []) {
-          gaWindow.gtag("event", queued.event, queued.payload);
+          gaWindow.gtag?.("event", queued.event, queued.payload);
         }
         gaWindow.pnsAnalyticsQueue = [];
 
