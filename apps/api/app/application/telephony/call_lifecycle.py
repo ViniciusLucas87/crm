@@ -136,14 +136,6 @@ class CallLifecycleService:
             call.public_uuid, direction, phone_number, company_id,
         )
 
-        # Activity + Timeline outbox
-        _emit_outbox(self._db, "call.created", {
-            "call_uuid": call.public_uuid, "call_id": call.id,
-            "direction": direction, "company_id": company_id,
-            "contact_id": contact_id, "lead_id": lead_id,
-            "correlation_id": correlation_id,
-        })
-
         return call
 
     # ── State Transitions ──
@@ -212,36 +204,8 @@ class CallLifecycleService:
             call.public_uuid, previous, canonical, call.duration_seconds,
         )
 
-        # Outbox for Timeline + Metrics
-        _emit_outbox(self._db, "call.state_changed", {
-            "call_uuid": call.public_uuid, "call_id": call.id,
-            "previous_status": previous, "new_status": canonical,
-            "provider_event_id": provider_event_id,
-            "activity_id": activity_id,
-            "company_id": call.company_id, "contact_id": call.contact_id,
-            "lead_id": call.lead_id,
-            "correlation_id": call.correlation_id,
-        })
-
-        # On terminal state: queue post-call processing
+        # On terminal state: queue only events with active worker consumers.
         if canonical in ("COMPLETED", "FAILED", "MISSED"):
-            _emit_outbox(self._db, "call.completed", {
-                "call_uuid": call.public_uuid, "call_id": call.id,
-                "status": canonical,
-                "duration_seconds": call.duration_seconds,
-                "company_id": call.company_id, "contact_id": call.contact_id,
-                "correlation_id": call.correlation_id,
-            })
-            # Queue transcription + post-call analysis
-            if canonical == "COMPLETED":
-                _emit_outbox(self._db, "call.transcription.requested", {
-                    "call_uuid": call.public_uuid, "call_id": call.id,
-                    "provider_call_id": call.provider_call_id,
-                })
-                _emit_outbox(self._db, "call.postcall.requested", {
-                    "call_uuid": call.public_uuid, "call_id": call.id,
-                    "company_id": call.company_id,
-                })
             # Queue metrics recalculation
             _emit_outbox(self._db, "call.metrics_recalculation.requested", {
                 "call_uuid": call.public_uuid, "company_id": call.company_id,

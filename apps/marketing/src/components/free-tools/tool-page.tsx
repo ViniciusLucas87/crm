@@ -118,6 +118,13 @@ export function ToolPage({ config }: { config: ToolPageConfig }) {
           <span className="text-pns-text-primary font-medium">{config.title}</span>
         </nav>
 
+        <h1 className="font-heading text-3xl font-semibold tracking-tight text-pns-text-primary mb-3 md:text-4xl">
+          {config.title}
+        </h1>
+        <p className="text-[15px] leading-relaxed text-pns-text-muted mb-8">
+          {config.description}
+        </p>
+
         {/* Progress */}
         {step < config.steps.length && (
           <div className="mb-6">

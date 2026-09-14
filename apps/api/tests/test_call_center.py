@@ -1,8 +1,28 @@
 from fastapi.testclient import TestClient
 
+from app.application.telephony.call_lifecycle import CallLifecycleService
 from app.infrastructure.db import session as db_session
-from app.infrastructure.db.models import Call, Company, Contact
+from app.infrastructure.db.models import Call, Company, Contact, OutboxEvent
 from tests.conftest import auth_headers
+
+
+def test_call_lifecycle_only_queues_consumed_events(client: TestClient) -> None:
+    with db_session.SessionLocal() as session:
+        company = Company(organization_id=1, name="Outbox Test Company")
+        session.add(company)
+        session.flush()
+        lifecycle = CallLifecycleService(session)
+        call = lifecycle.create_call(
+            direction="outbound", phone_number="+16045550123", company_id=company.id,
+        )
+        lifecycle.transition(call, "FAILED")
+        session.flush()
+        event_types = {event.event_type for event in session.query(OutboxEvent).all()}
+        assert event_types == {
+            "call.metrics_recalculation.requested",
+            "call.timeline_projection.requested",
+            "knowledge.call_ingestion.requested",
+        }
 
 
 def test_browser_call_is_saved_and_appears_in_history(client: TestClient) -> None:
