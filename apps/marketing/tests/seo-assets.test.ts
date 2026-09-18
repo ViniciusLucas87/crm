@@ -29,6 +29,7 @@ describe("search and AI discovery assets", () => {
     const urls = (await sitemap()).map((entry) => entry.url);
     for (const path of [
       "/free-tools",
+      "/document-processing-automation",
       "/business-guides/do-i-need-a-crm",
       "/research/manual-work-cost-benchmark-2026",
       "/methodology",

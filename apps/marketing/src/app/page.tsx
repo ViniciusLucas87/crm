@@ -34,7 +34,7 @@ const services = [
     title: "Data, reporting, and AI",
     description:
       "Clear dashboards, document processing, and carefully scoped AI tools that make business information easier to use.",
-    href: "/solutions#business-dashboards",
+    href: "/document-processing-automation",
   },
 ];
 

@@ -40,7 +40,7 @@ export const siteConfig = {
       { label: "Custom Applications", href: "/solutions#custom-business-software" },
       { label: "Workflow Automation", href: "/solutions#workflow-automation" },
       { label: "Dashboards & Reporting", href: "/solutions#business-dashboards" },
-      { label: "AI Document Tools", href: "/solutions#ai-document-processing" },
+      { label: "Document Processing Automation", href: "/document-processing-automation" },
       { label: "Integrations", href: "/solutions#system-integrations" },
       { label: "Support & Maintenance", href: "/solutions#operational-it-support" },
     ],

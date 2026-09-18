@@ -14,6 +14,7 @@ export interface SolutionSectionData {
   typicalFirstVersion: string;
   expectedOutcome: string;
   relevantIndustries: string[];
+  detailsHref?: string;
 }
 
 interface SolutionSectionProps {
@@ -118,6 +119,14 @@ export function SolutionSection({ data, index }: SolutionSectionProps) {
               ))}
             </div>
           </div>
+
+          {data.detailsHref && (
+            <div className="mt-8">
+              <Button variant="outline" size="sm" href={data.detailsHref}>
+                Explore document processing automation
+              </Button>
+            </div>
+          )}
 
           {/* Assessment CTA */}
           <div className="mt-10 pt-8 border-t border-pns-text-primary/10 flex flex-col sm:flex-row items-start sm:items-center gap-4">

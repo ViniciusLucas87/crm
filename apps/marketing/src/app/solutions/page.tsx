@@ -337,6 +337,7 @@ const solutionsData: SolutionSectionData[] = [
       "Logistics",
       "Professional Services",
     ],
+    detailsHref: "/document-processing-automation",
   },
   {
     id: "ai-assistants",

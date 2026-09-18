@@ -9,6 +9,7 @@ const SITE_LAUNCH = new Date("2026-06-01");
 const TOOLS_ADDED = new Date("2026-08-03");
 const GUIDES_PUBLISHED = new Date("2026-08-03");
 const NEVER_MISS_TRADE_PAGES_PUBLISHED = new Date("2026-08-21");
+const DOCUMENT_PROCESSING_PAGE_PUBLISHED = new Date("2026-09-18");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const articles = await getAllArticles();
@@ -20,6 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: BASE_URL, lastModified: SITE_LAUNCH, changeFrequency: "weekly", priority: 1.0 },
     { url: `${BASE_URL}/solutions`, lastModified: SITE_LAUNCH, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${BASE_URL}/document-processing-automation`, lastModified: DOCUMENT_PROCESSING_PAGE_PUBLISHED, changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE_URL}/never-miss`, lastModified: TOOLS_ADDED, changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE_URL}/never-forget`, lastModified: new Date("2026-08-18"), changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE_URL}/work`, lastModified: TOOLS_ADDED, changeFrequency: "monthly", priority: 0.8 },
