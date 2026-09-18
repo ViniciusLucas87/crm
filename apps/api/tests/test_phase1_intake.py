@@ -593,6 +593,39 @@ def test_delivery_receipt_resolves_tenant_from_sender_in_production(
     assert resp.json()["status"] == "ok"
 
 
+def test_outbound_sms_sent_event_does_not_create_lead_capture(client, _patch_webhook_verify):
+    """Telnyx message.sent events describe our outbound SMS, not a new contact."""
+    from app.infrastructure.db.models import LeadCaptureRecord
+    from app.infrastructure.db.session import SessionLocal
+
+    event_id = "evt_outbound_sms_not_a_lead"
+    ts = str(int(datetime.now(UTC).timestamp()))
+    response = client.post(
+        SMS_WEBHOOK_URL,
+        json=_make_sms_payload(
+            event_id=event_id,
+            event_type="message.sent",
+            from_number="+16045559876",
+            to_number="+16045551234",
+            text="Here is the demo link you requested.",
+        ),
+        headers={"telnyx-timestamp": ts},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ignored", "event_type": "message.sent"}
+
+    db = SessionLocal()
+    try:
+        captured = db.query(LeadCaptureRecord).filter(
+            LeadCaptureRecord.source == "sms",
+            LeadCaptureRecord.external_id == event_id,
+        ).first()
+        assert captured is None
+    finally:
+        db.close()
+
+
 # ── 14. Recovery outbox idempotency ──────────────────────────
 
 def test_reconciliation_outbox_idempotent(client, _patch_webhook_verify):

@@ -1039,6 +1039,14 @@ async def sms_webhook(request: Request, session: Session = Depends(get_db_sessio
 
     normalized_to = normalize_phone(to_number) if to_number else None
 
+    # Telnyx also sends outbound lifecycle events (for example,
+    # message.sent) to this endpoint. Keep them in the immutable webhook
+    # ledger, but do not resolve a customer tenant or create CRM records.
+    if event_type not in ("message.received", "message.finalized"):
+        wh_event.processing_status = "processed"
+        session.commit()
+        return {"status": "ignored", "event_type": event_type}
+
     # Resolve against the business-owned number. For outbound delivery receipts,
     # that is the sender; for inbound messages, it is the destination.
     org_id = _resolve_sms_tenant(
@@ -1047,22 +1055,6 @@ async def sms_webhook(request: Request, session: Session = Depends(get_db_sessio
         normalized_from,
         normalized_to,
     )
-
-    # STOP/START handling
-    text_upper = text.upper()
-    if text_upper in ("STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"):
-        suppress_phone(session, org_id, normalized_from or from_number, reason=text_upper, source_event_id=provider_event_id)
-        wh_event.processing_status = "processed"
-        session.commit()
-        logger.info("SMS STOP: %s for org %d", _redact_number(from_number), org_id)
-        return {"status": "suppressed", "phone": _redact_number(from_number)}
-
-    if text_upper in ("START", "YES", "UNSTOP"):
-        remove_suppression(session, org_id, normalized_from or from_number)
-        wh_event.processing_status = "processed"
-        session.commit()
-        logger.info("SMS START: %s for org %d", _redact_number(from_number), org_id)
-        return {"status": "unsuppressed", "phone": _redact_number(from_number)}
 
     # Delivery receipt
     if event_type == "message.finalized":
@@ -1087,6 +1079,26 @@ async def sms_webhook(request: Request, session: Session = Depends(get_db_sessio
                     "activity_id": activity.id if activity else None,
                     "delivery_status": delivery_status,
                 }
+
+        wh_event.processing_status = "processed"
+        session.commit()
+        return {"status": "ok"}
+
+    # STOP/START handling applies only to inbound customer messages.
+    text_upper = text.upper()
+    if text_upper in ("STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"):
+        suppress_phone(session, org_id, normalized_from or from_number, reason=text_upper, source_event_id=provider_event_id)
+        wh_event.processing_status = "processed"
+        session.commit()
+        logger.info("SMS STOP: %s for org %d", _redact_number(from_number), org_id)
+        return {"status": "suppressed", "phone": _redact_number(from_number)}
+
+    if text_upper in ("START", "YES", "UNSTOP"):
+        remove_suppression(session, org_id, normalized_from or from_number)
+        wh_event.processing_status = "processed"
+        session.commit()
+        logger.info("SMS START: %s for org %d", _redact_number(from_number), org_id)
+        return {"status": "unsuppressed", "phone": _redact_number(from_number)}
 
     # Normal inbound reply: find contact, create activity
     contact = None
